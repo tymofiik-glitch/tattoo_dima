@@ -31,8 +31,10 @@ button{font-family:inherit;cursor:pointer}
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px var(--pad);transition:background .4s,border-color .4s;border-bottom:.5px solid transparent}
 nav.sc{background:rgba(245,240,232,.93);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom-color:var(--rule)}
-.n-logo{font-family:var(--micro);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(245,240,232,.75);transition:color .4s}
-nav.sc .n-logo{color:var(--ink)}
+.n-logo{font-family:var(--micro);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,240,232,.75);transition:color .4s;display:flex;flex-direction:column;gap:3px;line-height:1}
+.n-sub{font-size:8px;letter-spacing:.16em;color:rgba(245,240,232,.32);transition:color .4s}
+nav.sc .n-sub{color:var(--ink-3)}
+@media(max-width:400px){.n-logo{font-size:9px;letter-spacing:.12em}.n-sub{font-size:7px}}
 .n-links{display:flex;gap:28px;font-family:var(--micro);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,240,232,.5);transition:color .4s}
 nav.sc .n-links{color:var(--ink-2)}
 .n-links a{transition:color .2s}.n-links a:hover{color:var(--gold)}
@@ -59,8 +61,6 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 /* контент: всё прижато к левому краю внизу */
 .h-c{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(76px,11vh,116px) var(--pad) clamp(48px,7vh,80px)}
 
-/* верхний лейбл — только локация */
-.h-loc{position:absolute;top:clamp(22px,4vh,36px);left:var(--pad);font-family:var(--micro);font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:rgba(245,240,232,.38);opacity:0;animation:fi .8s ease .2s forwards}
 .h-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-right:8px;animation:bl 2.5s ease-in-out infinite;vertical-align:middle}
 @keyframes bl{0%,100%{opacity:.3}50%{opacity:1}}
 
@@ -344,7 +344,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
 <body>
 
 <nav id="nav">
-  <a href="#top" class="n-logo">Dmytro Bilynets</a>
+  <a href="#top" class="n-logo"><span>Dmytro Bilynets</span><span class="n-sub"><span class="h-dot"></span>Den Haag</span></a>
   <div class="n-links" id="nlinks"><a href="#work">Work</a><a href="#about">About</a><a href="#booking">Book</a></div>
   <div style="display:flex;align-items:center;gap:12px">
     <button class="n-book om">Reserve →</button>
@@ -361,7 +361,6 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
     <div class="h-bg-g"></div>
   </div>
   <div class="h-c">
-    <div class="h-loc"><span class="h-dot"></span>The Muse Ink · Den Haag</div>
     <div class="h-body">
       <h1 class="h-t">
         <span>Silence,</span>
