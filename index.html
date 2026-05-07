@@ -209,34 +209,33 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 .pc{background:var(--linen);padding:20px 16px}
 .pcl{font-family:var(--micro);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px}
 .pcv{font-family:var(--serif);font-style:italic;font-size:clamp(20px,2.8vw,30px);color:var(--ink)}
-/* Studio photos grid (4 photos) */
+/* Studio photos — masonry 2 columns */
 .sphotos{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  grid-template-rows:200px 160px 160px;
-  gap:6px;
+  columns:2;
+  column-gap:8px;
   margin-top:clamp(28px,4vw,52px);
 }
-.sp{overflow:hidden;position:relative;border-radius:4px;box-shadow:0 3px 14px rgba(26,24,20,.08);transition:box-shadow .35s,transform .35s;cursor:default}
-.sp:hover{box-shadow:0 12px 32px rgba(26,24,20,.15);transform:translateY(-2px);z-index:2}
-.sp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
-.sp:hover img{transform:scale(1.05)}
-.sp2 img{transform:scale(1.1);transform-origin:center 65%}
-.sp2:hover img{transform:scale(1.15);transform-origin:center 65%}
-.sp4 img{transform:scale(1.08);transform-origin:center 10%}
-.sp4:hover img{transform:scale(1.13);transform-origin:center 10%}
-/* mobile: roses + evening top row, photo-zone full, marshall full */
-.sp1{grid-column:1;grid-row:1}
-.sp2{grid-column:2;grid-row:1}
-.sp3{grid-column:1/span 2;grid-row:2}
-.sp4{grid-column:1/span 2;grid-row:3}
-@media(min-width:680px){
-  .sphotos{grid-template-columns:0.7fr 1.6fr 1fr;grid-template-rows:clamp(180px,24vw,300px) clamp(180px,24vw,300px);gap:10px}
-  .sp1{grid-column:1;grid-row:1/span 2}
-  .sp2{grid-column:2;grid-row:1}
-  .sp3{grid-column:3;grid-row:1/span 2}
-  .sp4{grid-column:2;grid-row:2}
+@media(min-width:680px){.sphotos{column-gap:12px}}
+.sp{
+  break-inside:avoid;
+  display:block;
+  margin-bottom:8px;
+  overflow:hidden;
+  border-radius:4px;
+  box-shadow:0 3px 14px rgba(26,24,20,.08);
+  transition:box-shadow .35s,transform .35s;
+  cursor:default;
+  position:relative;
 }
+@media(min-width:680px){.sp{margin-bottom:12px}}
+.sp:hover{box-shadow:0 12px 32px rgba(26,24,20,.15);transform:translateY(-2px)}
+.sp img{
+  width:100%;
+  height:auto;
+  display:block;
+  transition:transform .6s cubic-bezier(.2,.7,.2,1);
+}
+.sp:hover img{transform:scale(1.04)}
 
 /* BOOKING */
 .book-s{padding:var(--sec) var(--pad);text-align:center;position:relative;overflow:hidden}
@@ -650,17 +649,17 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
     </div>
   </div>
   <div class="sphotos rev d2">
-    <div class="sp sp1">
-      <img src="img/studio-roses.jpg" alt="Studio — roses and sculptures" style="object-position:center 25%"/>
+    <div class="sp">
+      <img src="img/studio-evening.jpg" alt="Studio — evening light"/>
     </div>
-    <div class="sp sp2">
-      <img src="img/studio-evening.jpg" alt="Studio — evening light and paintings" style="object-position:center 65%"/>
+    <div class="sp">
+      <img src="img/studio-photo-zone.jpg" alt="Studio — photo zone"/>
     </div>
-    <div class="sp sp3">
-      <img src="img/studio-photo-zone.jpg" alt="Studio — photo zone with curtains" style="object-position:center 60%"/>
+    <div class="sp">
+      <img src="img/studio-roses.jpg" alt="Studio — roses and sculptures"/>
     </div>
-    <div class="sp sp4">
-      <img src="img/studio-marshall.jpg" alt="Studio — Marshall speaker and details" style="object-position:center 10%"/>
+    <div class="sp">
+      <img src="img/studio-marshall.jpg" alt="Studio — Marshall speaker"/>
     </div>
   </div>
 </section>
