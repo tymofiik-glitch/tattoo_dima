@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="Dmytro Bilynets — Microrealism tattoo artist in Den Haag. Private studio, by appointment only."/>
+<title>Dmytro Bilynets · Microrealism · Den Haag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Playfair+Display:ital,wght@1,700&family=Josefin+Sans:wght@300&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --linen:#f5f0e8;--linen-2:#ede8dc;--linen-3:#e4dbd0;
+  --ink:#1c1814;--ink-2:#4a4540;--ink-3:#8a8478;
+  --olive:#2d3d28;--olive-deep:#1e2c1a;
+  --gold:#b8956a;--rule:rgba(26,24,20,.12);
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --serif-d:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans','Helvetica Neue',sans-serif;
+  --micro:'Josefin Sans','Helvetica Neue',sans-serif;
+  --pad:clamp(20px,5vw,80px);
+  --sec:clamp(64px,9vw,128px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+body{background:var(--linen);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.7;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px var(--pad);transition:background .4s,border-color .4s;border-bottom:.5px solid transparent}
+nav.sc{background:rgba(245,240,232,.93);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom-color:var(--rule)}
+.n-logo{font-family:var(--micro);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:rgba(245,240,232,.75);transition:color .4s}
+nav.sc .n-logo{color:var(--ink)}
+.n-links{display:flex;gap:28px;font-family:var(--micro);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:rgba(245,240,232,.5);transition:color .4s}
+nav.sc .n-links{color:var(--ink-2)}
+.n-links a{transition:color .2s}.n-links a:hover{color:var(--gold)}
+nav.sc .n-links a:hover{color:var(--olive)}
+.n-book{font-family:var(--micro);font-size:10px;letter-spacing:.26em;text-transform:uppercase;padding:9px 18px;border:1px solid rgba(255,255,255,.22);background:none;color:rgba(245,240,232,.75);transition:all .25s}
+nav.sc .n-book{border-color:var(--olive);color:var(--olive)}
+.n-book:hover{background:rgba(255,255,255,.1)}
+nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
+@media(max-width:680px){.n-links{display:none}}
+
+/* HERO */
+.hero{position:relative;height:100svh;min-height:580px;overflow:hidden;background:#0d0b07}
+.h-bg{position:absolute;inset:-40px;will-change:transform;transition:transform .1s linear}
+.h-bg img{width:100%;height:100%;object-fit:cover;object-position:center 30%;filter:brightness(.36) saturate(1.1)}
+.h-bg-g{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(10,8,4,.2) 0%,rgba(10,8,4,.04) 28%,rgba(10,8,4,.58) 72%,rgba(10,8,4,.9) 100%)}
+.h-c{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(76px,11vh,116px) var(--pad) clamp(28px,5vw,48px)}
+.h-top{display:flex;justify-content:space-between;align-items:flex-start}
+.h-pill{display:flex;align-items:center;gap:10px;border:.5px solid rgba(255,255,255,.14);padding:7px 14px;backdrop-filter:blur(8px);background:rgba(245,240,232,.05)}
+.h-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:bl 2.5s ease-in-out infinite}
+@keyframes bl{0%,100%{opacity:.3}50%{opacity:1}}
+.h-pill-t{font-family:var(--micro);font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:rgba(245,240,232,.6)}
+.h-tr{font-family:var(--micro);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(245,240,232,.28);text-align:right;line-height:2}
+.h-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:0;padding:.5rem 0}
+.h-ey{font-family:var(--micro);font-size:9px;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;opacity:0;animation:fu .9s ease .3s forwards}
+.h-t{font-family:var(--serif-d);font-size:clamp(46px,11vw,110px);font-weight:700;font-style:italic;color:#f5f0e8;line-height:.9;letter-spacing:-.02em;opacity:0;animation:fu .9s ease .55s forwards}
+.h-t em{display:block;font-family:var(--serif);font-weight:300;font-style:italic;color:rgba(245,240,232,.45);font-size:.52em;letter-spacing:.05em;margin-top:.35em}
+.h-dash{width:22px;height:.5px;background:rgba(184,149,106,.45);margin:1.2rem auto 1rem;opacity:0;animation:fi .8s ease .95s forwards}
+.h-sub{font-family:var(--sans);font-size:12px;letter-spacing:.1em;color:rgba(245,240,232,.32);line-height:2;max-width:28ch;opacity:0;animation:fu .9s ease 1.05s forwards}
+.h-bot{display:flex;justify-content:space-between;align-items:flex-end}
+.h-name{font-family:var(--serif-d);font-size:clamp(24px,5vw,50px);font-weight:700;color:#f5f0e8;line-height:.92;letter-spacing:-.01em;opacity:0;animation:fu .9s ease 1.2s forwards}
+.h-name em{display:block;font-family:var(--serif);font-weight:300;font-style:italic;font-size:.68em;color:rgba(245,240,232,.38);margin-top:.18em}
+.h-soc{display:flex;gap:9px;align-items:center;margin-top:12px;opacity:0;animation:fi .9s ease 1.4s forwards}
+.soc-a{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:.5px solid rgba(255,255,255,.16);color:rgba(245,240,232,.55);transition:border-color .25s,color .25s;text-decoration:none}
+.soc-a:hover{border-color:var(--gold);color:var(--gold)}
+.scue{display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;animation:fi 1s ease 2s forwards}
+.scue-t{font-family:var(--micro);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(245,240,232,.26);writing-mode:vertical-rl;transform:rotate(180deg)}
+.scue-l{width:.5px;height:38px;background:rgba(184,149,106,.28);position:relative;overflow:hidden}
+.scue-l::after{content:'';position:absolute;top:-100%;left:0;width:100%;height:100%;background:var(--gold);animation:sd 2s ease-in-out infinite 2.2s}
+@keyframes sd{0%{top:-100%}100%{top:200%}}
+.scue-s{font-size:11px;color:rgba(184,149,106,.38);animation:ps 2.2s ease-in-out infinite}
+@keyframes ps{0%,100%{opacity:.28;transform:scale(.8)}50%{opacity:.85;transform:scale(1.15)}}
+@keyframes fu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+
+/* COMMON */
+.wrap{padding:var(--sec) var(--pad)}
+.wrap-sm{padding:clamp(44px,6vw,88px) var(--pad)}
+.ey{font-family:var(--micro);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-3);margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.ey .gd{color:var(--gold)}
+.sh{font-family:var(--serif);font-weight:300;font-style:italic;font-size:clamp(28px,4vw,50px);line-height:1.08;color:var(--ink);margin-top:8px}
+.sh em{color:var(--olive)}
+.div{display:flex;align-items:center;gap:20px;padding:0 var(--pad)}
+.div .dl{flex:1;height:.5px;background:var(--rule)}
+.div .ds{color:var(--gold);font-size:14px;letter-spacing:6px}
+.rev{opacity:0;transform:translateY(14px) translateX(-5px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+.rev.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.25s}.d4{transition-delay:.35s}
+
+/* TRUST */
+.trust{background:var(--linen-2);border-top:.5px solid var(--rule);border-bottom:.5px solid var(--rule)}
+.trust-g{display:grid;grid-template-columns:repeat(4,1fr);max-width:860px;margin:0 auto;padding:26px var(--pad)}
+.tc{text-align:center;padding:12px 8px}
+.tc .v{font-family:var(--serif);font-style:italic;font-size:clamp(18px,2.5vw,26px);color:var(--ink);line-height:1.1}
+.tc .l{font-family:var(--micro);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+@media(max-width:580px){.trust-g{grid-template-columns:repeat(2,1fr)}.tc:nth-child(odd){border-right:.5px solid var(--rule)}.tc{border-bottom:.5px solid var(--rule)}}
+
+/* WORK SCROLL */
+.work-s{padding:var(--sec) 0}
+.work-h{padding:0 var(--pad);margin-bottom:clamp(24px,3.5vw,44px);display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+.wf{display:flex;gap:0}
+.wfb{font-family:var(--micro);font-size:10px;letter-spacing:.24em;text-transform:uppercase;padding:8px 16px;border:.5px solid var(--rule);background:none;color:var(--ink-3);transition:all .2s}
+.wfb:not(:last-child){border-right:none}
+.wfb.active,.wfb:hover{background:var(--olive);color:var(--linen);border-color:var(--olive)}
+.work-tr{display:flex;gap:10px;overflow-x:auto;padding:0 var(--pad) 14px;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory}
+.work-tr::-webkit-scrollbar{display:none}
+.wc{flex:0 0 clamp(240px,36vw,340px);aspect-ratio:3/4;position:relative;overflow:hidden;scroll-snap-align:start;border:.5px solid var(--rule)}
+.wc img{width:100%;height:100%;object-fit:cover;transition:transform .65s cubic-bezier(.2,.7,.2,1),filter .4s}
+.wc:hover img{transform:scale(1.06);filter:brightness(1.06)}
+.wc-meta{position:absolute;bottom:0;left:0;right:0;padding:18px 16px 14px;background:linear-gradient(to top,rgba(14,11,7,.85),transparent);opacity:0;transition:opacity .3s}
+.wc:hover .wc-meta{opacity:1}
+.wc-n{font-family:var(--serif);font-style:italic;font-size:17px;color:#f5f0e8;display:block;margin-bottom:3px}
+.wc-t{font-family:var(--micro);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:rgba(245,240,232,.48)}
+.wb{position:absolute;top:12px;left:12px;font-family:var(--micro);font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:4px 10px;background:rgba(245,240,232,.9);color:var(--ink-2)}
+.wb.fr{background:rgba(45,61,40,.85);color:rgba(245,240,232,.85)}
+.wdots{display:flex;justify-content:center;gap:6px;margin-top:14px;padding:0 var(--pad)}
+.wd{width:4px;height:4px;border-radius:50%;background:var(--rule);transition:all .3s}
+.wd.active{background:var(--olive);width:18px;border-radius:2px}
+@media(max-width:460px){.wc{flex:0 0 82vw}}
+
+/* HEALED */
+.ba-g{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:38px}
+@media(max-width:780px){.ba-g{grid-template-columns:1fr;max-width:360px;margin-left:auto;margin-right:auto}}
+.ba-w{position:relative;aspect-ratio:3/4;overflow:hidden;cursor:ew-resize;user-select:none;-webkit-user-select:none;border:.5px solid var(--rule);touch-action:none}
+.ba-bef{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ba-clip{position:absolute;top:0;right:0;bottom:0;width:50%;overflow:hidden;z-index:2}
+.ba-af{position:absolute;top:0;right:0;bottom:0;width:100vw;max-width:600px;height:100%;object-fit:cover;display:block;object-position:right center}
+.ba-hl{position:absolute;top:0;bottom:0;z-index:3;left:50%;width:2px;background:rgba(245,240,232,.9);transform:translateX(-50%);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.ba-hb{width:36px;height:36px;border-radius:50%;background:rgba(245,240,232,.95);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink-2);box-shadow:0 2px 12px rgba(0,0,0,.22);flex-shrink:0;letter-spacing:2px}
+.ba-lb{position:absolute;bottom:10px;z-index:4;font-family:var(--micro);font-size:9px;letter-spacing:.2em;text-transform:uppercase;background:rgba(12,10,6,.65);color:rgba(245,240,232,.85);padding:4px 10px;pointer-events:none}
+.ba-lb.l{left:10px}.ba-lb.r{right:10px}
+.ba-m{margin-top:10px}
+.ba-mn{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--ink);display:block}
+.ba-ms{font-family:var(--micro);font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);margin-top:3px;display:block}
+.ba-ph{aspect-ratio:3/4;border:.5px dashed var(--rule);background:var(--linen-2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.ba-ph-s{color:var(--gold);font-size:18px}
+.ba-ph-t{font-family:var(--micro);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);text-align:center;padding:0 20px;line-height:1.6}
+
+/* BOX */
+.box-s{background:var(--linen-2)}
+.box-c{max-width:700px;margin:0 auto;text-align:center}
+.box-st{position:relative;width:172px;height:152px;cursor:pointer;margin:2.8rem auto 0;transition:transform .18s;flex-shrink:0}
+.box-st:hover{transform:scale(1.04)}.box-st:active{transform:scale(.97)}
+.box-body{position:absolute;bottom:0;left:0;width:172px;height:104px;background:#ede5d5;border:1px solid #c9bfaa;border-radius:3px}
+.box-rv{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:1px;height:104px;background:#b8956a;opacity:.6;pointer-events:none}
+.box-rh{position:absolute;bottom:52px;left:0;width:172px;height:1px;background:#b8956a;opacity:.6;pointer-events:none}
+.box-lbl{position:absolute;bottom:11px;left:50%;transform:translateX(-50%);font-family:var(--micro);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8a7a65;white-space:nowrap;z-index:2}
+.box-lid{position:absolute;bottom:98px;left:-2px;width:176px;height:28px;background:#e4dbc8;border:1px solid #c9bfaa;border-radius:3px 3px 0 0;transform-origin:bottom center;transition:transform .6s cubic-bezier(.2,.7,.2,1),opacity .5s .1s;z-index:3}
+.box-st.open .box-lid{transform:perspective(400px) rotateX(-132deg);opacity:0}
+.box-bow{position:absolute;bottom:125px;left:50%;transform:translateX(-50%);width:38px;height:22px;z-index:4;transition:opacity .3s,transform .4s}
+.box-st.open .box-bow{opacity:0;transform:translateX(-50%) translateY(-12px)}
+.bh{font-family:var(--micro);font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.9rem;transition:opacity .4s}
+.bh.hid{opacity:0}.bhd{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:bl 2s ease-in-out infinite}
+.bit{font-family:var(--micro);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin:1.6rem 0 .9rem;opacity:0;transition:opacity .5s .2s;text-align:center}
+.bit.vis{opacity:1}
+.bg{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:.4rem}
+@media(min-width:680px){.bg{grid-template-columns:repeat(3,1fr)}}
+.bi{background:#faf7f2;border:.5px solid #ddd6c8;border-radius:4px;padding:13px 11px 11px;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;transform:translateY(24px) scale(.92);transition:opacity 0s,transform 0s;text-align:center}
+.bi.vis{opacity:1;transform:none;transition:opacity .5s ease,transform .5s cubic-bezier(.15,.85,.2,1)}
+.bi.hid{opacity:0;transform:translateY(-12px) scale(.94);transition:opacity .3s,transform .3s}
+.bi-n{font-family:var(--micro);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#5a4e40}
+.bi-d{font-size:10px;color:#a09585;font-style:italic;font-family:var(--serif);line-height:1.45}
+.bcb{margin-top:1.6rem;font-family:var(--micro);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);background:none;border:.5px solid var(--rule);padding:9px 22px;cursor:pointer;opacity:0;transition:opacity .4s .9s;pointer-events:none}
+.bcb.vis{opacity:1;pointer-events:auto}.bcb:hover{background:var(--linen-3)}
+
+/* ABOUT */
+.about-s{padding:0}
+.aph{width:100%;height:clamp(340px,56vw,560px);overflow:hidden;position:relative}
+.aph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 8%;display:block;transform:scale(1.08);transform-origin:center 20%}
+.aph-ov{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 35%,rgba(245,240,232,.97) 100%)}
+.ab{padding:clamp(36px,5.5vw,68px) var(--pad) var(--sec)}
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,76px);align-items:start;margin-top:32px}
+@media(max-width:620px){.ag{grid-template-columns:1fr;gap:24px}}
+.abio{font-family:var(--serif);font-size:clamp(15px,1.8vw,19px);color:var(--ink-2);line-height:1.85;font-style:italic}
+.abio em{font-style:normal;color:var(--olive)}
+.afacts{border-top:.5px solid var(--rule)}
+.fr{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:.5px solid var(--rule)}
+.fl{font-family:var(--micro);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-3)}
+.fv{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--ink)}
+.acr{margin-top:28px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.btn-s{font-family:var(--micro);font-size:10px;letter-spacing:.28em;text-transform:uppercase;padding:13px 26px;background:var(--olive);color:var(--linen);border:none;cursor:pointer;transition:background .25s,transform .2s}
+.btn-s:hover{background:var(--olive-deep);transform:translateY(-1px)}
+.btn-o{font-family:var(--micro);font-size:10px;letter-spacing:.28em;text-transform:uppercase;padding:12px 22px;border:.5px solid var(--rule);background:none;color:var(--ink-2);cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:8px}
+.btn-o:hover{border-color:var(--olive);color:var(--olive)}
+
+/* LOCATION */
+.loc-g{display:grid;grid-template-columns:1fr 1fr;gap:clamp(36px,5.5vw,92px);align-items:start;margin-top:36px}
+@media(max-width:680px){.loc-g{grid-template-columns:1fr;gap:28px}}
+.loc-desc{font-family:var(--serif);font-style:italic;font-size:clamp(17px,1.9vw,22px);color:var(--ink);line-height:1.55;max-width:28ch;margin-bottom:24px}
+.loc-addr{font-family:var(--micro);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);line-height:2;margin-bottom:22px}
+.loc-addr strong{color:var(--ink);display:block;font-weight:400;margin-bottom:3px}
+.maps-a{display:inline-flex;align-items:center;gap:9px;font-family:var(--micro);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--olive);border-bottom:.5px solid var(--rule);padding-bottom:4px;transition:border-color .2s}
+.maps-a:hover{border-color:var(--olive)}
+.maps-wrap{margin-top:20px}
+.maps-thumb{display:block;position:relative;width:100%;height:180px;overflow:hidden;border:.5px solid var(--rule);cursor:pointer;text-decoration:none}
+@media(max-width:680px){.maps-thumb{height:160px}}
+.maps-overlay{position:absolute;inset:0;background:rgba(245,240,232,.0);display:flex;align-items:flex-end;padding:12px 14px;transition:background .25s}
+.maps-thumb:hover .maps-overlay{background:rgba(245,240,232,.15)}
+.maps-cta{font-family:var(--micro);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink);background:rgba(245,240,232,.92);padding:7px 14px;display:inline-block}
+.pcs{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule)}
+.pc{background:var(--linen);padding:20px 16px}
+.pcl{font-family:var(--micro);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px}
+.pcv{font-family:var(--serif);font-style:italic;font-size:clamp(20px,2.8vw,30px);color:var(--ink)}
+.sphotos{
+  display:grid;
+  grid-template-columns:1fr 1fr 1.45fr 0.85fr;
+  grid-template-rows:clamp(160px,22vw,280px) clamp(90px,12vw,160px);
+  gap:6px;
+  margin-top:clamp(28px,4vw,52px);
+}
+.sp{overflow:hidden;position:relative;border-radius:2px;box-shadow:0 2px 12px rgba(26,24,20,.09),0 1px 3px rgba(26,24,20,.06);transition:box-shadow .35s,transform .35s;cursor:default}
+.sp:hover{box-shadow:0 10px 32px rgba(26,24,20,.18),0 2px 8px rgba(26,24,20,.1);transform:translateY(-3px);z-index:2}
+.sp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.sp:hover img{transform:scale(1.06)}
+.sp1{grid-column:1;grid-row:1/span 2}
+.sp2{grid-column:2;grid-row:1/span 2}
+.sp3{grid-column:3;grid-row:1}
+.sp4{grid-column:4;grid-row:1}
+.sp5{grid-column:3/span 2;grid-row:2}
+@media(max-width:900px){
+  .sphotos{grid-template-columns:1fr 1fr;grid-template-rows:clamp(200px,36vw,300px) clamp(120px,20vw,180px);gap:5px}
+  .sp1{grid-column:1;grid-row:1/span 2}
+  .sp2{grid-column:2;grid-row:1}
+  .sp3{grid-column:2;grid-row:2}
+  .sp4{display:none}.sp5{display:none}
+}
+@media(max-width:560px){
+  .sphotos{grid-template-columns:1fr 1fr;grid-template-rows:180px 100px;gap:4px}
+  .sp1{grid-column:1;grid-row:1/span 2}
+  .sp2{grid-column:2;grid-row:1}
+  .sp3{grid-column:2;grid-row:2}
+  .sp4{display:none}.sp5{display:none}
+}
+
+/* BOOKING */
+.book-s{padding:var(--sec) var(--pad);text-align:center;position:relative;overflow:hidden}
+.book-bg{position:absolute;inset:0;pointer-events:none;z-index:0}
+.book-bg img{width:100%;height:100%;object-fit:cover;opacity:.08;filter:saturate(.5)}
+.book-i{position:relative;z-index:1}
+.book-s h2{font-family:var(--serif-d);font-size:clamp(42px,8vw,92px);font-weight:700;font-style:italic;color:var(--ink);line-height:.96;margin-bottom:18px}
+.book-s h2 em{color:var(--olive)}
+.book-n{font-family:var(--sans);font-size:13px;color:var(--ink-3);line-height:2;margin-bottom:36px}
+.book-alts{display:flex;gap:18px;justify-content:center;align-items:center;margin-top:22px;font-family:var(--micro);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3)}
+.book-alts a{color:var(--ink-2);border-bottom:.5px solid var(--rule);padding-bottom:2px;transition:color .2s,border-color .2s}
+.book-alts a:hover{color:var(--olive);border-color:var(--olive)}
+
+/* FAQ */
+.faq-g{display:grid;grid-template-columns:1fr 2fr;gap:clamp(36px,5.5vw,90px);align-items:start}
+@media(max-width:680px){.faq-g{grid-template-columns:1fr;gap:28px}}
+.faq-l{border-top:.5px solid var(--rule)}
+.fi{border-bottom:.5px solid var(--rule)}
+.fq{width:100%;background:none;border:none;padding:17px 0;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:14px;font-family:var(--serif);font-size:clamp(14px,1.7vw,17px);color:var(--ink);cursor:pointer;transition:color .2s}
+.fq:hover{color:var(--olive)}
+.fp{width:17px;height:17px;position:relative;flex-shrink:0}
+.fp::before,.fp::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--ink-3);border-radius:1px;transition:transform .3s,background .2s}
+.fp::before{width:11px;height:.8px}
+.fp::after{width:.8px;height:11px;transform:translate(-50%,-50%) rotate(90deg)}
+.fi.op .fp::after{transform:translate(-50%,-50%) rotate(0deg)}
+.fi.op .fp::before,.fi.op .fp::after{background:var(--olive)}
+.fa{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.2,.7,.2,1)}
+.fa-i{padding-bottom:17px;font-size:14px;color:var(--ink-2);line-height:1.85}
+
+/* FOOTER */
+footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5vw,68px) var(--pad) clamp(24px,3.5vw,44px)}
+.ft{display:grid;grid-template-columns:1fr auto;gap:36px;align-items:start;margin-bottom:44px}
+@media(max-width:580px){.ft{grid-template-columns:1fr;gap:28px}}
+.flogo{font-family:var(--serif-d);font-size:clamp(22px,4vw,40px);font-weight:700;font-style:italic;color:rgba(245,240,232,.82);line-height:1}
+.flogo span{display:block;font-family:var(--serif);font-weight:300;font-style:italic;font-size:.48em;color:var(--gold);margin-top:5px}
+.fcols{display:flex;gap:clamp(20px,4vw,60px);flex-wrap:wrap}
+.fcol h4{font-family:var(--micro);font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:rgba(245,240,232,.28);margin-bottom:14px;font-weight:300}
+.fcol a{display:block;font-size:13px;color:rgba(245,240,232,.48);margin-bottom:9px;transition:color .2s;letter-spacing:.04em}
+.fcol a:hover{color:rgba(245,240,232,.82)}
+.fb{border-top:.5px solid rgba(245,240,232,.07);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:9px;font-family:var(--micro);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,240,232,.22)}
+
+/* FAB */
+.fab{display:none;position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;background:var(--olive);color:var(--linen);font-family:var(--micro);font-size:11px;letter-spacing:.26em;text-transform:uppercase;padding:15px 34px;border:none;cursor:pointer;box-shadow:0 6px 28px -6px rgba(0,0,0,.38);white-space:nowrap;transition:background .25s,transform .25s}
+.fab:hover{background:var(--olive-deep);transform:translateX(-50%) translateY(-2px)}
+@media(max-width:760px){.fab{display:block}}
+
+/* MODAL */
+.mo{position:fixed;inset:0;z-index:200;background:rgba(24,20,16,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:14px;opacity:0;pointer-events:none;transition:opacity .3s}
+.mo.open{opacity:1;pointer-events:all}
+.mb{background:var(--linen);width:100%;max-width:490px;max-height:92vh;overflow-y:auto;padding:clamp(26px,5vw,46px);position:relative;transform:translateY(20px);transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.mo.open .mb{transform:none}
+.mc{position:absolute;top:16px;right:20px;background:none;border:0;font-size:22px;color:var(--ink-3);cursor:pointer;transition:color .2s;line-height:1}
+.mc:hover{color:var(--ink)}
+.mst{display:flex;align-items:center;gap:0;margin-bottom:30px}
+.ms{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.msd{width:7px;height:7px;border-radius:50%;background:var(--rule);transition:background .3s}
+.ms.act .msd,.ms.dn .msd{background:var(--olive)}
+.msl{font-family:var(--micro);font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);transition:color .3s}
+.ms.act .msl{color:var(--olive)}
+.ms-ln{flex:1;height:.5px;background:var(--rule);margin:0 9px}
+.mp{display:none}.mp.act{display:block}
+.mey{font-family:var(--micro);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-3);margin-bottom:13px}
+.mt{font-family:var(--serif);font-weight:300;font-style:italic;font-size:clamp(26px,3.8vw,38px);color:var(--ink);line-height:1.08;margin-bottom:26px}
+.mt em{color:var(--olive)}
+.mf{margin-bottom:20px}
+.mf label{display:block;font-family:var(--micro);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px}
+.mf input,.mf textarea{width:100%;background:transparent;border:0;border-bottom:.5px solid var(--rule);padding:9px 0 11px;color:var(--ink);font-family:var(--serif);font-style:italic;font-weight:300;font-size:16px;outline:none;transition:border-color .25s}
+.mf input:focus,.mf textarea:focus{border-bottom-color:var(--olive)}
+.mf textarea{resize:none;line-height:1.6}
+.sc-g{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.scc{border:.5px solid var(--rule);background:transparent;cursor:pointer;padding:11px 5px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .2s,background .2s}
+.scc:hover{border-color:var(--olive)}
+.scc.act{border-color:var(--olive);background:rgba(45,61,40,.06)}
+.scc .sd{border-radius:50%;background:var(--ink-3);transition:background .2s}
+.scc.act .sd{background:var(--olive)}
+.scc span{font-family:var(--micro);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);text-align:center;line-height:1.4}
+.scc.act span{color:var(--olive)}
+@media(max-width:440px){.sc-g{grid-template-columns:repeat(2,1fr)}}
+.br{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.bb{background:none;border:.5px solid var(--rule);cursor:pointer;font-family:var(--micro);font-size:10px;letter-spacing:.15em;color:var(--ink-2);padding:8px 14px;transition:all .2s}
+.bb:hover{border-color:var(--olive)}
+.bb.act{border-color:var(--olive);background:rgba(45,61,40,.07);color:var(--olive)}
+.mn{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:26px;flex-wrap:wrap}
+.mnote{font-family:var(--micro);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3)}
+.mnext,.msub{display:inline-flex;align-items:center;gap:9px;background:var(--olive);color:var(--linen);border:0;cursor:pointer;font-family:var(--micro);font-size:10px;letter-spacing:.26em;text-transform:uppercase;padding:13px 22px;transition:background .25s}
+.mnext:hover,.msub:hover{background:var(--olive-deep)}
+.mback{background:none;border:0;cursor:pointer;font-family:var(--micro);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);transition:color .2s}
+.mback:hover{color:var(--ink)}
+.uz{border:.5px dashed var(--rule);background:var(--linen-2);cursor:pointer;position:relative;transition:border-color .25s,background .25s}
+.uz.dov{border-color:var(--olive);background:rgba(45,61,40,.05)}
+.ui{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 14px;text-align:center;color:var(--ink-3)}
+.ut{font-size:12px;color:var(--ink-2)}
+.ubr{background:none;border:0;cursor:pointer;font-size:12px;color:var(--olive);border-bottom:.5px solid var(--rule);padding:0 0 1px}
+.uh{font-family:var(--micro);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3)}
+.up{padding:12px;display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+.utr{display:flex;gap:7px;flex-wrap:wrap}
+.uth{width:60px;height:60px;object-fit:cover;border:.5px solid var(--rule)}
+.ucl{background:none;border:0;cursor:pointer;font-family:var(--micro);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);transition:color .2s}
+.ucl:hover{color:var(--ink)}
+.msucc{display:none}.msucc.act{display:block}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <a href="#top" class="n-logo">Dmytro Bilynets</a>
+  <div class="n-links"><a href="#work">Work</a><a href="#about">About</a><a href="#booking">Book</a></div>
+  <button class="n-book om">Reserve →</button>
+</nav>
+
+<button class="fab om">Reserve a Session →</button>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="h-bg" id="hbg">
+    <img src="studio-bed-wide.jpg" alt="The Muse Ink studio interior"/>
+    <div class="h-bg-g"></div>
+  </div>
+  <div class="h-c">
+    <div class="h-top">
+      <div class="h-pill"><div class="h-dot"></div><span class="h-pill-t">The Muse Ink · Den Haag</span></div>
+      <div class="h-tr">By appointment<br/>Den Haag, NL</div>
+    </div>
+    <div class="h-mid">
+      <div class="h-ey">Microrealism · Private Studio</div>
+      <h1 class="h-t">Silence,<br/>captured<em>in ink.</em></h1>
+      <div class="h-dash"></div>
+      <p class="h-sub">Each piece designed once.<br/>For one person. For ever.</p>
+    </div>
+    <div class="h-bot">
+      <div>
+        <div class="h-name">Dmytro<em>Bilynets</em></div>
+        <div class="h-soc">
+          <a href="https://instagram.com/kaktuz_tattooz" target="_blank" rel="noopener" class="soc-a" aria-label="Instagram">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+          </a>
+          <a href="https://wa.me/" target="_blank" rel="noopener" class="soc-a" aria-label="WhatsApp">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </a>
+        </div>
+      </div>
+      <div class="scue">
+        <div class="scue-s">✦</div>
+        <div class="scue-l"></div>
+        <div class="scue-t">scroll</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section class="trust">
+  <div class="trust-g">
+    <div class="tc rev"><div class="v"><em>31K</em></div><div class="l">Followers</div></div>
+    <div class="tc rev d1"><div class="v"><em>Since</em> 2018</div><div class="l">Practice</div></div>
+    <div class="tc rev d2"><div class="v">Den Haag</div><div class="l">The Hague · NL</div></div>
+    <div class="tc rev d3"><div class="v">€150+</div><div class="l">Starting price</div></div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section class="work-s" id="work">
+  <div class="work-h">
+    <div class="rev">
+      <div class="ey"><span class="gd">✦</span>Selected Work</div>
+      <h2 class="sh">The <em>portfolio.</em></h2>
+    </div>
+    <div class="wf rev d1">
+      <button class="wfb active" data-f="all">All</button>
+      <button class="wfb" data-f="healed">Healed</button>
+      <button class="wfb" data-f="fresh">Fresh</button>
+    </div>
+  </div>
+  <div class="work-tr" id="wtr">
+    <div class="wc" data-st="healed">
+      <img src="healed-moth.jpg" alt="Moth microrealism tattoo" style="object-position:center 15%"/>
+      <div class="wb">Healed · 7 mo</div>
+      <div class="wc-meta"><span class="wc-n">Moth</span><span class="wc-t">Microrealism</span></div>
+    </div>
+    <div class="wc" data-st="healed">
+      <img src="healed-butterfly.jpg" alt="Butterfly microrealism" style="object-position:center 30%"/>
+      <div class="wb">Healed · 6 mo</div>
+      <div class="wc-meta"><span class="wc-n">Butterfly</span><span class="wc-t">Microrealism</span></div>
+    </div>
+    <div class="wc" data-st="healed">
+      <img src="healed-flower.jpg" alt="Botanical fine line" style="object-position:center 20%"/>
+      <div class="wb">Healed · 1 yr</div>
+      <div class="wc-meta"><span class="wc-n">Botanical</span><span class="wc-t">Fine Line</span></div>
+    </div>
+    <div class="wc" data-st="healed">
+      <img src="healed-bird.jpg" alt="Sparrow microrealism" style="object-position:center 25%"/>
+      <div class="wb">Healed · 1 yr</div>
+      <div class="wc-meta"><span class="wc-n">Sparrow</span><span class="wc-t">Microrealism</span></div>
+    </div>
+    <div class="wc" data-st="healed">
+      <img src="healed.jpg" alt="Scallop shell healed" style="object-position:center 30%"/>
+      <div class="wb">Healed · 6 mo</div>
+      <div class="wc-meta"><span class="wc-n">Scallop Shell</span><span class="wc-t">Microrealism</span></div>
+    </div>
+    <div class="wc" data-st="fresh">
+      <img src="fresh.png" alt="Fresh scallop shell" style="object-position:center 40%"/>
+      <div class="wb fr">Fresh</div>
+      <div class="wc-meta"><span class="wc-n">Scallop Shell</span><span class="wc-t">Fresh</span></div>
+    </div>
+  </div>
+  <div class="wdots" id="wdots">
+    <div class="wd active"></div><div class="wd"></div><div class="wd"></div>
+    <div class="wd"></div><div class="wd"></div><div class="wd"></div>
+  </div>
+</section>
+
+<div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
+
+<!-- HEALED BA -->
+<section class="wrap" id="healed">
+  <div class="rev">
+    <div class="ey"><span class="gd">✦</span>Healed Results</div>
+    <h2 class="sh">How it looks<br/><em>over time.</em></h2>
+    <p style="margin-top:14px;color:var(--ink-3);font-size:13px;max-width:42ch;line-height:1.9">Drag the slider to compare fresh vs healed. Fine detail holds — that is the standard.</p>
+  </div>
+  <div class="ba-g">
+    <div class="rev d1">
+      <div class="ba-w" id="ba1">
+        <img class="ba-bef" src="healed.jpg" alt="Healed" style="object-position:center 30%"/>
+        <div class="ba-clip" id="ba1c">
+          <img class="ba-af" src="fresh.png" alt="Fresh" style="object-position:right 40%"/>
+        </div>
+        <div class="ba-hl" id="ba1h"><div class="ba-hb">◁▷</div></div>
+        <span class="ba-lb l">Healed · 6 mo</span><span class="ba-lb r">Fresh</span>
+      </div>
+      <div class="ba-m"><span class="ba-mn">Scallop Shell</span><span class="ba-ms">Microrealism · inner arm</span></div>
+    </div>
+    <div class="rev d2">
+      <div class="ba-ph"><div class="ba-ph-s">✦</div><div class="ba-ph-t">Coming soon<br/>Next healed pair</div></div>
+      <div class="ba-m"><span class="ba-mn" style="opacity:.32">Work in progress</span><span class="ba-ms" style="opacity:.32">Healed shots coming</span></div>
+    </div>
+    <div class="rev d3">
+      <div class="ba-ph"><div class="ba-ph-s">✦</div><div class="ba-ph-t">Coming soon<br/>Next healed pair</div></div>
+      <div class="ba-m"><span class="ba-mn" style="opacity:.32">Work in progress</span><span class="ba-ms" style="opacity:.32">Healed shots coming</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
+
+<!-- GIFT BOX -->
+<section class="box-s wrap-sm" id="experience">
+  <div class="box-c">
+    <div class="rev">
+      <div class="ey" style="justify-content:center"><span class="gd">✦</span>The Muse Experience</div>
+      <h2 class="sh" style="text-align:center">Every session ends<br/><em>with a gift.</em></h2>
+      <p style="margin-top:14px;color:var(--ink-3);font-size:13px;line-height:1.9;max-width:38ch;margin-left:auto;margin-right:auto">Included with every session, at no extra cost.</p>
+    </div>
+    <div class="box-st" id="bst" onclick="toggleBox()">
+      <svg class="box-bow" viewBox="0 0 38 22" fill="none">
+        <path d="M19 11 C12 4,2 2,2 8 C2 14,12 12,19 11Z" fill="#b8956a" opacity=".86"/>
+        <path d="M19 11 C26 4,36 2,36 8 C36 14,26 12,19 11Z" fill="#b8956a" opacity=".86"/>
+        <circle cx="19" cy="11" r="3" fill="#c9a96e"/>
+      </svg>
+      <div class="box-lid"></div>
+      <div class="box-body">
+        <div class="box-rv"></div><div class="box-rh"></div>
+        <span class="box-lbl">The Muse Ink</span>
+      </div>
+    </div>
+    <div class="bh" id="bh"><div class="bhd"></div><span>Open the box</span></div>
+    <div class="bit" id="bit">✦ &nbsp; included with every session &nbsp; ✦</div>
+    <div class="bg">
+      <div class="bi" id="bi0">
+        <svg width="50" height="50" viewBox="0 0 52 52" fill="none">
+          <rect x="8" y="6" width="36" height="40" rx="2" fill="#ede5d5" stroke="#c9bfaa" stroke-width=".8"/>
+          <rect x="8" y="6" width="36" height="11" rx="2" fill="#3d4a35"/>
+          <rect x="8" y="15" width="36" height="2" fill="#3d4a35"/>
+          <circle cx="15" cy="11" r="3" fill="none" stroke="#8a9a7b" stroke-width=".7"/>
+          <path d="M12 11 L15 8 L18 11" fill="none" stroke="#8a9a7b" stroke-width=".6"/>
+          <rect x="20" y="8" width="18" height="1.5" rx=".5" fill="#8a9a7b" opacity=".6"/>
+          <rect x="20" y="11.5" width="12" height="1.5" rx=".5" fill="#8a9a7b" opacity=".4"/>
+          <line x1="14" y1="24" x2="38" y2="24" stroke="#c9bfaa" stroke-width=".6"/>
+          <line x1="14" y1="29" x2="38" y2="29" stroke="#c9bfaa" stroke-width=".6"/>
+          <line x1="14" y1="34" x2="38" y2="34" stroke="#c9bfaa" stroke-width=".6"/>
+          <line x1="14" y1="39" x2="38" y2="39" stroke="#c9bfaa" stroke-width=".6"/>
+          <line x1="22" y1="20" x2="22" y2="43" stroke="#c9bfaa" stroke-width=".5"/>
+          <line x1="30" y1="20" x2="30" y2="43" stroke="#c9bfaa" stroke-width=".5"/>
+          <circle cx="11" cy="31" r="2" fill="#b8956a" opacity=".6"/>
+        </svg>
+        <div class="bi-n">Ink Passport</div><div class="bi-d">Date, inks, artist notes</div>
+      </div>
+      <div class="bi" id="bi1">
+        <svg width="50" height="50" viewBox="0 0 52 52" fill="none">
+          <rect x="10" y="8" width="32" height="40" rx="2" fill="#f0ebe0" stroke="#c9bfaa" stroke-width=".8"/>
+          <rect x="14" y="14" width="24" height="18" rx="1" fill="#e0d8c8" stroke="#c9bfaa" stroke-width=".5"/>
+          <line x1="16" y1="38" x2="36" y2="38" stroke="#c9bfaa" stroke-width=".6"/>
+          <line x1="16" y1="42" x2="30" y2="42" stroke="#c9bfaa" stroke-width=".6"/>
+          <circle cx="26" cy="23" r="4" fill="none" stroke="#b8956a" stroke-width=".7"/>
+          <path d="M22 27 L26 19 L30 27" fill="none" stroke="#8a9a7b" stroke-width=".6"/>
+        </svg>
+        <div class="bi-n">Polaroid + Photos</div><div class="bi-d">Pro shot of your tattoo</div>
+      </div>
+      <div class="bi" id="bi2">
+        <svg width="50" height="50" viewBox="0 0 52 52" fill="none">
+          <rect x="16" y="4" width="20" height="44" rx="3" fill="#e8f0f8" stroke="#b8d0e8" stroke-width=".8"/>
+          <rect x="16" y="4" width="20" height="12" rx="3" fill="#3a5a8a"/>
+          <rect x="16" y="14" width="20" height="3" fill="#3a5a8a"/>
+          <rect x="16" y="30" width="20" height="10" rx="1" fill="#e8820a" opacity=".9"/>
+          <line x1="20" y1="24" x2="32" y2="24" stroke="#b8d0e8" stroke-width=".5"/>
+          <line x1="20" y1="27" x2="32" y2="27" stroke="#b8d0e8" stroke-width=".5"/>
+        </svg>
+        <div class="bi-n">Bepanthen</div><div class="bi-d">Best cream for healing</div>
+      </div>
+      <div class="bi" id="bi3">
+        <svg width="50" height="50" viewBox="0 0 52 52" fill="none">
+          <rect x="14" y="18" width="24" height="30" rx="10" fill="#f5f5f0" stroke="#d0d0c0" stroke-width=".8"/>
+          <rect x="20" y="10" width="12" height="10" rx="6" fill="#e8e8e0" stroke="#d0d0c0" stroke-width=".7"/>
+          <rect x="22" y="6" width="8" height="6" rx="2" fill="#d0d0c0"/>
+          <circle cx="32" cy="22" r="3" fill="none" stroke="#4a9a4a" stroke-width=".6"/>
+        </svg>
+        <div class="bi-n">Unicura Soap</div><div class="bi-d">Same soap from studio</div>
+      </div>
+      <div class="bi" id="bi4">
+        <svg width="50" height="50" viewBox="0 0 52 52" fill="none">
+          <rect x="10" y="10" width="32" height="36" rx="2" fill="#faf5f0" stroke="#e8c8b0" stroke-width=".8"/>
+          <rect x="10" y="10" width="32" height="6" rx="2" fill="#d03010" opacity=".85"/>
+          <circle cx="18" cy="36" r="4" fill="#f8f0e8" stroke="#e8d0b0" stroke-width=".6"/>
+          <circle cx="26" cy="38" r="4" fill="#f8f0e8" stroke="#e8d0b0" stroke-width=".6"/>
+          <circle cx="34" cy="36" r="4" fill="#f8f0e8" stroke="#e8d0b0" stroke-width=".6"/>
+        </svg>
+        <div class="bi-n">Raffaello</div><div class="bi-d">Because you deserve it</div>
+      </div>
+      <div class="bi" id="bi5">
+        <svg width="50" height="50" viewBox="0 0 52 52" fill="none">
+          <rect x="8" y="12" width="36" height="30" rx="2" fill="#1a1814" stroke="#3d4a35" stroke-width=".8"/>
+          <ellipse cx="16" cy="32" rx="6" ry="9" fill="none" stroke="#b8956a" stroke-width=".8"/>
+          <ellipse cx="26" cy="34" rx="6" ry="7" fill="none" stroke="#b8956a" stroke-width=".8"/>
+          <ellipse cx="36" cy="32" rx="6" ry="9" fill="none" stroke="#b8956a" stroke-width=".8"/>
+        </svg>
+        <div class="bi-n">Healing Guide</div><div class="bi-d">Step-by-step aftercare</div>
+      </div>
+    </div>
+    <button class="bcb" id="bcb" onclick="toggleBox()">Close the box ✦</button>
+  </div>
+</section>
+
+<div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
+
+<!-- ABOUT -->
+<section class="about-s" id="about">
+  <div class="aph rev">
+    <img src="dmytro.jpg" alt="Dmytro Bilynets — microrealism tattoo artist Den Haag"/>
+    <div class="aph-ov"></div>
+  </div>
+  <div class="ab">
+    <div class="ey rev"><span class="gd">✦</span>The Artist</div>
+    <h2 class="sh rev d1">Dmytro <em>Bilynets.</em></h2>
+    <div class="ag">
+      <div class="abio rev d2">
+        Ukrainian-born microrealism artist based in <em>Den Haag</em> since 2018. Specialising in miniature detail work — insects, botanicals, portraits — each piece is custom designed and built to heal perfectly.<br/><br/>He works in a private, appointment-only studio where every session is treated as a collaboration.
+        <div class="acr">
+          <button class="btn-s om">Reserve a session →</button>
+          <a href="https://instagram.com/kaktuz_tattooz" target="_blank" rel="noopener" class="btn-o">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            @kaktuz_tattooz
+          </a>
+        </div>
+      </div>
+      <div class="afacts rev d3">
+        <div class="fr"><span class="fl">Based in</span><span class="fv">Den Haag, NL</span></div>
+        <div class="fr"><span class="fl">Practice since</span><span class="fv">2018</span></div>
+        <div class="fr"><span class="fl">Specialty</span><span class="fv">Microrealism</span></div>
+        <div class="fr"><span class="fl">Session from</span><span class="fv">€150</span></div>
+        <div class="fr"><span class="fl">Deposit</span><span class="fv">€50</span></div>
+        <div class="fr"><span class="fl">Booking</span><span class="fv">By appointment</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
+
+<!-- LOCATION -->
+<section class="wrap" id="studio">
+  <div class="ey rev"><span class="gd">✦</span>Location</div>
+  <h2 class="sh rev d1">The <em>Atelier.</em></h2>
+  <div class="loc-g">
+    <div class="rev d1">
+      <p class="loc-desc">A private, appointment-only studio. No walk-ins. Just you, the artist, and the work.</p>
+      <div class="loc-addr"><strong>The Muse Ink</strong>Regentesselaan 106<br/>2562 CW · Den Haag</div>
+      <div class="maps-wrap">
+        <a href="https://maps.app.goo.gl/sgWr6aMxyn5eyNwN7" target="_blank" rel="noopener" class="maps-thumb" aria-label="Open in Google Maps">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2455.123!2d4.2879!3d52.0795!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c5b7b6c0000001%3A0x1!2sRegentesselaan+106%2C+2562+CW+Den+Haag!5e0!3m2!1sen!2snl!4v1"
+            width="100%" height="100%"
+            style="border:0;pointer-events:none;display:block"
+            loading="lazy"
+            allowfullscreen=""
+            referrerpolicy="no-referrer-when-downgrade"
+            title="The Muse Ink location">
+          </iframe>
+          <div class="maps-overlay">
+            <span class="maps-cta">Open in Google Maps →</span>
+          </div>
+        </a>
+      </div>
+    </div>
+    <div class="pcs rev d2">
+      <div class="pc"><div class="pcl">Sessions from</div><div class="pcv">€150</div></div>
+      <div class="pc"><div class="pcl">Average session</div><div class="pcv">€400</div></div>
+      <div class="pc"><div class="pcl">Deposit</div><div class="pcv">€50</div></div>
+      <div class="pc"><div class="pcl">Lead time</div><div class="pcv">4–8 wks</div></div>
+    </div>
+  </div>
+  <div class="sphotos rev d2">
+    <div class="sp sp1">
+      <img src="studio-roses-new.jpg" alt="Studio — roses and sculptures" style="object-position:center 25%"/>
+    </div>
+    <div class="sp sp2">
+      <img src="studio-evening.jpg" alt="Studio — evening light and paintings" style="object-position:center 20%"/>
+    </div>
+    <div class="sp sp3">
+      <img src="studio-photo-zone.jpg" alt="Studio — photo zone with curtains" style="object-position:center 35%"/>
+    </div>
+    <div class="sp sp4">
+      <img src="studio-marshall.jpg" alt="Studio — Marshall speaker and details" style="object-position:center 40%"/>
+    </div>
+    <div class="sp sp5">
+      <img src="studio-bed-close.jpg" alt="Studio — tattoo bed" style="object-position:center 30%"/>
+    </div>
+  </div>
+</section>
+
+<div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
+
+<!-- BOOKING -->
+<section class="book-s" id="booking">
+  <div class="book-bg"><img src="studio-roses-new.jpg" alt=""/></div>
+  <div class="book-i rev">
+    <div class="ey" style="justify-content:center"><span class="gd">✦</span>Reserve a Session</div>
+    <h2 style="margin-top:10px">Ready to<br/><em>begin?</em></h2>
+    <p class="book-n" style="margin-top:18px">Sessions from €150 · Deposit €50 · Response within 48h.<br/>The form takes 60 seconds.</p>
+    <button class="btn-s om" style="font-size:11px;padding:17px 42px;letter-spacing:.34em">Start Booking →</button>
+    <div class="book-alts">
+      <a href="https://instagram.com/kaktuz_tattooz" target="_blank" rel="noopener">DM Instagram</a>
+      <span style="color:var(--rule)">·</span>
+      <a href="https://wa.me/">WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="wrap-sm" id="faq" style="background:var(--linen-2)">
+  <div class="faq-g">
+    <div class="rev"><div class="ey"><span class="gd">✦</span>Before We Begin</div><h2 class="sh">Questions<br/><em>answered.</em></h2></div>
+    <div class="faq-l rev d1">
+      <div class="fi"><button class="fq" aria-expanded="false">How long does a session take?<span class="fp"></span></button><div class="fa"><div class="fa-i">Most microrealism pieces are completed in a single sitting of three to five hours. Larger work may be split across two sessions, at least a month apart.</div></div></div>
+      <div class="fi"><button class="fq" aria-expanded="false">What is the price range?<span class="fp"></span></button><div class="fa"><div class="fa-i">The minimum is €150. Most pieces fall between €400 and €900 depending on size, placement, and detail. A precise quote is given after the design consultation.</div></div></div>
+      <div class="fi"><button class="fq" aria-expanded="false">Do you require a deposit?<span class="fp"></span></button><div class="fa"><div class="fa-i">Yes — a non-refundable deposit of €50 secures your appointment and goes toward the final price. It is forfeited if you cancel within 72 hours of the session.</div></div></div>
+      <div class="fi"><button class="fq" aria-expanded="false">How does it look once healed?<span class="fp"></span></button><div class="fa"><div class="fa-i">Every piece in the portfolio tagged "Healed" was photographed at least six months after the session. Drag the slider in the Healed section to see the real result.</div></div></div>
+      <div class="fi"><button class="fq" aria-expanded="false">Do you do cover-ups?<span class="fp"></span></button><div class="fa"><div class="fa-i">Cover-ups are accepted on a case-by-case basis. Send clear photos of the existing piece in your booking enquiry.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft">
+    <div class="flogo">Dmytro Bilynets<span>Microrealism · Den Haag</span></div>
+    <div class="fcols">
+      <div class="fcol"><h4>Studio</h4><a href="#studio">The Muse Ink</a><a href="#studio">Regentesselaan 106</a><a href="#studio">Den Haag, NL</a></div>
+      <div class="fcol"><h4>Contact</h4><a href="https://instagram.com/kaktuz_tattooz" target="_blank" rel="noopener">Instagram</a><a href="https://wa.me/">WhatsApp</a><a href="mailto:hello@themuseink.com">Email</a></div>
+      <div class="fcol"><h4>Navigate</h4><a href="#work">Work</a><a href="#healed">Healed</a><a href="#about">About</a><a href="#booking">Book</a></div>
+    </div>
+  </div>
+  <div class="fb"><span>© 2025 Dmytro Bilynets</span><span>52.0795°N · 4.2879°E</span><span>The Muse Ink</span></div>
+</footer>
+
+<!-- MODAL -->
+<div id="modal" class="mo" role="dialog" aria-modal="true" aria-label="Reserve a session">
+  <div class="mb">
+    <button class="mc" id="mc" aria-label="Close">×</button>
+    <div class="mst">
+      <div class="ms act" data-s="1"><span class="msd"></span><span class="msl">You</span></div>
+      <div class="ms-ln"></div>
+      <div class="ms" data-s="2"><span class="msd"></span><span class="msl">Idea</span></div>
+      <div class="ms-ln"></div>
+      <div class="ms" data-s="3"><span class="msd"></span><span class="msl">Details</span></div>
+    </div>
+    <form id="mf" novalidate>
+      <div class="mp act" data-p="1">
+        <p class="mey">Step 1 of 3</p>
+        <h3 class="mt">Let's start<br/><em>with you.</em></h3>
+        <div class="mf"><label>Your name</label><input type="text" name="name" placeholder="Full name" required autocomplete="name"/></div>
+        <div class="mf"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required autocomplete="email"/></div>
+        <div class="mf"><label>Instagram <span style="color:var(--ink-3);font-size:10px;letter-spacing:0">— we check your profile to see if styles match</span></label><input type="text" name="instagram" placeholder="@yourhandle" required/></div>
+        <div class="mn"><span class="mnote">Sessions from €150 · Deposit €50</span><button type="button" class="mnext" data-n="2">Continue →</button></div>
+      </div>
+      <div class="mp" data-p="2">
+        <p class="mey">Step 2 of 3</p>
+        <h3 class="mt">What do you<br/><em>have in mind?</em></h3>
+        <div class="mf"><label>Describe your idea</label><input type="text" name="idea" placeholder="A moth, a botanical, a portrait…" required/></div>
+        <div class="mf">
+          <label>Approximate size</label>
+          <div class="sc-g" id="scg">
+            <button type="button" class="scc act" data-sz="xs"><div class="sd" style="width:9px;height:9px"></div><span>XS<br/>under 5cm</span></button>
+            <button type="button" class="scc" data-sz="s"><div class="sd" style="width:14px;height:14px"></div><span>S<br/>5–10cm</span></button>
+            <button type="button" class="scc" data-sz="m"><div class="sd" style="width:20px;height:20px"></div><span>M<br/>10–15cm</span></button>
+            <button type="button" class="scc" data-sz="l"><div class="sd" style="width:27px;height:27px"></div><span>L<br/>15cm+</span></button>
+          </div>
+          <input type="hidden" name="size" id="szv" value="xs"/>
+        </div>
+        <div class="mn"><button type="button" class="mback" data-b="1">← Back</button><button type="button" class="mnext" data-n="3">Continue →</button></div>
+      </div>
+      <div class="mp" data-p="3">
+        <p class="mey">Step 3 of 3</p>
+        <h3 class="mt">Almost<br/><em>there.</em></h3>
+        <div class="mf"><label>Placement</label><input type="text" name="placement" placeholder="Inner forearm, ribs, wrist…"/></div>
+        <div class="mf">
+          <label>Budget</label>
+          <div class="br"><button type="button" class="bb act" data-bu="150-300">€150–300</button><button type="button" class="bb" data-bu="300-500">€300–500</button><button type="button" class="bb" data-bu="500+">€500+</button></div>
+          <input type="hidden" name="budget" id="buv" value="150-300"/>
+        </div>
+        <div class="mf">
+          <label>Reference or sketch <span style="color:var(--ink-3);font-size:10px;letter-spacing:0">(optional)</span></label>
+          <div class="uz" id="uz">
+            <input type="file" id="ufi" name="sketch" accept="image/*,.pdf" multiple style="display:none"/>
+            <div class="ui" id="uid">
+              <svg width="26" height="26" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width=".9" stroke-linecap="round"><path d="M16 22 L16 10"/><path d="M10 15 L16 9 L22 15"/><path d="M6 24 L6 27 L26 27 L26 24"/></svg>
+              <span class="ut">Drop file or <button type="button" class="ubr" id="ubr">browse</button></span>
+              <span class="uh">jpg, png, pdf</span>
+            </div>
+            <div class="up" id="upv" style="display:none"><div class="utr" id="utr"></div><button type="button" class="ucl" id="ucl">× Remove</button></div>
+          </div>
+        </div>
+        <div class="mf"><label>Anything else? <span style="color:var(--ink-3);font-size:10px;letter-spacing:0">(optional)</span></label><textarea name="notes" placeholder="References, timing, skin conditions…" rows="3"></textarea></div>
+        <div class="mn"><button type="button" class="mback" data-b="2">← Back</button><button type="submit" class="msub">Send Enquiry ✦</button></div>
+      </div>
+      <div class="mp msucc" data-p="4">
+        <div style="text-align:center;padding:38px 0">
+          <div style="font-size:26px;color:var(--gold);margin-bottom:18px">✦</div>
+          <h3 class="mt" style="text-align:center">Enquiry<br/><em>received.</em></h3>
+          <p style="color:var(--ink-2);margin-top:14px;font-size:14px;line-height:1.9">We'll reply within 48 hours<br/>with next steps.</p>
+          <button type="button" id="mcs" style="margin-top:28px;background:none;border:0;font-family:var(--micro);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--olive);cursor:pointer">Close →</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const nav=document.getElementById('nav');
+function uNav(){nav.classList.toggle('sc',scrollY>innerHeight*.72)}
+addEventListener('scroll',uNav,{passive:true});uNav();
+
+const hbg=document.getElementById('hbg');
+const hero=document.querySelector('.hero');
+hero.addEventListener('mousemove',e=>{
+  const r=hero.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+  hbg.style.transform=`translate(${x*28}px,${y*20}px)`;
+});
+hero.addEventListener('mouseleave',()=>hbg.style.transform='');
+hero.addEventListener('touchmove',e=>{
+  const r=hero.getBoundingClientRect();
+  const t=e.touches[0],x=(t.clientX-r.left)/r.width-.5,y=(t.clientY-r.top)/r.height-.5;
+  hbg.style.transform=`translate(${x*14}px,${y*10}px)`;
+},{passive:true});
+
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.1});
+document.querySelectorAll('.rev').forEach(el=>io.observe(el));
+
+const wtr=document.getElementById('wtr'),wdots=document.querySelectorAll('.wd');
+document.querySelectorAll('.wfb').forEach(b=>b.addEventListener('click',()=>{
+  const f=b.dataset.f;
+  document.querySelectorAll('.wfb').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  wtr.querySelectorAll('.wc').forEach(c=>c.style.display=(f==='all'||c.dataset.st===f)?'':'none');
+  wtr.scrollLeft=0;
+}));
+wtr.addEventListener('scroll',()=>{
+  const cards=[...wtr.querySelectorAll('.wc')].filter(c=>c.style.display!=='none');
+  if(!cards.length)return;
+  const cw=cards[0].offsetWidth+10;
+  const idx=Math.min(Math.round(wtr.scrollLeft/cw),wdots.length-1);
+  wdots.forEach((d,i)=>d.classList.toggle('active',i===idx));
+},{passive:true});
+
+function initBA(id,cid,hid){
+  const w=document.getElementById(id),c=document.getElementById(cid),h=document.getElementById(hid);
+  if(!w||!c||!h)return;
+  let dr=false;
+  function setPos(cx){
+    const r=w.getBoundingClientRect();
+    const p=Math.max(.03,Math.min(.97,(cx-r.left)/r.width));
+    const pct=(1-p)*100;
+    c.style.width=pct+'%';
+    h.style.left=p*100+'%';
+  }
+  w.addEventListener('mousedown',e=>{dr=true;setPos(e.clientX);e.preventDefault()});
+  document.addEventListener('mousemove',e=>{if(dr)setPos(e.clientX)});
+  document.addEventListener('mouseup',()=>{dr=false});
+  w.addEventListener('touchstart',e=>{dr=true;setPos(e.touches[0].clientX)},{passive:false});
+  document.addEventListener('touchmove',e=>{if(dr){e.preventDefault();setPos(e.touches[0].clientX)}},{passive:false});
+  document.addEventListener('touchend',()=>{dr=false});
+  setPos(w.getBoundingClientRect().left + w.getBoundingClientRect().width * 0.5);
+}
+initBA('ba1','ba1c','ba1h');
+
+let bop=false;
+const bst=document.getElementById('bst'),bh=document.getElementById('bh'),bit=document.getElementById('bit'),bcb=document.getElementById('bcb'),bis=document.querySelectorAll('.bi');
+function toggleBox(){
+  bop=!bop;
+  if(bop){
+    bst.classList.add('open');bh.classList.add('hid');bit.classList.add('vis');
+    bis.forEach((c,i)=>{c.classList.remove('hid');setTimeout(()=>c.classList.add('vis'),175+i*78)});
+    bcb.classList.add('vis');
+  } else {
+    bis.forEach(c=>{c.classList.remove('vis');c.classList.add('hid')});
+    setTimeout(()=>{bst.classList.remove('open');bit.classList.remove('vis');bcb.classList.remove('vis');bis.forEach(c=>c.classList.remove('hid'));bh.classList.remove('hid')},360);
+  }
+}
+
+const mo=document.getElementById('modal');
+function oMo(){mo.classList.add('open');document.body.style.overflow='hidden';mo.querySelector('input')?.focus()}
+function cMo(){mo.classList.remove('open');document.body.style.overflow=''}
+document.querySelectorAll('.om').forEach(b=>b.addEventListener('click',oMo));
+document.getElementById('mc').addEventListener('click',cMo);
+document.getElementById('mcs')?.addEventListener('click',cMo);
+mo.addEventListener('click',e=>{if(e.target===mo)cMo()});
+addEventListener('keydown',e=>{if(e.key==='Escape')cMo()});
+const mps=mo.querySelectorAll('.mp'),mss=mo.querySelectorAll('.ms');
+function gTo(n){
+  mps.forEach(p=>p.classList.toggle('act',p.dataset.p===String(n)));
+  mss.forEach((s,i)=>{s.classList.toggle('act',i+1===n);s.classList.toggle('dn',i+1<n)});
+  mo.querySelector('.mb').scrollTop=0;
+}
+mo.querySelectorAll('[data-n]').forEach(b=>b.addEventListener('click',()=>{
+  const pan=b.closest('.mp'),reqs=pan.querySelectorAll('input[required]');
+  let ok=true;reqs.forEach(i=>{if(!i.value.trim()){i.style.borderBottomColor='#a05030';ok=false}else i.style.borderBottomColor=''});
+  if(ok)gTo(Number(b.dataset.n));
+}));
+mo.querySelectorAll('[data-b]').forEach(b=>b.addEventListener('click',()=>gTo(Number(b.dataset.b))));
+mo.querySelectorAll('#scg .scc').forEach(c=>c.addEventListener('click',()=>{
+  mo.querySelectorAll('#scg .scc').forEach(x=>x.classList.remove('act'));c.classList.add('act');
+  document.getElementById('szv').value=c.dataset.sz;
+}));
+mo.querySelectorAll('.bb').forEach(b=>b.addEventListener('click',()=>{
+  mo.querySelectorAll('.bb').forEach(x=>x.classList.remove('act'));b.classList.add('act');
+  document.getElementById('buv').value=b.dataset.bu;
+}));
+document.getElementById('mf').addEventListener('submit',e=>{e.preventDefault();gTo(4)});
+
+const uz=document.getElementById('uz'),ufi=document.getElementById('ufi'),ubr=document.getElementById('ubr'),uid=document.getElementById('uid'),upv=document.getElementById('upv'),utr=document.getElementById('utr'),ucl=document.getElementById('ucl');
+function shPrev(files){utr.innerHTML='';Array.from(files).forEach(f=>{if(f.type.startsWith('image/')){const img=document.createElement('img');img.className='uth';img.alt=f.name;const fr=new FileReader();fr.onload=e=>img.src=e.target.result;fr.readAsDataURL(f);utr.appendChild(img)}});uid.style.display='none';upv.style.display='flex'}
+ubr.addEventListener('click',()=>ufi.click());
+uz.addEventListener('click',e=>{if(e.target===uz||e.target===uid)ufi.click()});
+ufi.addEventListener('change',()=>{if(ufi.files.length)shPrev(ufi.files)});
+ucl.addEventListener('click',()=>{ufi.value='';utr.innerHTML='';uid.style.display='flex';upv.style.display='none'});
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('dov')});
+uz.addEventListener('dragleave',()=>uz.classList.remove('dov'));
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('dov');if(e.dataTransfer.files.length)shPrev(e.dataTransfer.files)});
+
+document.querySelectorAll('.fq').forEach(q=>q.addEventListener('click',()=>{
+  const fi=q.parentElement,fa=fi.querySelector('.fa'),op=fi.classList.toggle('op');
+  q.setAttribute('aria-expanded',op);fa.style.maxHeight=op?fa.scrollHeight+36+'px':'0';
+}));
+</script>
+</body>
+</html>
