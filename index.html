@@ -226,7 +226,22 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
   column-gap:8px;
   margin-top:clamp(28px,4vw,52px);
 }
-@media(min-width:680px){.sphotos{column-gap:12px}}
+/* mobile: evening на всю ширину сверху, остальные в 2 колонки */
+.sp-wide{
+  column-span:all;
+  break-inside:avoid;
+  display:block;
+  margin-bottom:8px;
+  overflow:hidden;
+  border-radius:4px;
+  box-shadow:0 3px 14px rgba(26,24,20,.08);
+  transition:box-shadow .35s,transform .35s;
+  cursor:default;
+}
+.sp-wide img{width:100%;height:auto;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.sp-wide:hover{box-shadow:0 12px 32px rgba(26,24,20,.15);transform:translateY(-2px)}
+.sp-wide:hover img{transform:scale(1.04)}
+@media(min-width:680px){.sp-wide{column-span:unset;margin-bottom:12px}}
 .sp{
   break-inside:avoid;
   display:block;
@@ -236,16 +251,10 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
   box-shadow:0 3px 14px rgba(26,24,20,.08);
   transition:box-shadow .35s,transform .35s;
   cursor:default;
-  position:relative;
 }
 @media(min-width:680px){.sp{margin-bottom:12px}}
 .sp:hover{box-shadow:0 12px 32px rgba(26,24,20,.15);transform:translateY(-2px)}
-.sp img{
-  width:100%;
-  height:auto;
-  display:block;
-  transition:transform .6s cubic-bezier(.2,.7,.2,1);
-}
+.sp img{width:100%;height:auto;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
 .sp:hover img{transform:scale(1.04)}
 
 /* BOOKING */
@@ -660,14 +669,14 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
     </div>
   </div>
   <div class="sphotos rev d2">
-    <div class="sp">
+    <div class="sp-wide">
       <img src="img/studio-evening.jpg" alt="Studio — evening light"/>
     </div>
     <div class="sp">
-      <img src="img/studio-roses.jpg" alt="Studio — roses and sculptures"/>
+      <img src="img/studio-photo-zone.jpg" alt="Studio — photo zone"/>
     </div>
     <div class="sp">
-      <img src="img/studio-photo-zone.jpg" alt="Studio — photo zone"/>
+      <img src="img/studio-roses.jpg" alt="Studio — roses and sculptures"/>
     </div>
     <div class="sp">
       <img src="img/studio-marshall.jpg" alt="Studio — Marshall speaker"/>
