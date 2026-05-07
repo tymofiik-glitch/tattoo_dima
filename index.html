@@ -223,35 +223,34 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 .pc{background:var(--linen);padding:20px 16px}
 .pcl{font-family:var(--micro);font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px}
 .pcv{font-family:var(--serif);font-style:italic;font-size:clamp(20px,2.8vw,30px);color:var(--ink)}
-/* Studio photos — masonry 2 columns */
+/* Studio photos grid */
 .sphotos{
-  columns:2;
-  column-gap:8px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:auto auto auto;
+  gap:6px;
   margin-top:clamp(28px,4vw,52px);
 }
 .sp-wide,.sp{
-  break-inside:avoid;
-  display:block;
   overflow:hidden;
   border-radius:4px;
   box-shadow:0 3px 14px rgba(26,24,20,.08);
   transition:box-shadow .35s,transform .35s;
   cursor:default;
-  margin-bottom:8px;
 }
 .sp-wide:hover,.sp:hover{box-shadow:0 12px 32px rgba(26,24,20,.15);transform:translateY(-2px)}
-/* mobile: evening на всю ширину с фиксированной высотой */
-.sp-wide{column-span:all}
-.sp-wide img{width:100%;height:260px;object-fit:cover;object-position:center 40%;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
-.sp-wide:hover img{transform:scale(1.04)}
-/* мобиль: вертикальные фото с фиксированной высотой */
-.sp img{width:100%;height:280px;object-fit:cover;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
-.sp:hover img{transform:scale(1.04)}
-/* desktop: полная высота фото, без обрезки */
+.sp-wide img,.sp img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.sp-wide:hover img,.sp:hover img{transform:scale(1.04)}
+/* mobile layout: evening top full, photo-zone + marshall middle, roses bottom full */
+.sp-wide{grid-column:1/span 2;height:260px}
+.sp{height:260px}
+.sp:last-child{grid-column:1/span 2;height:260px}
+/* desktop: 2 колонки, все фото полная высота */
 @media(min-width:680px){
-  .sp-wide,.sp{margin-bottom:12px}
-  .sp-wide{column-span:none}
-  .sp-wide img,.sp img{height:auto;object-fit:unset}
+  .sphotos{grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:10px}
+  .sp-wide{grid-column:1/span 2;height:420px}
+  .sp{height:auto;aspect-ratio:3/4}
+  .sp:last-child{grid-column:auto;height:auto;aspect-ratio:3/4}
 }
 .sp:hover img{transform:scale(1.04)}
 
