@@ -50,8 +50,9 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 
 /* HERO */
 .hero{position:relative;height:100svh;min-height:580px;overflow:hidden;background:#0d0b07}
-.h-bg{position:absolute;inset:-40px;will-change:transform;transition:transform .1s linear}
-.h-bg img{width:100%;height:100%;object-fit:cover;object-position:center 30%;filter:brightness(.36) saturate(1.1)}
+.h-bg{position:absolute;inset:0;will-change:transform}
+.h-bg video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;filter:brightness(.36) saturate(1.1)}
+@media(max-width:680px){.h-bg video{object-position:center center}}
 .h-bg-g{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(10,8,4,.2) 0%,rgba(10,8,4,.04) 28%,rgba(10,8,4,.58) 72%,rgba(10,8,4,.9) 100%)}
 .h-c{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(76px,11vh,116px) var(--pad) clamp(28px,5vw,48px)}
 .h-top{display:flex;justify-content:space-between;align-items:flex-start}
@@ -353,7 +354,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
 <!-- HERO -->
 <section class="hero" id="top">
   <div class="h-bg" id="hbg">
-    <img src="img/studio-bed-wide.jpg" alt="The Muse Ink studio interior"/>
+    <video id="hvid" autoplay muted playsinline preload="auto" aria-hidden="true"></video>
     <div class="h-bg-g"></div>
   </div>
   <div class="h-c">
@@ -801,19 +802,16 @@ if(nham){
   }));
 }
 
-const hbg=document.getElementById('hbg');
-const hero=document.querySelector('.hero');
-hero.addEventListener('mousemove',e=>{
-  const r=hero.getBoundingClientRect();
-  const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
-  hbg.style.transform=`translate(${x*28}px,${y*20}px)`;
-});
-hero.addEventListener('mouseleave',()=>hbg.style.transform='');
-hero.addEventListener('touchmove',e=>{
-  const r=hero.getBoundingClientRect();
-  const t=e.touches[0],x=(t.clientX-r.left)/r.width-.5,y=(t.clientY-r.top)/r.height-.5;
-  hbg.style.transform=`translate(${x*14}px,${y*10}px)`;
-},{passive:true});
+const hvid=document.getElementById('hvid');
+const reels=['reel 1.mp4','reel 2.mp4'];
+let ri=0;
+function loadReel(i){
+  hvid.src=reels[i];
+  hvid.load();
+  hvid.play().catch(()=>{});
+}
+hvid.addEventListener('ended',()=>{ri=(ri+1)%reels.length;loadReel(ri)});
+loadReel(0);
 
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.1});
 document.querySelectorAll('.rev').forEach(el=>io.observe(el));
