@@ -8,12 +8,12 @@ function extractField(text, label) {
 async function createAirtableLead(messageText, messageId) {
   const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
   const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
-  if (!airtableToken || !airtableBase) return;
+  if (!airtableToken || !airtableBase) return false;
 
   const fields = {
     Name: extractField(messageText, 'CLIENT'),
     Email: extractField(messageText, 'EMAIL'),
-    Instagram: extractField(messageText, 'IG'), // В сообщении IG, в базе Instagram
+    Instagram: extractField(messageText, 'IG'),
     Phone: extractField(messageText, 'PHONE'),
     Idea: extractField(messageText, 'IDEA'),
     Size: extractField(messageText, 'SIZE'),
@@ -24,14 +24,19 @@ async function createAirtableLead(messageText, messageId) {
     'Telegram Message ID': String(messageId || '')
   };
 
-  await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${airtableToken}`
-    },
-    body: JSON.stringify({ fields })
-  });
+  try {
+    const res = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${airtableToken}`
+      },
+      body: JSON.stringify({ fields })
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 module.exports = async (req, res) => {
@@ -47,44 +52,68 @@ module.exports = async (req, res) => {
       const messageId = message.message_id;
       const messageText = message.text || message.caption || '';
 
-      await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callback_query_id: id })
-      });
-
       if (data.startsWith('chat|')) {
         const [_, phone, name] = data.split('|');
+        const igHandle = extractField(messageText, 'IG').replace('@', '');
         
-        await createAirtableLead(messageText, messageId);
+        // Показываем "часики" на кнопке
+        await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callback_query_id: id, text: 'Saving to Airtable...' })
+        });
 
-        const waLink = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
+        const success = await createAirtableLead(messageText, messageId);
+
+        if (success) {
+          const waLink = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
+          const igLink = igHandle ? `https://instagram.com/${igHandle}` : null;
+
+          const inline_keyboard = [[
+            { text: '📱 WhatsApp', url: waLink }
+          ]];
+          if (igLink) inline_keyboard[0].push({ text: '📸 Instagram', url: igLink });
+          inline_keyboard.push([{ text: '💳 Issue Deposit', callback_data: `deposit|${phone}|${name}` }]);
+
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `✅ *Success!* All data and references are now in Airtable CRM.\n\nReady to contact *${name}*?`,
+              parse_mode: 'Markdown',
+              reply_markup: { inline_keyboard }
+            })
+          });
+
+          // Убираем кнопки из основного сообщения, чтобы не нажать дважды
+          await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } })
+          });
+        } else {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: '⚠️ Failed to save to Airtable. Please check credentials.' })
+          });
+        }
+      } else if (data === 'reject') {
+        await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callback_query_id: id })
+        });
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: `✅ Lead saved to Airtable!\n🔗 [Write to ${name} in WhatsApp](${waLink})`,
-            parse_mode: 'Markdown'
-          })
-        });
-
-        const updatedKeyboard = {
-          inline_keyboard: [[
-            { text: '💳 Issue Deposit', callback_data: `deposit|${phone}|${name}` },
-            { text: '❌ Reject', callback_data: 'reject' }
-          ]]
-        };
-
-        await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: updatedKeyboard })
+          body: JSON.stringify({ chat_id: chatId, text: '❌ Enquiry rejected.' })
         });
       }
     }
     return res.status(200).send('OK');
   } catch (error) {
-    return res.status(200).send('OK'); // Always return OK to TG
+    return res.status(200).send('OK');
   }
 };
