@@ -1,6 +1,9 @@
 const Busboy = require('busboy');
 
 exports.handler = async (event) => {
+  console.log('--- ENQUIRY START ---');
+  console.log('Method:', event.httpMethod);
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
