@@ -1,17 +1,14 @@
-// Helper: parse a field value from the Telegram message text
 function parseField(text, label) {
   const regex = new RegExp(label + ':\\s*(.+)');
   const match = text.match(regex);
   return match ? match[1].trim() : '';
 }
 
-// Update Airtable record status by Telegram Message ID
 async function updateAirtableStatus(messageId, status, extraFields = {}) {
   const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
   const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
   if (!airtableToken || !airtableBase) return;
 
-  // Find record by Telegram Message ID
   const searchRes = await fetch(
     `https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${encodeURIComponent(`{Telegram Message ID}="${messageId}"`)}`,
     { headers: { 'Authorization': `Bearer ${airtableToken}` } }
@@ -30,13 +27,13 @@ async function updateAirtableStatus(messageId, status, extraFields = {}) {
   });
 }
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
   }
 
   try {
-    const body = JSON.parse(event.body);
+    const body = req.body; // Vercel parses JSON bodies automatically
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const resendKey = process.env.RESEND_API_KEY;
 
@@ -46,19 +43,16 @@ exports.handler = async (event) => {
       const messageId = message.message_id;
       const originalText = message.text;
 
-      // Always answer the callback query first to remove loading state
       await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callback_query_id: id })
       });
 
-      // --- CHAT BUTTON ---
       if (data.startsWith('chat|')) {
         const [_, phone, name] = data.split('|');
         const waLink = `https://wa.me/${phone}`;
 
-        // Send WhatsApp link to manager
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -69,7 +63,6 @@ exports.handler = async (event) => {
           })
         });
 
-        // Evolve buttons: Chat → Deposit
         const updatedKeyboard = {
           inline_keyboard: [[
             { text: '💳 Выставить депозит', callback_data: `deposit|${phone}|${name}` },
@@ -83,29 +76,25 @@ exports.handler = async (event) => {
           body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: updatedKeyboard })
         });
 
-        // Update Airtable status
         await updateAirtableStatus(messageId.toString(), '💬 In Progress');
 
-      // --- REJECT BUTTON ---
       } else if (data === 'reject') {
         const clientEmail = parseField(originalText, 'Email');
         const clientName  = parseField(originalText, 'Client');
 
-        // Update Telegram message
         await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
             message_id: messageId,
-            text: originalText + '\n\n❌ Заявка отклонена. Письмо клиенту отправлено.'
+            text: originalText + '\n\n❌ *Rejected*',
+            parse_mode: 'Markdown'
           })
         });
 
-        // Update Airtable status
         await updateAirtableStatus(messageId.toString(), '❌ Rejected');
 
-        // Send rejection email via Resend
         if (resendKey && clientEmail) {
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
@@ -125,19 +114,14 @@ exports.handler = async (event) => {
                   <p style="line-height:1.85;color:#4a4540;">This can happen for a variety of reasons — timing, style fit, or a full calendar — and it is in no way a reflection of your idea.</p>
                   <p style="line-height:1.85;color:#4a4540;">We sincerely wish you all the best in finding the right artist for your piece.</p>
                   <p style="margin-top:40px;line-height:1.85;color:#4a4540;">Warmly,<br/><strong style="font-style:italic;">Dmytro Bilynets</strong><br/><span style="font-size:12px;color:#8a8478;">The Muse Ink</span></p>
-                  <div style="margin-top:40px;padding-top:24px;border-top:1px solid #e4dbd0;font-size:11px;color:#8a8478;">
-                    <a href="https://instagram.com/kaktuz_tattooz" style="color:#b8956a;text-decoration:none;">@kaktuz_tattooz</a>
-                  </div>
                 </div>
               `
             })
           });
         }
 
-      // --- DEPOSIT BUTTON ---
       } else if (data.startsWith('deposit|')) {
         const [_, phone, name] = data.split('|');
-        // Placeholder — will be replaced with Mollie API integration
         const depositLink = `https://themuseink.com/deposit?client=${encodeURIComponent(name)}`;
 
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -148,15 +132,13 @@ exports.handler = async (event) => {
             text: `💳 Ссылка на депозит для ${name} (€50):\n${depositLink}\n\nСкопируй и отправь клиенту в WhatsApp.`
           })
         });
-
-        // Update Airtable status
-        await updateAirtableStatus(messageId.toString(), '💳 Awaiting Deposit', { 'Deposit Link': depositLink });
       }
     }
 
-    return { statusCode: 200, body: 'OK' };
+    return res.status(200).send('OK');
+
   } catch (error) {
-    console.error('Webhook error:', error);
-    return { statusCode: 500, body: 'Error' };
+    console.error('Webhook Error:', error);
+    return res.status(500).send('Error');
   }
 };

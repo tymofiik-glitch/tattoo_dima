@@ -1,169 +1,122 @@
 const Busboy = require('busboy');
 
-exports.handler = async (event) => {
-  console.log('--- ENQUIRY START ---');
-  console.log('Method:', event.httpMethod);
+module.exports = async (req, res) => {
+    console.log('--- VERCEL ENQUIRY START ---');
+    console.log('Method:', req.method);
 
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
 
-  return new Promise((resolve) => {
-    const busboy = Busboy({ headers: event.headers });
-    const fields = {};
-    const files = [];
+    try {
+        const fields = {};
+        const fileUploads = [];
+        const busboy = Busboy({ headers: req.headers });
 
-    busboy.on('field', (name, value) => {
-      fields[name] = value;
-    });
+        await new Promise((resolve, reject) => {
+            busboy.on('field', (fieldname, val) => {
+                fields[fieldname] = val;
+            });
 
-    busboy.on('file', (name, file, info) => {
-      const { filename, mimeType } = info;
-      const chunks = [];
-      file.on('data', (data) => chunks.push(data));
-      file.on('end', () => {
-        files.push({
-          name,
-          filename,
-          mimeType,
-          content: Buffer.concat(chunks)
+            busboy.on('file', (fieldname, file, { filename, mimeType }) => {
+                const chunks = [];
+                file.on('data', (data) => chunks.push(data));
+                file.on('end', () => {
+                    if (chunks.length > 0) {
+                        fileUploads.push({
+                            filename,
+                            content: Buffer.concat(chunks),
+                            contentType: mimeType
+                        });
+                    }
+                });
+            });
+
+            busboy.on('finish', resolve);
+            busboy.on('error', reject);
+            req.pipe(busboy);
         });
-      });
-    });
 
-    busboy.on('finish', async () => {
-      try {
-        const { name, email, instagram, phone, idea, size, placement, budget, notes } = fields;
+        console.log('Fields parsed:', JSON.stringify(fields));
+
+        // 1. Send to Telegram
         const token = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
+        let tgMessageId = '';
 
-        if (!token || !chatId) {
-          resolve({ statusCode: 500, body: 'Server configuration error' });
-          return;
+        if (token && chatId) {
+            const messageText = `
+🆕 *New Tattoo Enquiry*
+👤 *Client:* ${fields.name}
+📧 *Email:* ${fields.email}
+📸 *Instagram:* ${fields.instagram}
+📞 *Phone:* ${fields.phone}
+📐 *Size:* ${fields.size}
+📍 *Placement:* ${fields.placement}
+💰 *Budget:* ${fields.budget}
+📝 *Idea:* ${fields.idea}
+📓 *Notes:* ${fields.notes}
+            `.trim();
+
+            const keyboard = {
+                inline_keyboard: [[
+                    { text: '💬 Start Chat', callback_data: `chat|${fields.phone}|${fields.name}` },
+                    { text: '❌ Reject', callback_data: 'reject' }
+                ]]
+            };
+
+            const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: messageText,
+                    parse_mode: 'Markdown',
+                    reply_markup: keyboard
+                })
+            });
+            const tgData = await tgRes.json();
+            tgMessageId = tgData.result?.message_id?.toString() || '';
         }
-
-        const message = `
-🔥 *New Tattoo Enquiry*
-
-👤 *Client:* ${name}
-📧 *Email:* ${email}
-📸 *Instagram:* ${instagram}
-📱 *Phone:* ${phone}
-
-💡 *Idea:* ${idea}
-📏 *Size:* ${size}
-📍 *Placement:* ${placement}
-💰 *Budget:* ${budget}
-
-📝 *Notes:* ${notes || 'None'}
-        `;
-
-        // 1. Send the text details with buttons
-        const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
-        const inlineKeyboard = {
-          inline_keyboard: [
-            [
-              { text: "💬 Начать чат", callback_data: `chat|${cleanPhone}|${name.substring(0, 20)}` },
-              { text: "❌ Отклонить", callback_data: `reject` }
-            ]
-          ]
-        };
-
-        const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: message,
-            parse_mode: 'Markdown',
-            reply_markup: inlineKeyboard
-          })
-        });
-        const tgData = await tgRes.json();
-        const tgMessageId = tgData.result?.message_id?.toString() || '';
 
         // 2. Save to Airtable
         const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
         const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
         
         if (airtableToken && airtableBase) {
-          console.log('Fields received from form:', JSON.stringify(fields));
-          const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
-          const budgetMap = { '150-300': '\u20ac150-300', '300-500': '\u20ac300-500', '500+': '\u20ac500+' };
-          
-          try {
-            const payload = {
-              fields: {
-                Name: String(fields.name || ''),
-                Email: String(fields.email || ''),
-                Instagram: String(fields.instagram || ''),
-                Phone: String(fields.phone || ''),
-                Idea: String(fields.idea || ''),
-                Size: String(sizeMap[fields.size] || fields.size || ''),
-                Placement: String(fields.placement || ''),
-                Budget: String(budgetMap[fields.budget] || fields.budget || ''),
-                Notes: String(fields.notes || ''),
-                Status: '\ud83c\udd95 New',
-                'Telegram Message ID': String(tgMessageId || '')
-              }
-            };
-            console.log('Sending payload to Airtable:', JSON.stringify(payload));
-
-            const atRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${airtableToken}`
-              },
-              body: JSON.stringify(payload)
-            });
+            const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
+            const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
             
-            const atData = await atRes.json();
-            if (!atRes.ok) {
-              console.error('Airtable Error Response:', JSON.stringify(atData));
-            } else {
-              console.log('Airtable Success. Record ID:', atData.id);
-            }
-          } catch (atErr) {
-            console.error('Airtable Network/General Error:', atErr.message);
-          }
-        } else {
-          console.error('Airtable Skipped: Missing Credentials');
+            const payload = {
+                fields: {
+                    Name: String(fields.name || ''),
+                    Email: String(fields.email || ''),
+                    Instagram: String(fields.instagram || ''),
+                    Phone: String(fields.phone || ''),
+                    Idea: String(fields.idea || ''),
+                    Size: String(sizeMap[fields.size] || fields.size || ''),
+                    Placement: String(fields.placement || ''),
+                    Budget: String(budgetMap[fields.budget] || fields.budget || ''),
+                    Notes: String(fields.notes || ''),
+                    Status: '🆕 New',
+                    'Telegram Message ID': String(tgMessageId || '')
+                }
+            };
+
+            await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${airtableToken}`
+                },
+                body: JSON.stringify(payload)
+            });
         }
 
-        // 3. Send files if any
-        for (const f of files) {
-          const formData = new FormData();
-          formData.append('chat_id', chatId);
-          
-          const blob = new Blob([f.content], { type: f.mimeType });
-          formData.append('photo', blob, f.filename);
+        return res.status(200).json({ message: 'Success' });
 
-          await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-            method: 'POST',
-            body: formData
-          });
-        }
-
-        resolve({
-          statusCode: 200,
-          body: JSON.stringify({ message: 'Success' })
-        });
-      } catch (error) {
+    } catch (error) {
         console.error('Error:', error);
-        resolve({
-          statusCode: 500,
-          body: JSON.stringify({ error: 'Failed to process enquiry' })
-        });
-      }
-    });
-
-    busboy.on('error', (err) => {
-      console.error('Busboy error:', err);
-      resolve({ statusCode: 500, body: 'Error parsing form' });
-    });
-
-    const body = event.isBase64Encoded ? Buffer.from(event.body, 'base64') : event.body;
-    busboy.end(body);
-  });
+        return res.status(500).json({ error: error.message });
+    }
 };
