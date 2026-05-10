@@ -82,6 +82,9 @@ exports.handler = async (event) => {
         // 2. Save to Airtable
         const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
         const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
+        if (airtableToken) {
+          console.log(`Token check: starts with ${airtableToken.substring(0, 5)}... ends with ...${airtableToken.substring(airtableToken.length - 5)} (length: ${airtableToken.length})`);
+        }
         console.log('Airtable env check — token:', !!airtableToken, 'base:', !!airtableBase);
         if (airtableToken && airtableBase) {
           const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
