@@ -45,17 +45,31 @@ module.exports = async (req, res) => {
         let tgMessageId = '';
 
         if (token && chatId) {
+            const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
+            const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
+
+            const displaySize = sizeMap[fields.size] || fields.size || 'Not specified';
+            const displayBudget = budgetMap[fields.budget] || fields.budget || 'Not specified';
+
             const messageText = `
-🆕 *New Tattoo Enquiry*
-👤 *Client:* ${fields.name}
-📧 *Email:* ${fields.email}
-📸 *Instagram:* ${fields.instagram}
-📞 *Phone:* ${fields.phone}
-📐 *Size:* ${fields.size}
-📍 *Placement:* ${fields.placement}
-💰 *Budget:* ${fields.budget}
-📝 *Idea:* ${fields.idea}
-📓 *Notes:* ${fields.notes}
+✨ *NEW TATTOO ENQUIRY* ✨
+━━━━━━━━━━━━━━━━━━
+👤 *CLIENT:* ${fields.name}
+📧 *EMAIL:* ${fields.email}
+📸 *IG:* ${fields.instagram}
+📞 *PHONE:* ${fields.phone}
+
+🖼️ *TATTOO DETAILS*
+📐 *SIZE:* ${displaySize}
+📍 *PLACE:* ${fields.placement}
+💰 *BUDGET:* ${displayBudget}
+
+📝 *IDEA:*
+${fields.idea}
+
+📓 *NOTES:*
+${fields.notes || 'No additional notes'}
+━━━━━━━━━━━━━━━━━━
             `.trim();
 
             const keyboard = {
