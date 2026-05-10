@@ -32,13 +32,12 @@ module.exports = async (req, res) => {
         const chatId = process.env.TELEGRAM_CHAT_ID;
         let tgMessageId = '';
 
-        if (token && chatId) {
-            const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
-            const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
-            const displaySize = sizeMap[fields.size] || fields.size || 'Not specified';
-            const displayBudget = budgetMap[fields.budget] || fields.budget || 'Not specified';
+        const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
+        const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
+        const displaySize = sizeMap[fields.size] || fields.size || 'Not specified';
+        const displayBudget = budgetMap[fields.budget] || fields.budget || 'Not specified';
 
-            const messageText = `
+        const messageText = `
 ✨ *NEW TATTOO ENQUIRY* ✨
 ━━━━━━━━━━━━━━━━━━
 👤 *CLIENT:* ${fields.name}
@@ -57,40 +56,54 @@ ${fields.idea}
 📓 *NOTES:*
 ${fields.notes || 'No additional notes'}
 ━━━━━━━━━━━━━━━━━━
-            `.trim();
+        `.trim();
 
-            const keyboard = {
-                inline_keyboard: [[
-                    { text: '💬 Start Chat', callback_data: `chat|${fields.phone}|${fields.name}` },
-                    { text: '❌ Reject', callback_data: 'reject' }
-                ]]
-            };
+        const keyboard = {
+            inline_keyboard: [[
+                { text: '💬 Start Chat', callback_data: `chat|${fields.phone}|${fields.name}` },
+                { text: '❌ Reject', callback_data: 'reject' }
+            ]]
+        };
 
-            // Send text first
-            const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: messageText,
-                    parse_mode: 'Markdown',
-                    reply_markup: keyboard
-                })
-            });
-            const tgData = await tgRes.json();
-            tgMessageId = tgData.result?.message_id?.toString() || '';
-
-            // Send photos if any
-            for (const upload of fileUploads) {
+        if (token && chatId) {
+            if (fileUploads.length > 0) {
+                // Send with photo as one message
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
-                formData.append('photo', new Blob([upload.content], { type: upload.contentType }), upload.filename);
-                formData.append('reply_to_message_id', tgMessageId);
+                formData.append('photo', new Blob([fileUploads[0].content], { type: fileUploads[0].contentType }), fileUploads[0].filename);
+                formData.append('caption', messageText);
+                formData.append('parse_mode', 'Markdown');
+                formData.append('reply_markup', JSON.stringify(keyboard));
 
-                await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 });
+                const tgData = await tgRes.json();
+                tgMessageId = tgData.result?.message_id?.toString() || '';
+
+                // If there are more photos, send them separately
+                for (let i = 1; i < fileUploads.length; i++) {
+                    const extraFd = new FormData();
+                    extraFd.append('chat_id', chatId);
+                    extraFd.append('photo', new Blob([fileUploads[i].content], { type: fileUploads[i].contentType }), fileUploads[i].filename);
+                    extraFd.append('reply_to_message_id', tgMessageId);
+                    await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: extraFd });
+                }
+            } else {
+                // Text only
+                const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: messageText,
+                        parse_mode: 'Markdown',
+                        reply_markup: keyboard
+                    })
+                });
+                const tgData = await tgRes.json();
+                tgMessageId = tgData.result?.message_id?.toString() || '';
             }
         }
 
@@ -98,9 +111,26 @@ ${fields.notes || 'No additional notes'}
         const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
         const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
         if (airtableToken && airtableBase) {
-            const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
-            const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
+            const airtableAttachments = [];
             
+            // Upload photos to temporary storage for Airtable to fetch
+            for (const upload of fileUploads) {
+                try {
+                    const uploadFd = new FormData();
+                    uploadFd.append('file', new Blob([upload.content], { type: upload.contentType }), upload.filename);
+                    const fileioRes = await fetch('https://file.io/?expires=1d', {
+                        method: 'POST',
+                        body: uploadFd
+                    });
+                    const fileioData = await fileioRes.json();
+                    if (fileioData.success) {
+                        airtableAttachments.push({ url: fileioData.link });
+                    }
+                } catch (e) {
+                    console.error('File upload error:', e);
+                }
+            }
+
             await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
                 method: 'POST',
                 headers: {
@@ -119,7 +149,8 @@ ${fields.notes || 'No additional notes'}
                         Budget: String(budgetMap[fields.budget] || fields.budget || ''),
                         Notes: String(fields.notes || ''),
                         Status: '🆕 New',
-                        'Telegram Message ID': String(tgMessageId || '')
+                        'Telegram Message ID': String(tgMessageId || ''),
+                        'Reference': airtableAttachments
                     }
                 })
             });
