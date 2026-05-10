@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
 :root{
   --linen:#f5f0e8;--linen-2:#ede8dc;--linen-3:#e4dbd0;
@@ -226,11 +228,16 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 .maps-a{display:inline-flex;align-items:center;gap:9px;font-family:var(--micro);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--olive);border-bottom:.5px solid var(--rule);padding-bottom:4px;transition:border-color .2s}
 .maps-a:hover{border-color:var(--olive)}
 .maps-wrap{margin-top:20px}
-.maps-thumb{display:block;position:relative;width:100%;height:180px;overflow:hidden;border:.5px solid var(--rule);cursor:pointer;text-decoration:none}
-@media(max-width:680px){.maps-thumb{height:160px}}
-.maps-overlay{position:absolute;inset:0;background:rgba(245,240,232,.0);display:flex;align-items:flex-end;padding:12px 14px;transition:background .25s}
-.maps-thumb:hover .maps-overlay{background:rgba(245,240,232,.15)}
+.maps-thumb{display:block;position:relative;width:100%;height:200px;overflow:hidden;border:.5px solid var(--rule);cursor:pointer;text-decoration:none}
+@media(max-width:680px){.maps-thumb{height:170px}}
+.maps-overlay{position:absolute;inset:0;background:rgba(245,240,232,.0);display:flex;align-items:flex-end;padding:12px 14px;transition:background .25s;pointer-events:none;z-index:9}
+.maps-thumb:hover .maps-overlay{background:rgba(245,240,232,.1)}
 .maps-cta{font-family:var(--micro);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink);background:rgba(245,240,232,.92);padding:7px 14px;display:inline-block}
+#loc-map{width:100%;height:100%;z-index:1}
+.leaflet-container{background:#ede8dc !important}
+/* Privacy badge */
+.loc-privacy{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.loc-privacy svg{flex-shrink:0}
 .pcs{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--rule)}
 .pc{background:var(--linen);padding:20px 16px}
 .pcl{font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px}
@@ -631,22 +638,18 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
   <div class="loc-g">
     <div class="rev d1">
       <p class="loc-desc">A private, appointment-only studio. No walk-ins. Just you, the artist, and the work.</p>
-      <div class="loc-addr"><strong>The Muse Ink</strong>Regentesselaan 106<br/>2562 CW · Den Haag</div>
+      <div class="loc-addr"><strong>The Muse Ink</strong>Regentesse neighbourhood<br/>2562 · Den Haag, NL</div>
+      <div class="loc-privacy">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Exact address shared after booking confirmation
+      </div>
       <div class="maps-wrap">
-        <a href="https://maps.app.goo.gl/sgWr6aMxyn5eyNwN7" target="_blank" rel="noopener" class="maps-thumb" aria-label="Open in Google Maps">
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2455.123!2d4.2879!3d52.0795!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c5b7b6c0000001%3A0x1!2sRegentesselaan+106%2C+2562+CW+Den+Haag!5e0!3m2!1sen!2snl!4v1"
-            width="100%" height="100%"
-            style="border:0;pointer-events:none;display:block"
-            loading="lazy"
-            allowfullscreen=""
-            referrerpolicy="no-referrer-when-downgrade"
-            title="The Muse Ink location">
-          </iframe>
+        <div class="maps-thumb" id="maptile" aria-label="Studio approximate area">
+          <div id="loc-map"></div>
           <div class="maps-overlay">
-            <span class="maps-cta">Open in Google Maps →</span>
+            <span class="maps-cta">Regentesse · Den Haag →</span>
           </div>
-        </a>
+        </div>
       </div>
     </div>
     <div class="pcs rev d2">
@@ -911,6 +914,28 @@ document.querySelectorAll('.fq').forEach(q=>q.addEventListener('click',()=>{
   const fi=q.parentElement,fa=fi.querySelector('.fa'),op=fi.classList.toggle('op');
   q.setAttribute('aria-expanded',op);fa.style.maxHeight=op?fa.scrollHeight+36+'px':'0';
 }));
+
+// Leaflet Map Init
+const map = L.map('loc-map', {
+  center: [52.0718, 4.2885],
+  zoom: 14,
+  zoomControl: false,
+  attributionControl: false,
+  scrollWheelZoom: false
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+L.circle([52.0718, 4.2885], {
+  color: '#b8956a',
+  fillColor: '#b8956a',
+  fillOpacity: 0.15,
+  radius: 350,
+  weight: 1
+}).addTo(map);
 </script>
 </body>
 </html>
