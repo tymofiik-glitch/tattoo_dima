@@ -644,12 +644,12 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
         Exact address shared after booking confirmation
       </div>
       <div class="maps-wrap">
-        <div class="maps-thumb" id="maptile" aria-label="Studio approximate area">
+        <a href="https://www.google.com/maps/search/?api=1&query=Regentessekwartier+Den+Haag" target="_blank" class="maps-thumb" id="maptile" aria-label="Studio approximate area">
           <div id="loc-map"></div>
           <div class="maps-overlay">
             <span class="maps-cta">Regentesse · Den Haag →</span>
           </div>
-        </div>
+        </a>
       </div>
     </div>
     <div class="pcs rev d2">
@@ -916,26 +916,37 @@ document.querySelectorAll('.fq').forEach(q=>q.addEventListener('click',()=>{
 }));
 
 // Leaflet Map Init
-const map = L.map('loc-map', {
-  center: [52.0718, 4.2885],
-  zoom: 14,
-  zoomControl: false,
-  attributionControl: false,
-  scrollWheelZoom: false
-});
+function initMap() {
+  const mapEl = document.getElementById('loc-map');
+  if (!mapEl) return;
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  subdomains: 'abcd',
-  maxZoom: 19
-}).addTo(map);
+  const map = L.map('loc-map', {
+    center: [52.0718, 4.2885],
+    zoom: 14,
+    zoomControl: false,
+    attributionControl: false,
+    scrollWheelZoom: false,
+    dragging: !L.Browser.mobile, // Disable dragging on mobile to allow page scroll
+    touchZoom: L.Browser.mobile
+  });
 
-L.circle([52.0718, 4.2885], {
-  color: '#b8956a',
-  fillColor: '#b8956a',
-  fillOpacity: 0.15,
-  radius: 350,
-  weight: 1
-}).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  L.circle([52.0718, 4.2885], {
+    color: '#b8956a',
+    fillColor: '#b8956a',
+    fillOpacity: 0.15,
+    radius: 350,
+    weight: 1
+  }).addTo(map);
+
+  // Fix for container size issues
+  setTimeout(() => map.invalidateSize(), 400);
+}
+initMap();
 </script>
 </body>
 </html>
