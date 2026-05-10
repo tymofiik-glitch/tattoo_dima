@@ -67,7 +67,6 @@ ${fields.notes || 'No additional notes'}
 
         if (token && chatId) {
             if (fileUploads.length > 0) {
-                // Send with photo as one message
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
                 formData.append('photo', new Blob([fileUploads[0].content], { type: fileUploads[0].contentType }), fileUploads[0].filename);
@@ -81,53 +80,43 @@ ${fields.notes || 'No additional notes'}
                 });
                 const tgData = await tgRes.json();
                 tgMessageId = tgData.result?.message_id?.toString() || '';
-
-                // If there are more photos, send them separately
-                for (let i = 1; i < fileUploads.length; i++) {
-                    const extraFd = new FormData();
-                    extraFd.append('chat_id', chatId);
-                    extraFd.append('photo', new Blob([fileUploads[i].content], { type: fileUploads[i].contentType }), fileUploads[i].filename);
-                    extraFd.append('reply_to_message_id', tgMessageId);
-                    await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: extraFd });
-                }
             } else {
-                // Text only
                 const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: messageText,
-                        parse_mode: 'Markdown',
-                        reply_markup: keyboard
-                    })
+                    body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: 'Markdown', reply_markup: keyboard })
                 });
                 const tgData = await tgRes.json();
                 tgMessageId = tgData.result?.message_id?.toString() || '';
             }
         }
 
-        // 2. Save to Airtable
+        // 2. Save to Airtable with Direct Links
         const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
         const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
         if (airtableToken && airtableBase) {
             const airtableAttachments = [];
             
-            // Upload photos to temporary storage for Airtable to fetch
             for (const upload of fileUploads) {
                 try {
                     const uploadFd = new FormData();
                     uploadFd.append('file', new Blob([upload.content], { type: upload.contentType }), upload.filename);
-                    const fileioRes = await fetch('https://file.io/?expires=1d', {
+                    
+                    // Using tmpfiles.org for direct links
+                    const tmpRes = await fetch('https://tmpfiles.org/api/v1/upload', {
                         method: 'POST',
                         body: uploadFd
                     });
-                    const fileioData = await fileioRes.json();
-                    if (fileioData.success) {
-                        airtableAttachments.push({ url: fileioData.link });
+                    const tmpData = await tmpRes.json();
+                    
+                    if (tmpData.status === 'success' && tmpData.data?.url) {
+                        // Transform to direct download URL
+                        // From: https://tmpfiles.org/123/file.jpg -> To: https://tmpfiles.org/dl/123/file.jpg
+                        const directUrl = tmpData.data.url.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/');
+                        airtableAttachments.push({ url: directUrl });
                     }
                 } catch (e) {
-                    console.error('File upload error:', e);
+                    console.error('Airtable upload error:', e);
                 }
             }
 
