@@ -80,8 +80,8 @@ exports.handler = async (event) => {
         const tgMessageId = tgData.result?.message_id?.toString() || '';
 
         // 2. Save to Airtable
-        const airtableToken = process.env.AIRTABLE_TOKEN;
-        const airtableBase = process.env.AIRTABLE_BASE_ID;
+        const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+        const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
         console.log('Airtable env check — token:', !!airtableToken, 'base:', !!airtableBase);
         if (airtableToken && airtableBase) {
           const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
