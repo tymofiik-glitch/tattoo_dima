@@ -958,7 +958,7 @@ document.getElementById('mf').addEventListener('submit', async (e) => {
   const formData = new FormData(form);
 
   try {
-    const response = await fetch('/.netlify/functions/send-enquiry', {
+    const response = await fetch('/api/send-enquiry', {
       method: 'POST',
       body: formData
     });
