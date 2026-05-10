@@ -22,18 +22,10 @@
   --micro:'Inter','Helvetica Neue',sans-serif;
   --pad:clamp(20px,5vw,80px);
   --sec:clamp(64px,9vw,128px);
-  --shadow:0 12px 40px rgba(26,24,20,0.06);
-  --shadow-hover:0 20px 60px rgba(26,24,20,0.12);
 }
-.grain{position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.035;background:url('https://grainy-gradients.vercel.app/noise.svg');mix-blend-mode:multiply}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
 body{background:var(--linen);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.75;overflow-x:hidden;font-size:15px}
-/* Scrollbar */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--linen)}
-::-webkit-scrollbar-thumb{background:var(--linen-3);border-radius:10px}
-::-webkit-scrollbar-thumb:hover{background:var(--ink-3)}
 a{color:inherit;text-decoration:none}
 img{display:block;max-width:100%}
 button{font-family:inherit;cursor:pointer}
@@ -64,8 +56,10 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 .h-bg video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;filter:brightness(.28) saturate(1.0)}
 
 /* desktop: затемнение справа налево — левая часть темнее, правая светлее */
-.h-bg-g{position:absolute;inset:0;background:linear-gradient(to right,rgba(10,8,4,.82) 0%,rgba(10,8,4,.55) 42%,rgba(10,8,4,.12) 100%);z-index:1}
-.h-c{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(76px,11vh,116px) var(--pad) clamp(48px,7vh,80px);transform:translateZ(0)}
+.h-bg-g{position:absolute;inset:0;background:linear-gradient(to right,rgba(10,8,4,.82) 0%,rgba(10,8,4,.55) 42%,rgba(10,8,4,.12) 100%)}
+
+/* контент: всё прижато к левому краю внизу */
+.h-c{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(76px,11vh,116px) var(--pad) clamp(48px,7vh,80px)}
 
 .h-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-right:8px;animation:bl 2.5s ease-in-out infinite;vertical-align:middle}
 @keyframes bl{0%,100%{opacity:.3}50%{opacity:1}}
@@ -132,8 +126,7 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 .wfb.active,.wfb:hover{background:var(--olive);color:var(--linen);border-color:var(--olive)}
 .work-tr{display:flex;gap:10px;overflow-x:auto;padding:0 var(--pad) 14px;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory}
 .work-tr::-webkit-scrollbar{display:none}
-.wc{flex:0 0 clamp(240px,38vw,340px);background:var(--linen);padding:1px;position:relative;transition:transform .5s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow)}
-.wc:hover{transform:translateY(-8px);box-shadow:var(--shadow-hover)}
+.wc{flex:0 0 clamp(240px,36vw,340px);aspect-ratio:3/4;position:relative;overflow:hidden;scroll-snap-align:start;border:.5px solid var(--rule)}
 .wc img{width:100%;height:100%;object-fit:cover;transition:transform .65s cubic-bezier(.2,.7,.2,1),filter .4s}
 .wc:hover img{transform:scale(1.06);filter:brightness(1.06)}
 .wc-meta{position:absolute;bottom:0;left:0;right:0;padding:18px 16px 14px;background:linear-gradient(to top,rgba(14,11,7,.85),transparent);opacity:0;transition:opacity .3s}
@@ -361,13 +354,6 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
 </style>
 </head>
 <body>
-<div class="grain"></div>
-
-<div class="fab">
-  <a href="https://wa.me/" target="_blank" rel="noopener" class="fab-a" aria-label="WhatsApp">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-  </a>
-</div>
 
 <nav id="nav">
   <a href="#top" class="n-logo">Dmytro Bilynets</a>
