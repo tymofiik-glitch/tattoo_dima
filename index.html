@@ -898,7 +898,37 @@ mo.querySelectorAll('.bb').forEach(b=>b.addEventListener('click',()=>{
   mo.querySelectorAll('.bb').forEach(x=>x.classList.remove('act'));b.classList.add('act');
   document.getElementById('buv').value=b.dataset.bu;
 }));
-document.getElementById('mf').addEventListener('submit',e=>{e.preventDefault();gTo(4)});
+document.getElementById('mf').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('.msub');
+  const originalText = btn.textContent;
+  
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData.entries());
+
+  try {
+    const response = await fetch('/.netlify/functions/send-enquiry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      gTo(4);
+    } else {
+      throw new Error();
+    }
+  } catch (err) {
+    alert('Something went wrong. Please try again or contact via Instagram.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+});
 
 const uz=document.getElementById('uz'),ufi=document.getElementById('ufi'),ubr=document.getElementById('ubr'),uid=document.getElementById('uid'),upv=document.getElementById('upv'),utr=document.getElementById('utr'),ucl=document.getElementById('ucl');
 function shPrev(files){utr.innerHTML='';Array.from(files).forEach(f=>{if(f.type.startsWith('image/')){const img=document.createElement('img');img.className='uth';img.alt=f.name;const fr=new FileReader();fr.onload=e=>img.src=e.target.result;fr.readAsDataURL(f);utr.appendChild(img)}});uid.style.display='none';upv.style.display='flex'}

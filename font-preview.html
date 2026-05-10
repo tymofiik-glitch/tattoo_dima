@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Font Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?
+family=Fraunces:ital,wght@1,700&
+family=Lora:ital,wght@0,400;1,400;1,600&
+family=Outfit:wght@300;400&
+family=Inter:wght@300;400&
+family=Libre+Baskerville:ital,wght@1,700&
+family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&
+family=Space+Grotesk:wght@300;400&
+family=Plus+Jakarta+Sans:wght@300;400&
+family=DM+Serif+Display:ital@1&
+family=Source+Serif+4:ital,wght@0,300;0,400;1,300;1,400&
+family=Barlow:wght@300;400&
+family=Nunito+Sans:wght@300;400&
+family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&
+family=Playfair+Display:ital,wght@1,700&
+family=Josefin+Sans:wght@300&
+family=DM+Sans:wght@300;400&
+display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --linen:#f5f0e8;--linen-2:#ede8dc;
+  --ink:#1c1814;--ink-2:#4a4540;--ink-3:#8a8478;
+  --olive:#2d3d28;--gold:#b8956a;--rule:rgba(26,24,20,.12);
+}
+html{scroll-behavior:smooth}
+body{background:var(--linen);color:var(--ink);line-height:1.7;overflow-x:hidden}
+
+/* HEADER */
+.page-header{background:var(--ink);color:var(--linen);padding:28px 40px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.page-header h1{font-family:'Inter',sans-serif;font-size:13px;letter-spacing:.2em;text-transform:uppercase;font-weight:400;color:rgba(245,240,232,.6)}
+.tabs{display:flex;gap:0}
+.tab{font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;padding:9px 20px;background:none;border:.5px solid rgba(255,255,255,.18);color:rgba(245,240,232,.5);cursor:pointer;transition:all .2s}
+.tab:not(:last-child){border-right:none}
+.tab.active,.tab:hover{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+
+/* VARIANTS */
+.variant{display:none;padding:48px 40px}
+.variant.active{display:block}
+
+/* VARIANT LABEL */
+.v-label{display:inline-flex;align-items:center;gap:12px;margin-bottom:40px}
+.v-num{width:36px;height:36px;border-radius:50%;background:var(--olive);color:var(--linen);display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;font-size:12px;font-weight:400}
+.v-name{font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3)}
+
+/* SAMPLE CARD */
+.sample{background:#fff;border:.5px solid var(--rule);padding:36px 40px;margin-bottom:16px;position:relative;overflow:hidden}
+.sample::before{content:attr(data-role);position:absolute;top:14px;right:18px;font-family:'Inter',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);opacity:.5}
+.font-name{font-family:'Inter',sans-serif;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:20px;display:block}
+
+/* LIVE HERO PREVIEW */
+.hero-preview{position:relative;height:420px;background:#0d0b07;overflow:hidden;margin-bottom:16px;border:.5px solid var(--rule)}
+.hp-bg{position:absolute;inset:0;background:linear-gradient(135deg,#1a1410 0%,#0d0b07 60%,#1a1810 100%)}
+.hp-grad{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(10,8,4,.2) 0%,rgba(10,8,4,.04) 28%,rgba(10,8,4,.58) 72%,rgba(10,8,4,.9) 100%)}
+.hp-c{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:36px 40px 32px}
+.hp-pill{display:inline-flex;align-items:center;gap:8px;border:.5px solid rgba(255,255,255,.14);padding:6px 12px;background:rgba(245,240,232,.05)}
+.hp-dot{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.hp-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.hp-label{font-size:9px;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.hp-title{font-size:clamp(48px,9vw,80px);font-weight:700;font-style:italic;color:#f5f0e8;line-height:.92;letter-spacing:-.02em}
+.hp-title em{display:block;font-weight:300;font-style:italic;color:rgba(245,240,232,.42);font-size:.5em;letter-spacing:.05em;margin-top:.3em}
+.hp-sub{font-size:12px;letter-spacing:.08em;color:rgba(245,240,232,.3);margin-top:14px;line-height:2}
+.hp-bot{display:flex;justify-content:space-between;align-items:flex-end}
+.hp-name{font-size:clamp(22px,4vw,36px);font-weight:700;color:#f5f0e8;line-height:.92}
+.hp-name em{display:block;font-weight:300;font-style:italic;font-size:.65em;color:rgba(245,240,232,.35);margin-top:.15em}
+
+/* SECTION PREVIEW */
+.section-preview{background:var(--linen);border:.5px solid var(--rule);padding:32px 40px;margin-bottom:16px}
+.sp-eyebrow{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sp-eyebrow .gd{color:var(--gold)}
+.sp-heading{font-weight:300;font-style:italic;font-size:clamp(26px,4vw,44px);line-height:1.08;color:var(--ink);margin-bottom:20px}
+.sp-heading em{color:var(--olive)}
+.sp-body{font-size:15px;color:var(--ink-2);line-height:1.85;max-width:54ch;margin-bottom:24px}
+.sp-btn{display:inline-flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.28em;text-transform:uppercase;padding:12px 24px;background:var(--olive);color:var(--linen);border:none;cursor:default}
+.sp-btn-o{display:inline-flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.28em;text-transform:uppercase;padding:11px 20px;border:.5px solid var(--rule);background:none;color:var(--ink-2);margin-left:10px;cursor:default}
+
+/* NAV PREVIEW */
+.nav-preview{background:rgba(245,240,232,.93);border:.5px solid var(--rule);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.np-logo{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink)}
+.np-links{display:flex;gap:24px;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-2)}
+.np-book{font-size:10px;letter-spacing:.26em;text-transform:uppercase;padding:8px 16px;border:.5px solid var(--olive);background:none;color:var(--olive);cursor:default}
+
+/* TAGS */
+.tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.tag{font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:5px 12px;border:.5px solid var(--rule);color:var(--ink-3)}
+.tag.active{background:var(--olive);color:var(--linen);border-color:var(--olive)}
+
+/* TRUST ROW */
+.trust-row{display:grid;grid-template-columns:repeat(4,1fr);border:.5px solid var(--rule);margin-bottom:16px}
+.tc{text-align:center;padding:20px 10px;border-right:.5px solid var(--rule)}
+.tc:last-child{border-right:none}
+.tc-v{font-style:italic;font-size:clamp(18px,2.5vw,24px);color:var(--ink);line-height:1.1}
+.tc-l{font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+
+/* DIVIDER */
+.preview-divider{border:none;border-top:.5px solid var(--rule);margin:32px 0}
+
+/* COMPARE GRID */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:700px){.compare{grid-template-columns:1fr}}
+.ccard{background:#fff;border:.5px solid var(--rule);padding:24px 28px}
+.ccard-label{font-family:'Inter',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:16px;display:block}
+
+/* =========== VARIANT A =========== */
+.va-serif-d{font-family:'Fraunces',Georgia,serif}
+.va-serif{font-family:'Lora',Georgia,serif}
+.va-micro{font-family:'Outfit',sans-serif;font-weight:300}
+.va-sans{font-family:'Inter',sans-serif;font-weight:300}
+
+/* =========== VARIANT B =========== */
+.vb-serif-d{font-family:'Libre Baskerville',Georgia,serif}
+.vb-serif{font-family:'Crimson Pro',Georgia,serif}
+.vb-micro{font-family:'Space Grotesk',sans-serif;font-weight:300}
+.vb-sans{font-family:'Plus Jakarta Sans',sans-serif;font-weight:300}
+
+/* =========== VARIANT C =========== */
+.vc-serif-d{font-family:'DM Serif Display',Georgia,serif}
+.vc-serif{font-family:'Source Serif 4',Georgia,serif;font-weight:300}
+.vc-micro{font-family:'Barlow',sans-serif;font-weight:300}
+.vc-sans{font-family:'Nunito Sans',sans-serif;font-weight:300}
+
+/* =========== CURRENT (for compare) =========== */
+.vx-serif-d{font-family:'Playfair Display',Georgia,serif}
+.vx-serif{font-family:'Cormorant Garamond',Georgia,serif}
+.vx-micro{font-family:'Josefin Sans',sans-serif;font-weight:300}
+.vx-sans{font-family:'DM Sans',sans-serif;font-weight:300}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Font Preview · Dmytro Bilynets</h1>
+  <div class="tabs">
+    <button class="tab active" onclick="show('a')">A — Refinement</button>
+    <button class="tab" onclick="show('b')">B — Bold Character</button>
+    <button class="tab" onclick="show('c')">C — Minimal Luxury</button>
+  </div>
+</div>
+
+<!-- ==================== VARIANT A ==================== -->
+<div class="variant active" id="va">
+  <div class="v-label">
+    <div class="v-num">A</div>
+    <span class="v-name">Refinement — Fraunces · Lora · Outfit · Inter</span>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-preview">
+    <span class="np-logo va-micro">Dmytro Bilynets</span>
+    <div class="np-links va-micro"><span>Work</span><span>About</span><span>Book</span></div>
+    <span class="np-book va-micro">Reserve →</span>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero-preview">
+    <div class="hp-bg"></div><div class="hp-grad"></div>
+    <div class="hp-c">
+      <div class="hp-pill"><div class="hp-dot"></div><span class="va-micro hp-label" style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:rgba(245,240,232,.6)">The Muse Ink · Den Haag</span></div>
+      <div class="hp-mid">
+        <div class="va-micro hp-label">Microrealism · Private Studio</div>
+        <div class="va-serif-d hp-title">Silence,<em class="va-serif" style="font-family:'Lora',Georgia,serif">in ink.</em></div>
+        <p class="va-sans hp-sub">Each piece designed once.<br/>For one person. For ever.</p>
+      </div>
+      <div class="hp-bot">
+        <div class="va-serif-d hp-name">Dmytro<em class="va-serif" style="font-family:'Lora',Georgia,serif;font-size:.65em">Bilynets</em></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION -->
+  <div class="section-preview">
+    <div class="sp-eyebrow va-micro"><span class="gd">✦</span>Selected Work</div>
+    <h2 class="sp-heading va-serif">The <em>portfolio.</em></h2>
+    <div class="tag-row">
+      <span class="tag va-micro active">All</span>
+      <span class="tag va-micro">Healed</span>
+      <span class="tag va-micro">Fresh</span>
+    </div>
+    <p class="sp-body va-sans">Ukrainian-born microrealism artist based in Den Haag since 2018. Specialising in miniature detail work — insects, botanicals, portraits — each piece is custom designed.</p>
+    <button class="sp-btn va-micro">Reserve a session →</button>
+    <button class="sp-btn-o va-micro">@kaktuz_tattooz</button>
+  </div>
+
+  <!-- TRUST -->
+  <div class="trust-row">
+    <div class="tc"><div class="tc-v va-serif"><em>31K</em></div><div class="tc-l va-micro">Followers</div></div>
+    <div class="tc"><div class="tc-v va-serif"><em>Since</em> 2018</div><div class="tc-l va-micro">Practice</div></div>
+    <div class="tc"><div class="tc-v va-serif">Den Haag</div><div class="tc-l va-micro">The Hague · NL</div></div>
+    <div class="tc"><div class="tc-v va-serif">€150+</div><div class="tc-l va-micro">Starting price</div></div>
+  </div>
+
+  <!-- COMPARE -->
+  <hr class="preview-divider"/>
+  <div style="font-family:'Inter',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:16px">Side-by-side: Current vs Variant A</div>
+  <div class="compare">
+    <div class="ccard">
+      <span class="ccard-label" style="font-family:'Inter',sans-serif">Current (Playfair + Cormorant + Josefin + DM Sans)</span>
+      <div style="font-family:'Josefin Sans',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;font-weight:300">✦ Section Label</div>
+      <div style="font-family:'Playfair Display',serif;font-size:38px;font-weight:700;font-style:italic;color:var(--ink);line-height:.95;margin-bottom:12px">Silence,<br/><span style="font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;font-size:.52em;color:var(--ink-2)">in ink.</span></div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--ink-2);margin-bottom:12px">The portfolio of fine work.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-2);font-weight:300;line-height:1.8">Each piece designed once, for one person, for ever. Private studio in Den Haag.</div>
+    </div>
+    <div class="ccard" style="border-color:var(--gold)">
+      <span class="ccard-label" style="font-family:'Inter',sans-serif;color:var(--gold)">Variant A (Fraunces + Lora + Outfit + Inter)</span>
+      <div class="va-micro" style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">✦ Section Label</div>
+      <div class="va-serif-d" style="font-size:38px;font-weight:700;font-style:italic;color:var(--ink);line-height:.95;margin-bottom:12px">Silence,<br/><span class="va-serif" style="font-weight:300;font-style:italic;font-size:.52em;color:var(--ink-2)">in ink.</span></div>
+      <div class="va-serif" style="font-size:16px;font-style:italic;color:var(--ink-2);margin-bottom:12px">The portfolio of fine work.</div>
+      <div class="va-sans" style="font-size:14px;color:var(--ink-2);line-height:1.8">Each piece designed once, for one person, for ever. Private studio in Den Haag.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== VARIANT B ==================== -->
+<div class="variant" id="vb">
+  <div class="v-label">
+    <div class="v-num">B</div>
+    <span class="v-name">Bold Character — Libre Baskerville · Crimson Pro · Space Grotesk · Plus Jakarta Sans</span>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-preview">
+    <span class="np-logo vb-micro">Dmytro Bilynets</span>
+    <div class="np-links vb-micro"><span>Work</span><span>About</span><span>Book</span></div>
+    <span class="np-book vb-micro">Reserve →</span>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero-preview">
+    <div class="hp-bg"></div><div class="hp-grad"></div>
+    <div class="hp-c">
+      <div class="hp-pill"><div class="hp-dot"></div><span class="vb-micro hp-label" style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:rgba(245,240,232,.6)">The Muse Ink · Den Haag</span></div>
+      <div class="hp-mid">
+        <div class="vb-micro hp-label">Microrealism · Private Studio</div>
+        <div class="vb-serif-d hp-title">Silence,<em class="vb-serif" style="font-family:'Crimson Pro',Georgia,serif">in ink.</em></div>
+        <p class="vb-sans hp-sub">Each piece designed once.<br/>For one person. For ever.</p>
+      </div>
+      <div class="hp-bot">
+        <div class="vb-serif-d hp-name">Dmytro<em class="vb-serif" style="font-family:'Crimson Pro',Georgia,serif;font-size:.65em">Bilynets</em></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION -->
+  <div class="section-preview">
+    <div class="sp-eyebrow vb-micro"><span class="gd">✦</span>Selected Work</div>
+    <h2 class="sp-heading vb-serif">The <em>portfolio.</em></h2>
+    <div class="tag-row">
+      <span class="tag vb-micro active">All</span>
+      <span class="tag vb-micro">Healed</span>
+      <span class="tag vb-micro">Fresh</span>
+    </div>
+    <p class="sp-body vb-sans">Ukrainian-born microrealism artist based in Den Haag since 2018. Specialising in miniature detail work — insects, botanicals, portraits — each piece is custom designed.</p>
+    <button class="sp-btn vb-micro">Reserve a session →</button>
+    <button class="sp-btn-o vb-micro">@kaktuz_tattooz</button>
+  </div>
+
+  <!-- TRUST -->
+  <div class="trust-row">
+    <div class="tc"><div class="tc-v vb-serif"><em>31K</em></div><div class="tc-l vb-micro">Followers</div></div>
+    <div class="tc"><div class="tc-v vb-serif"><em>Since</em> 2018</div><div class="tc-l vb-micro">Practice</div></div>
+    <div class="tc"><div class="tc-v vb-serif">Den Haag</div><div class="tc-l vb-micro">The Hague · NL</div></div>
+    <div class="tc"><div class="tc-v vb-serif">€150+</div><div class="tc-l vb-micro">Starting price</div></div>
+  </div>
+
+  <!-- COMPARE -->
+  <hr class="preview-divider"/>
+  <div style="font-family:'Inter',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:16px">Side-by-side: Current vs Variant B</div>
+  <div class="compare">
+    <div class="ccard">
+      <span class="ccard-label" style="font-family:'Inter',sans-serif">Current (Playfair + Cormorant + Josefin + DM Sans)</span>
+      <div style="font-family:'Josefin Sans',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;font-weight:300">✦ Section Label</div>
+      <div style="font-family:'Playfair Display',serif;font-size:38px;font-weight:700;font-style:italic;color:var(--ink);line-height:.95;margin-bottom:12px">Silence,<br/><span style="font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;font-size:.52em;color:var(--ink-2)">in ink.</span></div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--ink-2);margin-bottom:12px">The portfolio of fine work.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-2);font-weight:300;line-height:1.8">Each piece designed once, for one person, for ever. Private studio in Den Haag.</div>
+    </div>
+    <div class="ccard" style="border-color:var(--gold)">
+      <span class="ccard-label" style="font-family:'Inter',sans-serif;color:var(--gold)">Variant B (Libre Baskerville + Crimson Pro + Space Grotesk + Plus Jakarta)</span>
+      <div class="vb-micro" style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">✦ Section Label</div>
+      <div class="vb-serif-d" style="font-size:38px;font-weight:700;font-style:italic;color:var(--ink);line-height:.95;margin-bottom:12px">Silence,<br/><span class="vb-serif" style="font-weight:300;font-style:italic;font-size:.52em;color:var(--ink-2)">in ink.</span></div>
+      <div class="vb-serif" style="font-size:16px;font-style:italic;color:var(--ink-2);margin-bottom:12px">The portfolio of fine work.</div>
+      <div class="vb-sans" style="font-size:14px;color:var(--ink-2);line-height:1.8">Each piece designed once, for one person, for ever. Private studio in Den Haag.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== VARIANT C ==================== -->
+<div class="variant" id="vc">
+  <div class="v-label">
+    <div class="v-num">C</div>
+    <span class="v-name">Minimal Luxury — DM Serif Display · Source Serif 4 · Barlow · Nunito Sans</span>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-preview">
+    <span class="np-logo vc-micro">Dmytro Bilynets</span>
+    <div class="np-links vc-micro"><span>Work</span><span>About</span><span>Book</span></div>
+    <span class="np-book vc-micro">Reserve →</span>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero-preview">
+    <div class="hp-bg"></div><div class="hp-grad"></div>
+    <div class="hp-c">
+      <div class="hp-pill"><div class="hp-dot"></div><span class="vc-micro hp-label" style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:rgba(245,240,232,.6)">The Muse Ink · Den Haag</span></div>
+      <div class="hp-mid">
+        <div class="vc-micro hp-label">Microrealism · Private Studio</div>
+        <div class="vc-serif-d hp-title">Silence,<em class="vc-serif" style="font-family:'Source Serif 4',Georgia,serif">in ink.</em></div>
+        <p class="vc-sans hp-sub">Each piece designed once.<br/>For one person. For ever.</p>
+      </div>
+      <div class="hp-bot">
+        <div class="vc-serif-d hp-name">Dmytro<em class="vc-serif" style="font-family:'Source Serif 4',Georgia,serif;font-size:.65em">Bilynets</em></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION -->
+  <div class="section-preview">
+    <div class="sp-eyebrow vc-micro"><span class="gd">✦</span>Selected Work</div>
+    <h2 class="sp-heading vc-serif">The <em>portfolio.</em></h2>
+    <div class="tag-row">
+      <span class="tag vc-micro active">All</span>
+      <span class="tag vc-micro">Healed</span>
+      <span class="tag vc-micro">Fresh</span>
+    </div>
+    <p class="sp-body vc-sans">Ukrainian-born microrealism artist based in Den Haag since 2018. Specialising in miniature detail work — insects, botanicals, portraits — each piece is custom designed.</p>
+    <button class="sp-btn vc-micro">Reserve a session →</button>
+    <button class="sp-btn-o vc-micro">@kaktuz_tattooz</button>
+  </div>
+
+  <!-- TRUST -->
+  <div class="trust-row">
+    <div class="tc"><div class="tc-v vc-serif"><em>31K</em></div><div class="tc-l vc-micro">Followers</div></div>
+    <div class="tc"><div class="tc-v vc-serif"><em>Since</em> 2018</div><div class="tc-l vc-micro">Practice</div></div>
+    <div class="tc"><div class="tc-v vc-serif">Den Haag</div><div class="tc-l vc-micro">The Hague · NL</div></div>
+    <div class="tc"><div class="tc-v vc-serif">€150+</div><div class="tc-l vc-micro">Starting price</div></div>
+  </div>
+
+  <!-- COMPARE -->
+  <hr class="preview-divider"/>
+  <div style="font-family:'Inter',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-bottom:16px">Side-by-side: Current vs Variant C</div>
+  <div class="compare">
+    <div class="ccard">
+      <span class="ccard-label" style="font-family:'Inter',sans-serif">Current (Playfair + Cormorant + Josefin + DM Sans)</span>
+      <div style="font-family:'Josefin Sans',sans-serif;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;font-weight:300">✦ Section Label</div>
+      <div style="font-family:'Playfair Display',serif;font-size:38px;font-weight:700;font-style:italic;color:var(--ink);line-height:.95;margin-bottom:12px">Silence,<br/><span style="font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;font-size:.52em;color:var(--ink-2)">in ink.</span></div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--ink-2);margin-bottom:12px">The portfolio of fine work.</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-2);font-weight:300;line-height:1.8">Each piece designed once, for one person, for ever. Private studio in Den Haag.</div>
+    </div>
+    <div class="ccard" style="border-color:var(--gold)">
+      <span class="ccard-label" style="font-family:'Inter',sans-serif;color:var(--gold)">Variant C (DM Serif Display + Source Serif 4 + Barlow + Nunito Sans)</span>
+      <div class="vc-micro" style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">✦ Section Label</div>
+      <div class="vc-serif-d" style="font-size:38px;font-style:italic;color:var(--ink);line-height:.95;margin-bottom:12px">Silence,<br/><span class="vc-serif" style="font-weight:300;font-style:italic;font-size:.52em;color:var(--ink-2)">in ink.</span></div>
+      <div class="vc-serif" style="font-size:16px;font-style:italic;color:var(--ink-2);margin-bottom:12px">The portfolio of fine work.</div>
+      <div class="vc-sans" style="font-size:14px;color:var(--ink-2);line-height:1.8">Each piece designed once, for one person, for ever. Private studio in Den Haag.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(v){
+  document.querySelectorAll('.variant').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('v'+v).classList.add('active');
+  document.querySelectorAll('.tab')[v.charCodeAt(0)-97].classList.add('active');
+}
+</script>
+</body>
+</html>
