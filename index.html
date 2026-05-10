@@ -955,13 +955,11 @@ document.getElementById('mf').addEventListener('submit', async (e) => {
   btn.textContent = 'Sending...';
 
   const formData = new FormData(form);
-  const data = Object.fromEntries(formData.entries());
 
   try {
     const response = await fetch('/.netlify/functions/send-enquiry', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: formData
     });
 
     if (response.ok) {

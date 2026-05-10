@@ -1,0 +1,11 @@
+{
+  "name": "tattoo-dima",
+  "version": "1.0.0",
+  "description": "Tattoo studio website",
+  "dependencies": {
+    "busboy": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
