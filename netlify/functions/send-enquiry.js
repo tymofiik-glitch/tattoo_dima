@@ -82,14 +82,10 @@ exports.handler = async (event) => {
         // 2. Save to Airtable
         const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
         const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
-        if (airtableToken) {
-          console.log(`Token check: starts with ${airtableToken.substring(0, 5)}... ends with ...${airtableToken.substring(airtableToken.length - 5)} (length: ${airtableToken.length})`);
-        }
-        console.log('Airtable env check — token:', !!airtableToken, 'base:', !!airtableBase);
         if (airtableToken && airtableBase) {
           const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
           const budgetMap = { '150-300': '\u20ac150-300', '300-500': '\u20ac300-500', '500+': '\u20ac500+' };
-          const atRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/Enquiries`, {
+          await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -111,10 +107,6 @@ exports.handler = async (event) => {
               }
             })
           });
-          const atData = await atRes.json();
-          console.log('Airtable response:', JSON.stringify(atData));
-        } else {
-          console.log('Airtable skipped — missing env vars');
         }
 
         // 3. Send files if any

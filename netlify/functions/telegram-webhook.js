@@ -7,20 +7,20 @@ function parseField(text, label) {
 
 // Update Airtable record status by Telegram Message ID
 async function updateAirtableStatus(messageId, status, extraFields = {}) {
-  const airtableToken = process.env.AIRTABLE_TOKEN;
-  const airtableBase = process.env.AIRTABLE_BASE_ID;
+  const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+  const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
   if (!airtableToken || !airtableBase) return;
 
   // Find record by Telegram Message ID
   const searchRes = await fetch(
-    `https://api.airtable.com/v0/${airtableBase}/Enquiries?filterByFormula=${encodeURIComponent(`{Telegram Message ID}="${messageId}"`)}`,
+    `https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${encodeURIComponent(`{Telegram Message ID}="${messageId}"`)}`,
     { headers: { 'Authorization': `Bearer ${airtableToken}` } }
   );
   const searchData = await searchRes.json();
   const record = searchData.records?.[0];
   if (!record) return;
 
-  await fetch(`https://api.airtable.com/v0/${airtableBase}/Enquiries/${record.id}`, {
+  await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
