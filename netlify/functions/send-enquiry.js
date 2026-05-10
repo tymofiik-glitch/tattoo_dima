@@ -30,7 +30,7 @@ exports.handler = async (event) => {
 
     busboy.on('finish', async () => {
       try {
-        const { name, email, instagram, idea, size, placement, budget, notes } = fields;
+        const { name, email, instagram, phone, idea, size, placement, budget, notes } = fields;
         const token = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -45,6 +45,7 @@ exports.handler = async (event) => {
 👤 *Client:* ${name}
 📧 *Email:* ${email}
 📸 *Instagram:* ${instagram}
+📱 *Phone:* ${phone}
 
 💡 *Idea:* ${idea}
 📏 *Size:* ${size}
@@ -54,14 +55,25 @@ exports.handler = async (event) => {
 📝 *Notes:* ${notes || 'None'}
         `;
 
-        // 1. Send the text details
+        // 1. Send the text details with buttons
+        const cleanPhone = phone.replace(/\D/g, '');
+        const inlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "💬 Начать чат", callback_data: `chat|${cleanPhone}|${name.substring(0, 20)}` },
+              { text: "❌ Отклонить", callback_data: `reject` }
+            ]
+          ]
+        };
+
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
             text: message,
-            parse_mode: 'Markdown'
+            parse_mode: 'Markdown',
+            reply_markup: inlineKeyboard
           })
         });
 
@@ -70,7 +82,6 @@ exports.handler = async (event) => {
           const formData = new FormData();
           formData.append('chat_id', chatId);
           
-          // Convert buffer to Blob for fetch
           const blob = new Blob([f.content], { type: f.mimeType });
           formData.append('photo', blob, f.filename);
 
