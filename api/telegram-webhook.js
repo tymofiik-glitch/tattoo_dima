@@ -1,133 +1,118 @@
 function extractField(text, label) {
   if (!text) return '';
+  // Очищаем текст от лишних пробелов и скрытых символов
+  const cleanText = text.replace(/\*/g, '');
   const regex = new RegExp(`${label}:\\s*(.*)`, 'i');
-  const match = text.match(regex);
-  if (match) return match[1].replace(/\*/g, '').trim();
-  return '';
+  const match = cleanText.match(regex);
+  return match ? match[1].trim() : '';
 }
 
 async function createAirtableLead(messageText, messageId) {
-  console.log('--- STARTING AIRTABLE CREATE ---');
+  console.log('--- ATTEMPTING AIRTABLE WRITE ---');
   const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
   const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
   
+  // Берем только самое важное для теста
   const fields = {
-    Name: extractField(messageText, 'CLIENT') || 'Unknown',
-    Email: extractField(messageText, 'EMAIL'),
-    Instagram: extractField(messageText, 'IG'),
-    Phone: extractField(messageText, 'PHONE'),
-    Idea: extractField(messageText, 'IDEA'),
-    Size: extractField(messageText, 'SIZE'),
-    Placement: extractField(messageText, 'PLACE'),
-    Budget: extractField(messageText, 'BUDGET'),
-    Notes: extractField(messageText, 'NOTES'),
-    Status: '💬 In Progress',
-    'Telegram Message ID': String(messageId || '')
+    "Name": extractField(messageText, 'CLIENT') || 'New Lead',
+    "Phone": extractField(messageText, 'PHONE') || '000',
+    "Email": extractField(messageText, 'EMAIL'),
+    "Instagram": extractField(messageText, 'IG'),
+    "Idea": extractField(messageText, 'IDEA'),
+    "Size": extractField(messageText, 'SIZE'),
+    "Placement": extractField(messageText, 'PLACE'),
+    "Budget": extractField(messageText, 'BUDGET'),
+    "Notes": extractField(messageText, 'NOTES'),
+    "Status": '💬 In Progress',
+    "Telegram Message ID": String(messageId || '')
   };
 
-  console.log('Airtable Payload:', JSON.stringify(fields));
+  console.log('Sending fields to Airtable:', JSON.stringify(fields));
 
-  try {
-    const res = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${airtableToken}`
-      },
-      body: JSON.stringify({ fields })
-    });
-    const data = await res.json();
-    console.log('Airtable Response:', res.status, JSON.stringify(data));
-    return res.ok;
-  } catch (e) {
-    console.error('Airtable Fetch Error:', e.message);
-    return false;
-  }
+  const response = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${airtableToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ fields })
+  });
+
+  const result = await response.json();
+  console.log('Airtable Status:', response.status);
+  console.log('Airtable Result:', JSON.stringify(result));
+
+  return response.ok;
 }
 
 module.exports = async (req, res) => {
-  console.log('--- WEBHOOK REQUEST RECEIVED ---');
+  console.log('Webhook triggered');
   
-  // Telegram needs 200 OK fast
-  try {
-    const body = req.body;
-    const token = process.env.TELEGRAM_BOT_TOKEN;
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch(e) { console.error('JSON Parse Error'); }
+  }
 
-    if (!body || !body.callback_query) {
-      console.log('No callback query in body');
-      return res.status(200).json({ ok: true });
-    }
+  const token = process.env.TELEGRAM_BOT_TOKEN;
 
-    const { id, data, message } = body.callback_query;
-    const chatId = message.chat.id;
-    const messageId = message.message_id;
-    const messageText = message.text || message.caption || '';
+  if (!body || !body.callback_query) {
+    return res.status(200).send('No callback');
+  }
 
-    console.log('Callback Data:', data);
-    console.log('Message Text Snippet:', messageText.substring(0, 50));
+  const { id, data, message } = body.callback_query;
+  const chatId = message.chat.id;
+  const messageId = message.message_id;
+  const messageText = message.text || message.caption || '';
 
-    // Answer immediately to stop the spinner
-    await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ callback_query_id: id })
-    }).catch(e => console.error('Error answering callback:', e.message));
+  // 1. Сразу отвечаем Телеграму
+  await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ callback_query_id: id })
+  }).catch(() => {});
 
-    if (data.startsWith('chat|')) {
-      console.log('Handling Start Chat...');
-      const parts = data.split('|');
-      const phone = parts[1] || '0';
-      const name = parts[2] || 'Client';
-      
-      const success = await createAirtableLead(messageText, messageId);
+  if (data.startsWith('chat|')) {
+    console.log('Processing chat| data');
+    const parts = data.split('|');
+    const phone = parts[1] || '';
+    const name = parts[2] || '';
 
-      if (success) {
-        console.log('Airtable success, sending confirmation messages...');
-        const igHandle = extractField(messageText, 'IG').replace('@', '');
-        const waLink = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
-        const igLink = igHandle ? `https://instagram.com/${igHandle}` : null;
+    const success = await createAirtableLead(messageText, messageId);
 
-        const inline_keyboard = [[{ text: '📱 WhatsApp', url: waLink }]];
-        if (igLink) inline_keyboard[0].push({ text: '📸 Instagram', url: igLink });
-        inline_keyboard.push([{ text: '💳 Issue Deposit', callback_data: `deposit|${phone}|${name}` }]);
+    if (success) {
+      const waLink = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
+      const igHandle = extractField(messageText, 'IG').replace('@', '');
+      const igLink = igHandle ? `https://instagram.com/${igHandle}` : null;
 
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: `✅ *Lead Saved!* Data is in Airtable.\nReady to contact *${name}*?`,
-            parse_mode: 'Markdown',
-            reply_markup: { inline_keyboard }
-          })
-        });
+      const inline_keyboard = [[{ text: '📱 WhatsApp', url: waLink }]];
+      if (igLink) inline_keyboard[0].push({ text: '📸 Instagram', url: igLink });
+      inline_keyboard.push([{ text: '💳 Issue Deposit', callback_data: `deposit|${phone}|${name}` }]);
 
-        // Hide original buttons
-        await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } })
-        }).catch(() => {});
-      } else {
-        console.log('Airtable failed, notifying user...');
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text: '⚠️ Failed to save to Airtable. Check Vercel logs.' })
-        });
-      }
-    } else if (data === 'reject') {
-      console.log('Handling Reject...');
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text: '❌ Rejected.' })
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `✅ *Success!* Lead saved to CRM.\nReady to contact *${name}*?`,
+          parse_mode: 'Markdown',
+          reply_markup: { inline_keyboard }
+        })
+      });
+
+      // Убираем кнопку Start Chat
+      await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } })
+      }).catch(() => {});
+    } else {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: '❌ Error saving to Airtable. Check logs.' })
       });
     }
-
-    return res.status(200).json({ ok: true });
-  } catch (error) {
-    console.error('CRITICAL WEBHOOK ERROR:', error.stack);
-    return res.status(200).json({ error: error.message });
   }
+
+  return res.status(200).send('OK');
 };
