@@ -1,16 +1,18 @@
 const Busboy = require('busboy');
 
 module.exports = async (req, res) => {
+    console.log('--- ENQUIRY REQUEST RECEIVED ---');
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
         const fields = {};
         const fileUploads = [];
-        const busboy = Busboy({ headers: req.headers });
-
+        
+        // Use promise to handle busboy
         await new Promise((resolve, reject) => {
-            busboy.on('field', (fieldname, val) => { fields[fieldname] = val; });
-            busboy.on('file', (fieldname, file, { filename, mimeType }) => {
+            const busboy = Busboy({ headers: req.headers });
+            busboy.on('field', (name, val) => { fields[name] = val; });
+            busboy.on('file', (name, file, { filename, mimeType }) => {
                 const chunks = [];
                 file.on('data', (d) => chunks.push(d));
                 file.on('end', () => {
@@ -24,8 +26,12 @@ module.exports = async (req, res) => {
             req.pipe(busboy);
         });
 
+        console.log('Parsed fields:', Object.keys(fields));
+
         const token = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
+
+        if (!token || !chatId) throw new Error('Telegram credentials missing');
 
         const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
         const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
@@ -35,57 +41,52 @@ module.exports = async (req, res) => {
         const messageText = `
 ✨ *NEW TATTOO ENQUIRY* ✨
 ━━━━━━━━━━━━━━━━━━
-👤 *CLIENT:* ${fields.name}
-📧 *EMAIL:* ${fields.email}
-📸 *IG:* ${fields.instagram}
-📞 *PHONE:* ${fields.phone}
+👤 *CLIENT:* ${fields.name || 'N/A'}
+📧 *EMAIL:* ${fields.email || 'N/A'}
+📸 *IG:* ${fields.instagram || 'N/A'}
+📞 *PHONE:* ${fields.phone || 'N/A'}
 
 🖼️ *TATTOO DETAILS*
 📐 *SIZE:* ${displaySize}
-📍 *PLACE:* ${fields.placement}
+📍 *PLACE:* ${fields.placement || 'N/A'}
 💰 *BUDGET:* ${displayBudget}
 
 📝 *IDEA:*
-${fields.idea}
+${fields.idea || 'N/A'}
 
 📓 *NOTES:*
-${fields.notes || 'No additional notes'}
+${fields.notes || 'None'}
 ━━━━━━━━━━━━━━━━━━
         `.trim();
 
         const keyboard = {
             inline_keyboard: [[
-                { text: '💬 Start Chat', callback_data: `chat|${fields.phone}|${fields.name}` },
+                { text: '💬 Start Chat', callback_data: `chat|${fields.phone || '0'}|${fields.name || 'Client'}` },
                 { text: '❌ Reject', callback_data: 'reject' }
             ]]
         };
 
-        if (token && chatId) {
-            let tgMessageId = '';
-            if (fileUploads.length > 0) {
-                const formData = new FormData();
-                formData.append('chat_id', chatId);
-                formData.append('photo', new Blob([fileUploads[0].content], { type: fileUploads[0].contentType }), fileUploads[0].filename);
-                formData.append('caption', messageText);
-                formData.append('parse_mode', 'Markdown');
-                formData.append('reply_markup', JSON.stringify(keyboard));
+        // Send to Telegram
+        if (fileUploads.length > 0) {
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('photo', new Blob([fileUploads[0].content], { type: fileUploads[0].contentType }), fileUploads[0].filename);
+            formData.append('caption', messageText);
+            formData.append('parse_mode', 'Markdown');
+            formData.append('reply_markup', JSON.stringify(keyboard));
 
-                const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
-                const tgData = await tgRes.json();
-                tgMessageId = tgData.result?.message_id?.toString() || '';
-            } else {
-                const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: 'Markdown', reply_markup: keyboard })
-                });
-                const tgData = await tgRes.json();
-                tgMessageId = tgData.result?.message_id?.toString() || '';
-            }
+            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
+        } else {
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: 'Markdown', reply_markup: keyboard })
+            });
         }
 
-        return res.status(200).json({ message: 'Success' });
+        return res.status(200).json({ success: true });
     } catch (error) {
+        console.error('SERVER ERROR:', error.message);
         return res.status(500).json({ error: error.message });
     }
 };
