@@ -1,28 +1,19 @@
 function extractField(text, label) {
-  // Ищем метку, игнорируя символы вроде * или эмодзи вокруг неё
   const regex = new RegExp(`${label}:\\s*(.*)`, 'i');
   const match = text.match(regex);
-  if (match) {
-    // Убираем возможные оставшиеся звездочки в конце значения
-    return match[1].replace(/\*/g, '').trim();
-  }
+  if (match) return match[1].replace(/\*/g, '').trim();
   return '';
 }
 
 async function createAirtableLead(messageText, messageId) {
-  console.log('--- CREATING AIRTABLE LEAD ---');
   const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
   const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
-  
-  if (!airtableToken || !airtableBase) {
-    console.error('Airtable credentials missing');
-    return;
-  }
+  if (!airtableToken || !airtableBase) return;
 
   const fields = {
     Name: extractField(messageText, 'CLIENT'),
     Email: extractField(messageText, 'EMAIL'),
-    Instagram: extractField(messageText, 'IG'),
+    Instagram: extractField(messageText, 'IG'), // В сообщении IG, в базе Instagram
     Phone: extractField(messageText, 'PHONE'),
     Idea: extractField(messageText, 'IDEA'),
     Size: extractField(messageText, 'SIZE'),
@@ -30,13 +21,10 @@ async function createAirtableLead(messageText, messageId) {
     Budget: extractField(messageText, 'BUDGET'),
     Notes: extractField(messageText, 'NOTES'),
     Status: '💬 In Progress',
-    'Telegram Message ID': String(messageId || ''),
-    'Telegram Link': `tg://openmessage?user_id=${process.env.TELEGRAM_CHAT_ID}&message_id=${messageId}`
+    'Telegram Message ID': String(messageId || '')
   };
 
-  console.log('Parsed fields:', JSON.stringify(fields));
-
-  const res = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
+  await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -44,17 +32,10 @@ async function createAirtableLead(messageText, messageId) {
     },
     body: JSON.stringify({ fields })
   });
-
-  const data = await res.json();
-  if (!res.ok) {
-    console.error('Airtable Error:', JSON.stringify(data));
-  } else {
-    console.log('Airtable Success:', data.id);
-  }
 }
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+  if (req.method !== 'POST') return res.status(200).send('OK');
 
   try {
     const body = req.body;
@@ -75,7 +56,6 @@ module.exports = async (req, res) => {
       if (data.startsWith('chat|')) {
         const [_, phone, name] = data.split('|');
         
-        // Попытка создать лид
         await createAirtableLead(messageText, messageId);
 
         const waLink = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
@@ -105,7 +85,6 @@ module.exports = async (req, res) => {
     }
     return res.status(200).send('OK');
   } catch (error) {
-    console.error('Webhook Runtime Error:', error);
-    return res.status(500).send('Error');
+    return res.status(200).send('OK'); // Always return OK to TG
   }
 };
