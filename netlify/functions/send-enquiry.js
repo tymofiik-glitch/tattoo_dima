@@ -82,10 +82,11 @@ exports.handler = async (event) => {
         // 2. Save to Airtable
         const airtableToken = process.env.AIRTABLE_TOKEN;
         const airtableBase = process.env.AIRTABLE_BASE_ID;
+        console.log('Airtable env check — token:', !!airtableToken, 'base:', !!airtableBase);
         if (airtableToken && airtableBase) {
-          const sizeMap = { xs: 'XS — under 5cm', s: 'S — 5–10cm', m: 'M — 10–15cm', l: 'L — 15cm+' };
-          const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
-          await fetch(`https://api.airtable.com/v0/${airtableBase}/Enquiries`, {
+          const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
+          const budgetMap = { '150-300': '\u20ac150-300', '300-500': '\u20ac300-500', '500+': '\u20ac500+' };
+          const atRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/Enquiries`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -102,11 +103,15 @@ exports.handler = async (event) => {
                 Placement: placement || '',
                 Budget: budgetMap[budget] || budget || '',
                 Notes: notes || '',
-                Status: '🆕 New',
+                Status: '\ud83c\udd95 New',
                 'Telegram Message ID': tgMessageId
               }
             })
           });
+          const atData = await atRes.json();
+          console.log('Airtable response:', JSON.stringify(atData));
+        } else {
+          console.log('Airtable skipped — missing env vars');
         }
 
         // 3. Send files if any
