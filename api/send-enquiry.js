@@ -26,7 +26,6 @@ module.exports = async (req, res) => {
 
         const token = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
-        let tgMessageId = '';
 
         const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
         const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
@@ -62,6 +61,7 @@ ${fields.notes || 'No additional notes'}
         };
 
         if (token && chatId) {
+            let tgMessageId = '';
             if (fileUploads.length > 0) {
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
@@ -73,15 +73,6 @@ ${fields.notes || 'No additional notes'}
                 const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
                 const tgData = await tgRes.json();
                 tgMessageId = tgData.result?.message_id?.toString() || '';
-                
-                // Send extra photos if any
-                for (let i = 1; i < fileUploads.length; i++) {
-                    const extraFd = new FormData();
-                    extraFd.append('chat_id', chatId);
-                    extraFd.append('photo', new Blob([fileUploads[i].content], { type: fileUploads[i].contentType }), fileUploads[i].filename);
-                    extraFd.append('reply_to_message_id', tgMessageId);
-                    await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: extraFd });
-                }
             } else {
                 const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                     method: 'POST',
@@ -93,38 +84,8 @@ ${fields.notes || 'No additional notes'}
             }
         }
 
-        // 2. Save to Airtable
-        const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
-        const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
-        if (airtableToken && airtableBase) {
-            // Link to the telegram chat (simplified)
-            const tgLink = `tg://openmessage?user_id=${chatId}&message_id=${tgMessageId}`;
-
-            await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${airtableToken}` },
-                body: JSON.stringify({
-                    fields: {
-                        Name: String(fields.name || ''),
-                        Email: String(fields.email || ''),
-                        Instagram: String(fields.instagram || ''),
-                        Phone: String(fields.phone || ''),
-                        Idea: String(fields.idea || ''),
-                        Size: String(sizeMap[fields.size] || fields.size || ''),
-                        Placement: String(fields.placement || ''),
-                        Budget: String(budgetMap[fields.budget] || fields.budget || ''),
-                        Notes: String(fields.notes || ''),
-                        Status: '🆕 New',
-                        'Telegram Message ID': String(tgMessageId || ''),
-                        'Telegram Link': tgLink
-                    }
-                })
-            });
-        }
-
         return res.status(200).json({ message: 'Success' });
     } catch (error) {
-        console.error('Final Error:', error);
         return res.status(500).json({ error: error.message });
     }
 };
