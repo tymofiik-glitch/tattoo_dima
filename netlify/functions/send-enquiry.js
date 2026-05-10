@@ -56,7 +56,7 @@ exports.handler = async (event) => {
         `;
 
         // 1. Send the text details with buttons
-        const cleanPhone = phone.replace(/\D/g, '');
+        const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
         const inlineKeyboard = {
           inline_keyboard: [
             [
@@ -66,7 +66,7 @@ exports.handler = async (event) => {
           ]
         };
 
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -76,8 +76,40 @@ exports.handler = async (event) => {
             reply_markup: inlineKeyboard
           })
         });
+        const tgData = await tgRes.json();
+        const tgMessageId = tgData.result?.message_id?.toString() || '';
 
-        // 2. Send files if any
+        // 2. Save to Airtable
+        const airtableToken = process.env.AIRTABLE_TOKEN;
+        const airtableBase = process.env.AIRTABLE_BASE_ID;
+        if (airtableToken && airtableBase) {
+          const sizeMap = { xs: 'XS — under 5cm', s: 'S — 5–10cm', m: 'M — 10–15cm', l: 'L — 15cm+' };
+          const budgetMap = { '150-300': '€150-300', '300-500': '€300-500', '500+': '€500+' };
+          await fetch(`https://api.airtable.com/v0/${airtableBase}/Enquiries`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${airtableToken}`
+            },
+            body: JSON.stringify({
+              fields: {
+                Name: name || '',
+                Email: email || '',
+                Instagram: instagram || '',
+                Phone: phone || '',
+                Idea: idea || '',
+                Size: sizeMap[size] || size || '',
+                Placement: placement || '',
+                Budget: budgetMap[budget] || budget || '',
+                Notes: notes || '',
+                Status: '🆕 New',
+                'Telegram Message ID': tgMessageId
+              }
+            })
+          });
+        }
+
+        // 3. Send files if any
         for (const f of files) {
           const formData = new FormData();
           formData.append('chat_id', chatId);

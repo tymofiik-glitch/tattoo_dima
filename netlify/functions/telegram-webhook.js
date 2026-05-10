@@ -5,6 +5,31 @@ function parseField(text, label) {
   return match ? match[1].trim() : '';
 }
 
+// Update Airtable record status by Telegram Message ID
+async function updateAirtableStatus(messageId, status, extraFields = {}) {
+  const airtableToken = process.env.AIRTABLE_TOKEN;
+  const airtableBase = process.env.AIRTABLE_BASE_ID;
+  if (!airtableToken || !airtableBase) return;
+
+  // Find record by Telegram Message ID
+  const searchRes = await fetch(
+    `https://api.airtable.com/v0/${airtableBase}/Enquiries?filterByFormula=${encodeURIComponent(`{Telegram Message ID}="${messageId}"`)}`,
+    { headers: { 'Authorization': `Bearer ${airtableToken}` } }
+  );
+  const searchData = await searchRes.json();
+  const record = searchData.records?.[0];
+  if (!record) return;
+
+  await fetch(`https://api.airtable.com/v0/${airtableBase}/Enquiries/${record.id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${airtableToken}`
+    },
+    body: JSON.stringify({ fields: { Status: status, ...extraFields } })
+  });
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -47,7 +72,7 @@ exports.handler = async (event) => {
         // Evolve buttons: Chat → Deposit
         const updatedKeyboard = {
           inline_keyboard: [[
-            { text: '💳 Сгенерировать депозит', callback_data: `deposit|${phone}|${name}` },
+            { text: '💳 Выставить депозит', callback_data: `deposit|${phone}|${name}` },
             { text: '❌ Отклонить', callback_data: 'reject' }
           ]]
         };
@@ -58,24 +83,29 @@ exports.handler = async (event) => {
           body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: updatedKeyboard })
         });
 
+        // Update Airtable status
+        await updateAirtableStatus(messageId.toString(), '💬 In Progress');
+
       // --- REJECT BUTTON ---
       } else if (data === 'reject') {
-        // Extract client data from the original message text
         const clientEmail = parseField(originalText, 'Email');
         const clientName  = parseField(originalText, 'Client');
 
-        // 1. Update the Telegram message to mark as rejected
+        // Update Telegram message
         await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
             message_id: messageId,
-            text: originalText + '\n\n❌ Заявка отклонена. Письмо клиенту отправлено.',
+            text: originalText + '\n\n❌ Заявка отклонена. Письмо клиенту отправлено.'
           })
         });
 
-        // 2. Send polite rejection email via Resend
+        // Update Airtable status
+        await updateAirtableStatus(messageId.toString(), '❌ Rejected');
+
+        // Send rejection email via Resend
         if (resendKey && clientEmail) {
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
@@ -108,14 +138,19 @@ exports.handler = async (event) => {
       } else if (data.startsWith('deposit|')) {
         const [_, phone, name] = data.split('|');
         // Placeholder — will be replaced with Mollie API integration
+        const depositLink = `https://themuseink.com/deposit?client=${encodeURIComponent(name)}`;
+
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `💳 Ссылка на депозит для ${name} (50€):\nhttps://themuseink.com/deposit?client=${encodeURIComponent(name)}`
+            text: `💳 Ссылка на депозит для ${name} (€50):\n${depositLink}\n\nСкопируй и отправь клиенту в WhatsApp.`
           })
         });
+
+        // Update Airtable status
+        await updateAirtableStatus(messageId.toString(), '💳 Awaiting Deposit', { 'Deposit Link': depositLink });
       }
     }
 
