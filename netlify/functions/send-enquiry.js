@@ -84,45 +84,48 @@ exports.handler = async (event) => {
         const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
         
         if (airtableToken && airtableBase) {
-          console.log('Sending to Airtable...');
+          console.log('Fields received from form:', JSON.stringify(fields));
           const sizeMap = { xs: 'XS \u2014 under 5cm', s: 'S \u2014 5\u201310cm', m: 'M \u2014 10\u201315cm', l: 'L \u2014 15cm+' };
           const budgetMap = { '150-300': '\u20ac150-300', '300-500': '\u20ac300-500', '500+': '\u20ac500+' };
           
           try {
+            const payload = {
+              fields: {
+                Name: String(fields.name || ''),
+                Email: String(fields.email || ''),
+                Instagram: String(fields.instagram || ''),
+                Phone: String(fields.phone || ''),
+                Idea: String(fields.idea || ''),
+                Size: String(sizeMap[fields.size] || fields.size || ''),
+                Placement: String(fields.placement || ''),
+                Budget: String(budgetMap[fields.budget] || fields.budget || ''),
+                Notes: String(fields.notes || ''),
+                Status: '\ud83c\udd95 New',
+                'Telegram Message ID': String(tgMessageId || '')
+              }
+            };
+            console.log('Sending payload to Airtable:', JSON.stringify(payload));
+
             const atRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${airtableToken}`
               },
-              body: JSON.stringify({
-                fields: {
-                  Name: name || '',
-                  Email: email || '',
-                  Instagram: instagram || '',
-                  Phone: phone || '',
-                  Idea: idea || '',
-                  Size: sizeMap[size] || size || '',
-                  Placement: placement || '',
-                  Budget: budgetMap[budget] || budget || '',
-                  Notes: notes || '',
-                  Status: '\ud83c\udd95 New',
-                  'Telegram Message ID': tgMessageId
-                }
-              })
+              body: JSON.stringify(payload)
             });
             
             const atData = await atRes.json();
             if (!atRes.ok) {
               console.error('Airtable Error Response:', JSON.stringify(atData));
             } else {
-              console.log('Airtable Success:', atData.id);
+              console.log('Airtable Success. Record ID:', atData.id);
             }
           } catch (atErr) {
-            console.error('Airtable Network Error:', atErr.message);
+            console.error('Airtable Network/General Error:', atErr.message);
           }
         } else {
-          console.error('Airtable Skipped: Missing Credentials in env vars');
+          console.error('Airtable Skipped: Missing Credentials');
         }
 
         // 3. Send files if any
