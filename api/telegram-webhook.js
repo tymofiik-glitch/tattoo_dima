@@ -128,28 +128,29 @@ module.exports = async (req, res) => {
     };
 
     const statusMsg = ok 
-      ? `✅ *Всё чётко!*\nВсе данные клиента *${name}* успешно перенесены в таблицу Airtable.`
-      : `⚠️ *Проблема с таблицей!*\nНе удалось сохранить данные в Airtable (возможно, не заполнено обязательное поле).`;
+      ? `✅ *Всё чётко!*\nДанные клиента *${name}* перенесены в таблицу.`
+      : `⚠️ *Проблема!*\nНе удалось сохранить в Airtable.`;
 
+    // 1. Отправляем короткий статус ответом на оригинальное сообщение
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `${statusMsg}\n\nВыберите способ связи с клиентом:`,
+        text: statusMsg,
         parse_mode: 'Markdown',
-        reply_markup: keyboard
+        reply_to_message_id: msgId
       })
     });
 
-    // Скрываем кнопки Start Chat / Reject на оригинальном сообщении
+    // 2. Меняем кнопки на оригинальном сообщении (привязываем пункт управления к нему)
     await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
         message_id: msgId,
-        reply_markup: { inline_keyboard: [] }
+        reply_markup: keyboard
       })
     }).catch(() => {});
 
