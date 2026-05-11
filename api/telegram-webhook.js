@@ -113,53 +113,45 @@ module.exports = async (req, res) => {
 
     const ok = await createAirtableLead(msgText, msgId, chatId);
 
-    if (ok) {
-      const wa   = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
-      const igRaw = extractField(msgText, 'IG').replace('@', '');
-      const ig   = igRaw ? `https://instagram.com/${igRaw}` : null;
+    const wa   = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
+    const igRaw = extractField(msgText, 'IG').replace('@', '');
+    const ig   = igRaw ? `https://instagram.com/${igRaw}` : null;
 
-      const keyboard = {
-        inline_keyboard: [
-          [
-            { text: '📱 WhatsApp', url: wa },
-            ...(ig ? [{ text: '📸 Instagram', url: ig }] : [])
-          ],
-          [{ text: '💳 Issue Deposit', callback_data: `deposit|${phone}|${name}` }]
-        ]
-      };
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '📱 WhatsApp', url: wa },
+          ...(ig ? [{ text: '📸 Instagram', url: ig }] : [])
+        ],
+        [{ text: '💳 Выставить депозит', callback_data: `deposit|${phone}|${name}` }]
+      ]
+    };
 
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: `✅ *Lead saved to Airtable!*\n\nClient: *${name}*\nPhone: ${phone}\n\nReady to contact?`,
-          parse_mode: 'Markdown',
-          reply_markup: keyboard
-        })
-      });
+    const statusMsg = ok 
+      ? `✅ *Всё чётко!*\nВсе данные клиента *${name}* успешно перенесены в таблицу Airtable.`
+      : `⚠️ *Проблема с таблицей!*\nНе удалось сохранить данные в Airtable (возможно, не заполнено обязательное поле).`;
 
-      // Скрываем кнопки Start Chat / Reject на оригинальном сообщении
-      await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          message_id: msgId,
-          reply_markup: { inline_keyboard: [] }
-        })
-      }).catch(() => {});
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `${statusMsg}\n\nВыберите способ связи с клиентом:`,
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      })
+    });
 
-    } else {
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: '❌ Failed to save to Airtable. Check Vercel logs.'
-        })
-      });
-    }
+    // Скрываем кнопки Start Chat / Reject на оригинальном сообщении
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: msgId,
+        reply_markup: { inline_keyboard: [] }
+      })
+    }).catch(() => {});
 
   } else if (data === 'reject') {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
