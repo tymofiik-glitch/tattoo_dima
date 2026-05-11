@@ -52,7 +52,7 @@ async function createAirtableLead(messageText, messageId, chatId) {
     'Notes':                extractField(messageText, 'NOTES'),
     'Status':               '💬 In Progress',
     'Telegram Message ID':  String(messageId || ''),
-    'Telegram Link':        telegramLink
+    'Telegram Chat Link':   telegramLink
   };
 
   console.log('Fields to write:', JSON.stringify(fields));
