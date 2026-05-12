@@ -123,7 +123,7 @@ module.exports = async (req, res) => {
           { text: '📱 WhatsApp', url: wa },
           ...(ig ? [{ text: '📸 Instagram', url: ig }] : [])
         ],
-        [{ text: '💳 Выставить депозит', callback_data: `deposit|${phone}|${name}` }]
+        [{ text: '💳 Ссылка на депозит', url: `https://tattoodima.com/deposit?name=${encodeURIComponent(name)}&email=${encodeURIComponent(extractField(msgText, 'EMAIL') || '')}` }]
       ]
     };
 

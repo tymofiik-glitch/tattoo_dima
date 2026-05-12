@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Secure your spot · Dmytro Bilynets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:#0d0b07;
+  color:#f5f0e8;
+  font-family:'Source Serif 4',Georgia,serif;
+  font-weight:300;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:clamp(24px,5vw,60px) 20px;
+  position:relative;
+  overflow-x:hidden;
+}
+
+/* Background texture */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity:.07;mix-blend-mode:screen;pointer-events:none;z-index:0;
+}
+
+/* Studio bg image hint */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(184,149,106,.06),transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+.page{
+  position:relative;z-index:1;
+  width:100%;max-width:460px;
+  display:flex;flex-direction:column;
+  align-items:center;
+  gap:0;
+}
+
+/* Logo top */
+.logo{
+  font-family:'Fraunces',Georgia,serif;
+  font-style:italic;font-weight:700;
+  font-size:clamp(18px,3vw,24px);
+  color:rgba(245,240,232,.7);
+  letter-spacing:-.01em;
+  margin-bottom:clamp(40px,7vh,64px);
+  text-align:center;
+}
+.logo span{
+  display:block;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-style:italic;font-weight:300;
+  font-size:.55em;
+  color:var(--gold);
+  letter-spacing:.04em;
+  margin-top:4px;
+}
+:root{--gold:#b8956a;--olive:#2d3d28;--rule:rgba(245,240,232,.1)}
+
+/* Eyebrow */
+.eyebrow{
+  font-family:'Inter',sans-serif;
+  font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:12px;
+}
+
+/* Main heading */
+h1{
+  font-family:'Fraunces',Georgia,serif;
+  font-style:italic;font-weight:700;
+  font-size:clamp(36px,7vw,56px);
+  line-height:.95;letter-spacing:-.02em;
+  color:#f5f0e8;
+  text-align:center;
+  margin-bottom:clamp(32px,5vh,48px);
+  font-optical-sizing:auto;
+}
+h1 em{
+  display:block;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-weight:300;font-style:italic;
+  font-size:.52em;color:rgba(245,240,232,.45);
+  letter-spacing:.05em;margin-top:.3em;
+}
+
+/* Card */
+.card{
+  width:100%;
+  border:.5px solid rgba(245,240,232,.12);
+  background:rgba(245,240,232,.04);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  padding:clamp(24px,4vw,36px);
+  margin-bottom:clamp(20px,3vh,28px);
+}
+
+.card-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:14px 0;
+  border-bottom:.5px solid rgba(245,240,232,.08);
+}
+.card-row:last-child{border-bottom:none;padding-bottom:0}
+.card-row:first-child{padding-top:0}
+
+.card-label{
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(245,240,232,.35);
+}
+.card-value{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-style:italic;font-size:18px;
+  color:rgba(245,240,232,.85);
+  text-align:right;max-width:60%;
+}
+.card-value.amount{
+  font-family:'Fraunces',Georgia,serif;
+  font-weight:700;font-style:italic;
+  font-size:28px;color:#f5f0e8;
+  font-optical-sizing:auto;
+}
+
+/* Disclaimer */
+.disclaimer{
+  font-family:'Source Serif 4',Georgia,serif;
+  font-size:11px;line-height:1.8;
+  color:rgba(245,240,232,.3);
+  text-align:center;
+  max-width:36ch;
+  margin-bottom:clamp(28px,4vh,40px);
+  letter-spacing:.02em;
+}
+
+/* Pay button */
+.pay-btn{
+  width:100%;
+  padding:18px 32px;
+  background:var(--olive);
+  color:#f5f0e8;
+  border:none;cursor:pointer;
+  font-family:'Inter',sans-serif;
+  font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+  font-weight:400;
+  transition:background .25s,transform .2s,box-shadow .25s;
+  box-shadow:0 6px 28px -6px rgba(45,61,40,.5);
+  margin-bottom:clamp(32px,5vh,48px);
+  position:relative;
+  overflow:hidden;
+}
+.pay-btn::after{
+  content:'';
+  position:absolute;inset:0;
+  background:rgba(245,240,232,0);
+  transition:background .2s;
+}
+.pay-btn:hover{
+  background:#1e2c1a;
+  transform:translateY(-1px);
+  box-shadow:0 10px 36px -6px rgba(45,61,40,.65);
+}
+.pay-btn:active{transform:translateY(0)}
+
+/* Divider */
+.divider{
+  display:flex;align-items:center;gap:16px;
+  width:100%;margin-bottom:clamp(20px,3vh,28px);
+}
+.divider-line{flex:1;height:.5px;background:rgba(245,240,232,.08)}
+.divider-star{color:var(--gold);font-size:12px;letter-spacing:6px;opacity:.6}
+
+/* Payment methods */
+.payment-methods{
+  display:flex;align-items:center;justify-content:center;
+  gap:16px;flex-wrap:wrap;
+  margin-bottom:clamp(28px,4vh,40px);
+}
+.pm{
+  height:24px;
+  display:flex;align-items:center;justify-content:center;
+  opacity:.4;transition:opacity .2s;
+}
+.pm:hover{opacity:.65}
+.pm svg{height:100%;width:auto}
+
+/* Security note */
+.security{
+  display:flex;align-items:center;gap:8px;
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(245,240,232,.2);
+  margin-bottom:clamp(24px,4vh,36px);
+}
+.security svg{opacity:.4;flex-shrink:0}
+
+/* Footer brand */
+.footer-brand{
+  font-family:'Inter',sans-serif;
+  font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(245,240,232,.15);
+  text-align:center;
+}
+
+/* Success state */
+.success-overlay{
+  display:none;
+  position:fixed;inset:0;z-index:100;
+  background:#0d0b07;
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:40px;text-align:center;
+}
+.success-overlay.show{display:flex}
+.success-star{font-size:36px;color:var(--gold);margin-bottom:8px}
+.success-title{
+  font-family:'Fraunces',Georgia,serif;
+  font-style:italic;font-weight:700;
+  font-size:clamp(32px,6vw,48px);
+  color:#f5f0e8;line-height:.95;
+  font-optical-sizing:auto;
+}
+.success-title em{
+  display:block;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-weight:300;font-size:.55em;
+  color:rgba(245,240,232,.45);margin-top:.3em;
+}
+.success-note{
+  font-size:13px;color:rgba(245,240,232,.45);
+  line-height:1.9;max-width:34ch;
+  margin-top:8px;
+}
+
+@media(max-width:480px){
+  .card-value{font-size:16px}
+  .card-value.amount{font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Logo -->
+  <div class="logo">
+    Dmytro Bilynets
+    <span>The Muse Ink · Den Haag</span>
+  </div>
+
+  <!-- Eyebrow -->
+  <div class="eyebrow">Deposit Payment</div>
+
+  <!-- Heading -->
+  <h1>Secure your<em>spot.</em></h1>
+
+  <!-- Details card -->
+  <div class="card">
+    <div class="card-row">
+      <span class="card-label">Client</span>
+      <span class="card-value" id="clientName">—</span>
+    </div>
+    <div class="card-row">
+      <span class="card-label">Service</span>
+      <span class="card-value">Tattoo appointment</span>
+    </div>
+    <div class="card-row">
+      <span class="card-label">Artist</span>
+      <span class="card-value">Dmytro Bilynets</span>
+    </div>
+    <div class="card-row">
+      <span class="card-label">Deposit</span>
+      <span class="card-value amount">€50</span>
+    </div>
+  </div>
+
+  <!-- Disclaimer -->
+  <p class="disclaimer">
+    This deposit secures your appointment and will be deducted from the final price. Non-refundable in case of cancellation within 48 hours.
+  </p>
+
+  <!-- Pay button -->
+  <button class="pay-btn" onclick="handlePay()">
+    Pay €50 · Proceed to payment
+  </button>
+
+  <!-- Divider -->
+  <div class="divider">
+    <span class="divider-line"></span>
+    <span class="divider-star">✦</span>
+    <span class="divider-line"></span>
+  </div>
+
+  <!-- Payment methods -->
+  <div class="payment-methods">
+    <!-- iDEAL -->
+    <div class="pm" title="iDEAL">
+      <svg viewBox="0 0 68 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="1" width="68" height="22" rx="3" fill="#f5f0e8" opacity=".12" stroke="#f5f0e8" stroke-width=".5"/>
+        <!-- i -->
+        <text x="8" y="16.5" font-size="11" font-weight="400" fill="#f5f0e8" font-family="Arial" font-style="italic">i</text>
+        <!-- D -->
+        <text x="13" y="16.5" font-size="12" font-weight="700" fill="#cc0066" font-family="Arial">D</text>
+        <!-- vertical bar separator -->
+        <rect x="28" y="5" width="1" height="14" fill="#f5f0e8" opacity=".3"/>
+        <!-- EAL -->
+        <text x="32" y="16.5" font-size="11" font-weight="400" fill="#f5f0e8" font-family="Arial" letter-spacing="1">EAL</text>
+      </svg>
+    </div>
+    <!-- Visa -->
+    <div class="pm" title="Visa">
+      <svg viewBox="0 0 60 24" fill="none">
+        <rect x="0" y="2" width="60" height="20" rx="3" fill="#f5f0e8" opacity=".12" stroke="#f5f0e8" stroke-width=".5"/>
+        <text x="30" y="16" font-size="12" font-weight="700" text-anchor="middle" fill="#f5f0e8" font-family="Arial" letter-spacing="1">VISA</text>
+      </svg>
+    </div>
+    <!-- Mastercard -->
+    <div class="pm" title="Mastercard">
+      <svg viewBox="0 0 50 24" fill="none">
+        <circle cx="18" cy="12" r="10" fill="#eb001b" opacity=".8"/>
+        <circle cx="32" cy="12" r="10" fill="#f79e1b" opacity=".8"/>
+        <path d="M25 5.7a10 10 0 0 1 0 12.6A10 10 0 0 1 25 5.7z" fill="#ff5f00" opacity=".9"/>
+      </svg>
+    </div>
+    <!-- Apple Pay -->
+    <div class="pm" title="Apple Pay">
+      <svg viewBox="0 0 80 24" fill="none">
+        <rect x="0" y="1" width="80" height="22" rx="4" fill="#f5f0e8" opacity=".1" stroke="#f5f0e8" stroke-width=".5"/>
+        <text x="40" y="16" font-size="10" font-weight="500" text-anchor="middle" fill="#f5f0e8" font-family="-apple-system,Arial">Apple Pay</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Security note -->
+  <div class="security">
+    <svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round">
+      <path d="M6 1L1 3v4c0 3 2.5 5 5 6 2.5-1 5-3 5-6V3L6 1z"/>
+    </svg>
+    Secured by Mollie · SSL encrypted
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-brand">© Dmytro Bilynets · The Muse Ink · Den Haag</div>
+
+</div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-star">✦</div>
+  <div class="success-title">
+    You're in.<em>See you soon.</em>
+  </div>
+  <p class="success-note">
+    Your deposit has been received. Alena will be in touch shortly to confirm the details.
+  </p>
+</div>
+
+<script>
+// Read URL params
+const params = new URLSearchParams(window.location.search);
+const name = params.get('name');
+const email = params.get('email');
+
+if (name) {
+  document.getElementById('clientName').textContent = decodeURIComponent(name);
+}
+
+function handlePay() {
+  // In production: call your backend to create Mollie payment
+  // then redirect to mollie checkout URL
+  // window.location.href = mollieCheckoutUrl;
+
+  // For now — show success (replace with real Mollie redirect)
+  document.getElementById('successOverlay').classList.add('show');
+}
+</script>
+</body>
+</html>
