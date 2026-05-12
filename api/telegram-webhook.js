@@ -76,6 +76,30 @@ async function createAirtableLead(messageText, messageId, chatId) {
   }
 }
 
+async function deleteAirtableLead(messageId) {
+  const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+  const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
+  if (!airtableToken || !airtableBase) return false;
+
+  const formula = encodeURIComponent(`{Telegram Message ID} = '${messageId}'`);
+  try {
+    const res = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, {
+      headers: { 'Authorization': `Bearer ${airtableToken}` }
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (data.records && data.records.length > 0) {
+      const recordId = data.records[0].id;
+      await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${airtableToken}` }
+      });
+      return true;
+    }
+  } catch(e) { console.error('Delete error', e); }
+  return false;
+}
+
 module.exports = async (req, res) => {
   console.log('Webhook received, method:', req.method);
 
@@ -108,10 +132,17 @@ module.exports = async (req, res) => {
     body: JSON.stringify({ callback_query_id: callbackId })
   }).catch(() => {});
 
-  if (data?.startsWith('chat|')) {
-    const [, phone = '', name = 'Client'] = data.split('|');
+  if (data?.startsWith('chat|') || data === 'cancel_delete') {
+    let ok = true;
+    let name = extractField(msgText, 'CLIENT') || 'Client';
+    let phone = extractField(msgText, 'PHONE') || '0';
 
-    const ok = await createAirtableLead(msgText, msgId, chatId);
+    if (data?.startsWith('chat|')) {
+      const parts = data.split('|');
+      phone = parts[1] || phone;
+      name = parts[2] || name;
+      ok = await createAirtableLead(msgText, msgId, chatId);
+    }
 
     const wa   = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
     const igRaw = extractField(msgText, 'IG').replace('@', '');
@@ -126,7 +157,8 @@ module.exports = async (req, res) => {
         [{ 
           text: '💳 Ссылка на депозит', 
           url: `https://${req.headers.host || 'tattoodima.com'}/deposit?name=${encodeURIComponent(name)}&email=${encodeURIComponent(extractField(msgText, 'EMAIL') || '')}` 
-        }]
+        }],
+        [{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]
       ]
     };
 
@@ -135,10 +167,10 @@ module.exports = async (req, res) => {
     const newText = `
 ${newHeader}
 ━━━━━━━━━━━━━━━━━━
-👤 *CLIENT:* ${extractField(msgText, 'CLIENT') || 'N/A'}
+👤 *CLIENT:* ${name}
 📧 *EMAIL:* ${extractField(msgText, 'EMAIL') || 'N/A'}
 📸 *IG:* ${extractField(msgText, 'IG') || 'N/A'}
-📞 *PHONE:* ${extractField(msgText, 'PHONE') || 'N/A'}
+📞 *PHONE:* ${phone}
 
 🖼️ *TATTOO DETAILS*
 📐 *SIZE:* ${extractField(msgText, 'SIZE') || 'N/A'}
@@ -172,23 +204,63 @@ ${extractField(msgText, 'NOTES') || 'None'}
       body: JSON.stringify(payload)
     }).catch(err => console.error('Telegram Edit Error:', err));
 
-  } else if (data === 'reject') {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: '❌ Enquiry rejected.' })
-    });
-
-    // Убираем кнопки
+  } else if (data === 'reject' || data === 'ask_reject') {
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '⚠️ Точно отклонить заявку?', callback_data: 'ignore' }],
+        [
+          { text: '✅ Да, отклонить', callback_data: 'confirm_reject' },
+          { text: '🔙 Отмена', callback_data: 'cancel_reject' }
+        ]
+      ]
+    };
     await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        message_id: msgId,
-        reply_markup: { inline_keyboard: [] }
-      })
-    }).catch(() => {});
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: keyboard })
+    });
+  } else if (data === 'cancel_reject') {
+    const phone = extractField(msgText, 'PHONE') || '0';
+    const name = extractField(msgText, 'CLIENT') || 'Client';
+    const keyboard = {
+      inline_keyboard: [[
+        { text: '💬 Start Chat', callback_data: `chat|${phone}|${name}` },
+        { text: '❌ Reject', callback_data: 'reject' }
+      ]]
+    };
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: keyboard })
+    });
+  } else if (data === 'confirm_reject') {
+    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId })
+    });
+  } else if (data === 'ask_delete') {
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '⚠️ Удалить из базы и закрыть?', callback_data: 'ignore' }],
+        [
+          { text: '✅ Да, удалить', callback_data: 'confirm_delete' },
+          { text: '🔙 Отмена', callback_data: 'cancel_delete' }
+        ]
+      ]
+    };
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: keyboard })
+    });
+  } else if (data === 'confirm_delete') {
+    await deleteAirtableLead(msgId);
+    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId })
+    });
   }
 
   return res.status(200).json({ ok: true });
