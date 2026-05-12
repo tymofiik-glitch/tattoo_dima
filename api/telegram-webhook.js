@@ -127,32 +127,47 @@ module.exports = async (req, res) => {
       ]
     };
 
-    const statusMsg = ok 
-      ? `✅ *Всё чётко!*\nДанные клиента *${name}* перенесены в таблицу.`
-      : `⚠️ *Проблема!*\nНе удалось сохранить в Airtable.`;
+    const newHeader = ok ? '✅ *ЗАЯВКА ПРИНЯТА*' : '⚠️ *ОШИБКА СОХРАНЕНИЯ*';
+      
+    const newText = `
+${newHeader}
+━━━━━━━━━━━━━━━━━━
+👤 *CLIENT:* ${extractField(msgText, 'CLIENT') || 'N/A'}
+📧 *EMAIL:* ${extractField(msgText, 'EMAIL') || 'N/A'}
+📸 *IG:* ${extractField(msgText, 'IG') || 'N/A'}
+📞 *PHONE:* ${extractField(msgText, 'PHONE') || 'N/A'}
 
-    // 1. Отправляем короткий статус ответом на оригинальное сообщение
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+🖼️ *TATTOO DETAILS*
+📐 *SIZE:* ${extractField(msgText, 'SIZE') || 'N/A'}
+📍 *PLACE:* ${extractField(msgText, 'PLACE') || 'N/A'}
+💰 *BUDGET:* ${extractField(msgText, 'BUDGET') || 'N/A'}
+
+📝 *IDEA:*
+${extractField(msgText, 'IDEA') || 'N/A'}
+
+📓 *NOTES:*
+${extractField(msgText, 'NOTES') || 'None'}
+━━━━━━━━━━━━━━━━━━`.trim();
+
+    const method = message.caption ? 'editMessageCaption' : 'editMessageText';
+    const payload = {
+      chat_id: chatId,
+      message_id: msgId,
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    };
+    
+    if (message.caption) {
+      payload.caption = newText;
+    } else {
+      payload.text = newText;
+    }
+
+    await fetch(`https://api.telegram.org/bot${token}/${method}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: statusMsg,
-        parse_mode: 'Markdown',
-        reply_to_message_id: msgId
-      })
-    });
-
-    // 2. Меняем кнопки на оригинальном сообщении (привязываем пункт управления к нему)
-    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        message_id: msgId,
-        reply_markup: keyboard
-      })
-    }).catch(() => {});
+      body: JSON.stringify(payload)
+    }).catch(err => console.error('Telegram Edit Error:', err));
 
   } else if (data === 'reject') {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
