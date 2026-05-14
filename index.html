@@ -56,7 +56,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
 <style>
 :root{
   --linen:#f5f0e8;--linen-2:#ede8dc;--linen-3:#e4dbd0;
@@ -269,6 +269,16 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 /* LOCATION */
 .loc-g{display:grid;grid-template-columns:1fr 1fr;gap:clamp(36px,5.5vw,92px);align-items:start;margin-top:36px}
 @media(max-width:680px){.loc-g{grid-template-columns:1fr;gap:28px}}
+.h-sub-appt{display:block;margin-top:10px;font-family:var(--micro);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);opacity:.85}
+.h-appt-badge{display:inline-flex;align-items:center;gap:7px;margin-top:10px;font-family:var(--micro);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(245,240,232,.45);border:.5px solid rgba(245,240,232,.15);padding:5px 12px}
+.h-appt-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.7;flex-shrink:0}
+.access-strip{display:flex;align-items:center;justify-content:center;gap:0;background:var(--ink);padding:18px var(--pad);flex-wrap:wrap;border-bottom:.5px solid rgba(245,240,232,.06)}
+.access-item{display:flex;align-items:center;gap:10px;font-family:var(--micro);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(245,240,232,.5);padding:6px 24px;white-space:nowrap}
+.access-star{color:var(--gold);font-size:11px;opacity:.7}
+.access-div{width:.5px;height:20px;background:rgba(245,240,232,.12);flex-shrink:0}
+@media(max-width:600px){.access-strip{padding:14px 20px}.access-item{padding:5px 14px;font-size:9px;letter-spacing:.14em}}
+.loc-quote{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(17px,2vw,24px);color:var(--ink);line-height:1.45;margin-bottom:18px;opacity:.65}
+.loc-quote::before{content:'\201C'}.loc-quote::after{content:'\201D'}
 .loc-desc{font-family:var(--serif);font-style:italic;font-size:clamp(17px,1.9vw,22px);color:var(--ink);line-height:1.55;max-width:28ch;margin-bottom:24px}
 .loc-addr{font-family:var(--micro);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);line-height:2;margin-bottom:22px}
 .loc-addr strong{color:var(--ink);display:block;font-weight:400;margin-bottom:3px}
@@ -426,7 +436,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
         <span>captured in ink.</span>
       </h1>
       <div class="h-rule"></div>
-      <p class="h-sub">Each piece designed once.<br/>For one person. For ever.</p>
+      <p class="h-sub">Each piece designed once. For one person. For ever.<br/><span class="h-sub-appt">Private studio · No walk-ins · Appointment only.</span></p>
       <div class="h-actions">
         <button class="h-cta-btn om">Reserve a session<span class="arr"></span></button>
         <div class="h-soc">
@@ -442,9 +452,20 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
     <div class="h-artist">
       <div class="h-artist-name">Dmytro Bilynets</div>
       <div class="h-artist-sub">Tattoo Artist · Den Haag</div>
+      <div class="h-appt-badge">By appointment only</div>
     </div>
   </div>
 </section>
+
+
+<!-- ACCESS STRIP -->
+<div class="access-strip">
+  <div class="access-item"><span class="access-star">✦</span><span>By appointment</span></div>
+  <div class="access-div"></div>
+  <div class="access-item"><span class="access-star">✦</span><span>Private studio</span></div>
+  <div class="access-div"></div>
+  <div class="access-item"><span class="access-star">✦</span><span>Address on confirmation</span></div>
+</div>
 
 <!-- WORK -->
 <section class="work-s" id="work">
@@ -655,7 +676,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
     <h2 class="sh rev d1">Dmytro <em>Bilynets.</em></h2>
     <div class="ag">
       <div class="abio rev d2">
-        Ukrainian-born microrealism artist based in <em>Den Haag</em> since 2018. Specialising in miniature detail work — insects, botanicals, portraits — each piece is custom designed and built to heal perfectly.<br/><br/>He works in a private, appointment-only studio where every session is treated as a collaboration.
+        Dmytro works with a <em>limited number of clients</em> each month. Every piece is a custom collaboration — no flash, no walk-ins, no exceptions.<br/><br/>Ukrainian-born microrealism artist based in Den Haag since 2018. Specialising in miniature detail work — insects, botanicals, portraits — each piece is designed to heal perfectly and last a lifetime.
         <div class="acr">
           <button class="btn-s om">Reserve a session →</button>
           <a href="https://instagram.com/kaktuz_tattooz" target="_blank" rel="noopener" class="btn-o">
@@ -684,7 +705,8 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
   <h2 class="sh rev d1">The <em>Atelier.</em></h2>
   <div class="loc-g">
     <div class="rev d1">
-      <p class="loc-desc">A private, appointment-only studio. No walk-ins. Just you, the artist, and the work.</p>
+      <p class="loc-quote">"A space designed for one client at a time."</p>
+      <p class="loc-desc">Private studio. No walk-ins. The exact address is shared only after your booking is confirmed.</p>
       <div class="loc-addr"><strong>The Muse Ink</strong>Den Haag, NL</div>
       <div class="loc-privacy">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1004,6 +1026,7 @@ document.querySelectorAll('.fq').forEach(q=>q.addEventListener('click',()=>{
 function initMap() {
   const mapEl = document.getElementById('loc-map');
   if (!mapEl) return;
+  if (typeof L === 'undefined') return;
 
   const map = L.map('loc-map', {
     center: [52.0718, 4.2885],
@@ -1011,7 +1034,7 @@ function initMap() {
     zoomControl: false,
     attributionControl: false,
     scrollWheelZoom: false,
-    dragging: !L.Browser.mobile, // Disable dragging on mobile to allow page scroll
+    dragging: !L.Browser.mobile,
     touchZoom: L.Browser.mobile
   });
 
@@ -1028,10 +1051,15 @@ function initMap() {
     weight: 1
   }).addTo(map);
 
-  // Fix for container size issues
   setTimeout(() => map.invalidateSize(), 400);
 }
-initMap();
+
+// Wait for everything including Leaflet to load
+if (document.readyState === 'complete') {
+  initMap();
+} else {
+  window.addEventListener('load', initMap);
+}
 </script>
 </body>
 </html>
