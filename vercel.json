@@ -2,5 +2,8 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/.netlify/functions/:path*", "destination": "/api/:path*" }
+  ],
+  "crons": [
+    { "path": "/api/cron-aftercare", "schedule": "0 10 * * *" }
   ]
 }

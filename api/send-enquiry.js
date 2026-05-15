@@ -1,4 +1,5 @@
 const Busboy = require('busboy');
+const { sendEnquiryConfirmation } = require('./utils/email');
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -93,6 +94,12 @@ ${fields.notes || 'None'}
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: 'Markdown', reply_markup: keyboard })
             });
+        }
+
+        if (fields.email) {
+          sendEnquiryConfirmation({ name: fields.name || 'there', email: fields.email }).catch(err =>
+            console.error('Email #1 failed:', err.message)
+          );
         }
 
         return res.status(200).json({ success: true });

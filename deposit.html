@@ -264,7 +264,7 @@ h1 em{
   <h1>Secure your<em>spot.</em></h1>
 
   <!-- Details card -->
-  <div class="card">
+  <div class="card" id="payment-form">
     <div class="card-row">
       <span class="card-label">Client</span>
       <span class="card-value" id="clientName">—</span>
@@ -283,13 +283,22 @@ h1 em{
     </div>
   </div>
 
+  <div id="success-message" style="display: none; text-align: center; padding: 2rem;">
+      <div class="success-icon" style="font-size: 4rem; color: #4CAF50; margin-bottom: 1rem;">
+          <i class="fas fa-check-circle"></i>
+      </div>
+      <h2>Deposit Received!</h2>
+      <p>Thank you. Your appointment is now confirmed. We've sent the details to your email.</p>
+      <a href="/" class="submit-btn" style="display: inline-block; margin-top: 1rem; text-decoration: none;">Return to Home</a>
+  </div>
+
   <!-- Disclaimer -->
   <p class="disclaimer">
     This deposit secures your appointment and will be deducted from the final price. Non-refundable in case of cancellation within 48 hours.
   </p>
 
   <!-- Pay button -->
-  <button class="pay-btn" onclick="handlePay()">
+  <button class="pay-btn" id="pay-button" onclick="handlePay()">
     Pay €50 · Proceed to payment
   </button>
 
@@ -365,22 +374,49 @@ h1 em{
 </div>
 
 <script>
-// Read URL params
 const params = new URLSearchParams(window.location.search);
-const name = params.get('name');
-const email = params.get('email');
+const clientName  = params.get('name')  ? decodeURIComponent(params.get('name'))  : null;
+const clientEmail = params.get('email') ? decodeURIComponent(params.get('email')) : null;
+const status      = params.get('status');
 
-if (name) {
-  document.getElementById('clientName').textContent = decodeURIComponent(name);
+if (clientName) document.getElementById('clientName').textContent = clientName;
+
+// Show success only when Mollie redirects back with ?status=success
+// and there is no email param (meaning it's the return URL, not the initial payment page)
+if (status === 'success' && !clientEmail) {
+  document.getElementById('successOverlay').classList.add('show');
 }
 
-function handlePay() {
-  // In production: call your backend to create Mollie payment
-  // then redirect to mollie checkout URL
-  // window.location.href = mollieCheckoutUrl;
+async function handlePay() {
+  if (!clientEmail) {
+    alert('Payment link is invalid. Please contact us to get a new link.');
+    return;
+  }
 
-  // For now — show success (replace with real Mollie redirect)
-  document.getElementById('successOverlay').classList.add('show');
+  const btn = document.querySelector('.pay-btn');
+  const original = btn.textContent;
+  btn.textContent = 'Opening payment…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: clientName, email: clientEmail })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.checkoutUrl) {
+      throw new Error(data.error || 'Something went wrong');
+    }
+
+    window.location.href = data.checkoutUrl;
+  } catch (err) {
+    btn.textContent = original;
+    btn.disabled = false;
+    alert('Could not start payment: ' + err.message);
+  }
 }
 </script>
 </body>
