@@ -152,7 +152,7 @@ module.exports = async (req, res) => {
     const incomingText = body.message.text.trim();
     const incomingChatId = body.message.chat?.id;
 
-    // ─── Step 1: receive date → ask for address ─────────────────────
+    // ─── Step 1: receive date → send appointment email immediately ───
     if (awaitingDate[incomingChatId]) {
       const { clientName, clientEmail, originalMsgId } = awaitingDate[incomingChatId];
       delete awaitingDate[incomingChatId];
@@ -172,27 +172,8 @@ module.exports = async (req, res) => {
         return res.status(200).json({ ok: true });
       }
 
-      awaitingAddress[incomingChatId] = { clientName, clientEmail, originalMsgId, sessionDate };
-
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: incomingChatId,
-          text: '📍 Теперь введи *полный адрес студии* (улица, дом, индекс, город):\n_Например: Regentesselaan 12, 2562 ZZ Den Haag_\n\nИли отправь `skip` чтобы использовать адрес по умолчанию.',
-          parse_mode: 'Markdown'
-        })
-      });
-
-      return res.status(200).json({ ok: true });
-    }
-
-    // ─── Step 2: receive address → send appointment email ───────────
-    if (awaitingAddress[incomingChatId]) {
-      const { clientName, clientEmail, originalMsgId, sessionDate } = awaitingAddress[incomingChatId];
-      delete awaitingAddress[incomingChatId];
-
-      const address = incomingText.toLowerCase() === 'skip' ? null : incomingText;
+      // Address is null (automatically falls back to default studio address)
+      const address = null;
       const icsContent = generateIcs({ clientName, clientEmail, sessionDate, address });
       const googleUrl  = googleCalendarUrl({ sessionDate, address });
 
@@ -204,7 +185,7 @@ module.exports = async (req, res) => {
         }
       }
 
-      // Update Airtable with session date + address
+      // Update Airtable with session date
       const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
       const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
       if (airtableToken && airtableBase && originalMsgId) {
@@ -220,7 +201,6 @@ module.exports = async (req, res) => {
               'Session Date': sessionDate.toISOString().split('T')[0],
               'Status': '📅 Date Set'
             };
-            if (address) fields['Address'] = address;
             await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
               method: 'PATCH',
               headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
@@ -242,7 +222,7 @@ module.exports = async (req, res) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: incomingChatId,
-          text: `✅ Сессия назначена\n📅 *${dateStr}*\n📍 ${address || '_(адрес по умолчанию)_'}\n✉️ Письмо с .ics отправлено на ${clientEmail || '—'}`,
+          text: `✅ Сессия назначена\n📅 *${dateStr}*\n📍 _(адрес по умолчанию)_\n✉️ Письмо с .ics отправлено на ${clientEmail || '—'}`,
           parse_mode: 'Markdown'
         })
       });
