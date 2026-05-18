@@ -13,16 +13,22 @@ function toIcsDate(date) {
   );
 }
 
-function generateIcs({ clientName, sessionDate, durationHours = 3 }) {
+function escapeText(str) {
+  return String(str || '').replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n');
+}
+
+function generateIcs({ clientName, clientEmail, sessionDate, address, durationHours = 3 }) {
   const start = new Date(sessionDate);
   const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
   const now = new Date();
-  const uid = `tattoo-${start.getTime()}@themuseink.nl`;
+  const uid = `tattoo-${start.getTime()}@kaktuz.ink`;
+  const location = address || process.env.STUDIO_ADDRESS || 'Den Haag, Netherlands';
+  const organizerEmail = (process.env.RESEND_FROM || '').match(/<(.+?)>/)?.[1] || 'hello@kaktuz.ink';
 
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//The Muse Ink//Tattoo Appointment//EN',
+    'PRODID:-//kaktuz//Tattoo Appointment//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:REQUEST',
     'BEGIN:VEVENT',
@@ -30,11 +36,11 @@ function generateIcs({ clientName, sessionDate, durationHours = 3 }) {
     `DTSTAMP:${toIcsDate(now)}`,
     `DTSTART:${toIcsDate(start)}`,
     `DTEND:${toIcsDate(end)}`,
-    `SUMMARY:Tattoo appointment · Dmytro Bilynets`,
-    `DESCRIPTION:Your tattoo session with Dmytro Bilynets at The Muse Ink.\\nAddress: Regentessekwartier\\, Den Haag\\, Netherlands.`,
-    `LOCATION:Regentessekwartier, Den Haag, Netherlands`,
-    `ORGANIZER;CN=The Muse Ink:mailto:${process.env.RESEND_FROM || 'noreply@themuseink.nl'}`,
-    `ATTENDEE;CN=${clientName}:mailto:unknown@unknown.com`,
+    'SUMMARY:Tattoo appointment · Dmytro Bilynets',
+    `DESCRIPTION:${escapeText(`Your tattoo session with Dmytro Bilynets at kaktuz studio.\nAddress: ${location}`)}`,
+    `LOCATION:${escapeText(location)}`,
+    `ORGANIZER;CN=kaktuz:mailto:${organizerEmail}`,
+    `ATTENDEE;CN=${escapeText(clientName)}:mailto:${clientEmail || 'unknown@unknown.com'}`,
     'STATUS:CONFIRMED',
     'END:VEVENT',
     'END:VCALENDAR'
@@ -42,7 +48,7 @@ function generateIcs({ clientName, sessionDate, durationHours = 3 }) {
 }
 
 // Builds a Google Calendar add-event URL
-function googleCalendarUrl({ sessionDate, durationHours = 3 }) {
+function googleCalendarUrl({ sessionDate, address, durationHours = 3 }) {
   const start = new Date(sessionDate);
   const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
 
@@ -58,12 +64,14 @@ function googleCalendarUrl({ sessionDate, durationHours = 3 }) {
     );
   }
 
+  const location = address || process.env.STUDIO_ADDRESS || 'Den Haag, Netherlands';
+
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: 'Tattoo appointment · Dmytro Bilynets',
     dates: `${fmt(start)}/${fmt(end)}`,
-    details: 'Your tattoo session at The Muse Ink studio.',
-    location: 'Regentessekwartier, Den Haag, Netherlands',
+    details: 'Your tattoo session at kaktuz studio with Dmytro Bilynets.',
+    location,
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;

@@ -1,7 +1,9 @@
-const { sendAftercareEmail } = require('./utils/email');
+const { sendAftercareEmail, sendPreCareEmail } = require('./utils/email');
 
+// Daily cron: scans Airtable and triggers two email types:
+//   • Pre-care   — 7 days BEFORE the session  (field: PreCareSent)
+//   • Aftercare  — 3 days AFTER the session   (field: Aftercare Sent)
 module.exports = async (req, res) => {
-  // Allow manual trigger via GET for testing
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -13,50 +15,69 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Missing Airtable credentials' });
   }
 
-  // Target date: 3 days ago (Amsterdam timezone, date only)
-  const target = new Date();
-  target.setDate(target.getDate() - 3);
-  const targetDate = target.toISOString().split('T')[0]; // "YYYY-MM-DD"
+  const toDateStr = (d) => d.toISOString().split('T')[0];
 
-  const formula = encodeURIComponent(
-    `AND({Session Date} = '${targetDate}', NOT({Aftercare Sent}))`
-  );
+  const preCareDate  = new Date(); preCareDate.setDate(preCareDate.getDate() + 7);
+  const aftercareDate = new Date(); aftercareDate.setDate(aftercareDate.getDate() - 3);
 
-  try {
-    const listRes = await fetch(
+  const preCareTarget  = toDateStr(preCareDate);
+  const aftercareTarget = toDateStr(aftercareDate);
+
+  async function fetchRecords(filterFormula) {
+    const formula = encodeURIComponent(filterFormula);
+    const r = await fetch(
       `https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`,
       { headers: { 'Authorization': `Bearer ${airtableToken}` } }
     );
-    const listData = await listRes.json();
-    const records = listData.records || [];
+    const data = await r.json();
+    return data.records || [];
+  }
 
-    console.log(`Aftercare cron: ${records.length} records for ${targetDate}`);
+  async function patchRecord(recordId, fields) {
+    return fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields })
+    });
+  }
 
-    const results = await Promise.allSettled(records.map(async (record) => {
+  try {
+    // ─── Pre-care (T-7) ────────────────────────────────────────────
+    const preCareRecords = await fetchRecords(
+      `AND({Session Date} = '${preCareTarget}', NOT({PreCareSent}))`
+    );
+
+    const preCareResults = await Promise.allSettled(preCareRecords.map(async (record) => {
+      const { Name, Email, 'Session Date': sessionDate, Address } = record.fields;
+      if (!Email) return;
+      await sendPreCareEmail({ name: Name || 'there', email: Email, sessionDate, address: Address });
+      await patchRecord(record.id, { 'PreCareSent': true });
+      console.log(`Pre-care sent to ${Email}`);
+    }));
+
+    // ─── Aftercare (T+3) ───────────────────────────────────────────
+    const aftercareRecords = await fetchRecords(
+      `AND({Session Date} = '${aftercareTarget}', NOT({Aftercare Sent}))`
+    );
+
+    const aftercareResults = await Promise.allSettled(aftercareRecords.map(async (record) => {
       const { Name, Email } = record.fields;
       if (!Email) return;
-
       await sendAftercareEmail({ name: Name || 'there', email: Email });
-
-      // Mark as sent
-      await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${airtableToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ fields: { 'Aftercare Sent': true } })
-      });
-
+      await patchRecord(record.id, { 'Aftercare Sent': true });
       console.log(`Aftercare sent to ${Email}`);
     }));
 
-    const sent = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
+    const summary = {
+      ok: true,
+      preCare:  { target: preCareTarget,  sent: preCareResults.filter(r => r.status === 'fulfilled').length,  failed: preCareResults.filter(r => r.status === 'rejected').length  },
+      aftercare:{ target: aftercareTarget, sent: aftercareResults.filter(r => r.status === 'fulfilled').length, failed: aftercareResults.filter(r => r.status === 'rejected').length }
+    };
 
-    return res.status(200).json({ ok: true, sent, failed, targetDate });
+    console.log('Cron summary:', summary);
+    return res.status(200).json(summary);
   } catch (err) {
-    console.error('Aftercare cron error:', err.message);
+    console.error('Cron error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 };

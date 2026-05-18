@@ -1,9 +1,35 @@
 const { sendRejectionEmail, sendAppointmentCalendar } = require('./utils/email');
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
 
-// In-memory state for awaiting date input per chat
-// Key: chatId, Value: { msgId, clientName, clientEmail }
+// In-memory state for the two-step "set appointment" flow per chat.
+// Step 1: awaitingDate    — Alena enters date/time
+// Step 2: awaitingAddress — Alena enters the studio address
 const awaitingDate = {};
+const awaitingAddress = {};
+
+function parseAmsterdamDate(dateStr) {
+  const isoStr = dateStr.trim().replace(' ', 'T') + ':00';
+  const candidate = new Date(isoStr + '+01:00');
+  if (isNaN(candidate.getTime())) return null;
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Amsterdam',
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric',
+    hour12: false
+  });
+  const parts = formatter.formatToParts(candidate);
+  const getVal = (type) => parseInt(parts.find(p => p.type === type).value, 10);
+  const localUTC = Date.UTC(
+    getVal('year'),
+    getVal('month') - 1,
+    getVal('day'),
+    getVal('hour') === 24 ? 0 : getVal('hour'),
+    getVal('minute')
+  );
+  const offsetHours = (localUTC - candidate.getTime()) / (3600 * 1000);
+  const finalOffsetStr = '+' + String(offsetHours).padStart(2, '0') + ':00';
+  return new Date(isoStr + finalOffsetStr);
+}
 
 // Парсит поле из текста сообщения — ищет LABEL: как подстроку в каждой строке
 // Поддерживает значения на той же строке и на следующей
@@ -76,10 +102,13 @@ async function createAirtableLead(messageText, messageId, chatId) {
 
     const data = await res.json();
     console.log('Airtable response:', res.status, JSON.stringify(data));
-    return res.ok;
+    if (res.ok && data.id) {
+      return data.id;
+    }
+    return null;
   } catch (err) {
     console.error('Airtable fetch error:', err.message);
-    return false;
+    return null;
   }
 }
 
@@ -123,13 +152,14 @@ module.exports = async (req, res) => {
     const incomingText = body.message.text.trim();
     const incomingChatId = body.message.chat?.id;
 
+    // ─── Step 1: receive date → ask for address ─────────────────────
     if (awaitingDate[incomingChatId]) {
       const { clientName, clientEmail, originalMsgId } = awaitingDate[incomingChatId];
       delete awaitingDate[incomingChatId];
 
-      // Parse "YYYY-MM-DD HH:MM" (Amsterdam local time)
-      const parsed = Date.parse(incomingText.replace(' ', 'T') + ':00+02:00');
-      if (isNaN(parsed)) {
+      // Parse "YYYY-MM-DD HH:MM" (Amsterdam local time, DST-aware)
+      const sessionDate = parseAmsterdamDate(incomingText);
+      if (!sessionDate) {
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -142,19 +172,39 @@ module.exports = async (req, res) => {
         return res.status(200).json({ ok: true });
       }
 
-      const sessionDate = new Date(parsed);
-      const icsContent  = generateIcs({ clientName, sessionDate });
-      const googleUrl   = googleCalendarUrl({ sessionDate });
+      awaitingAddress[incomingChatId] = { clientName, clientEmail, originalMsgId, sessionDate };
+
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: incomingChatId,
+          text: '📍 Теперь введи *полный адрес студии* (улица, дом, индекс, город):\n_Например: Regentesselaan 12, 2562 ZZ Den Haag_\n\nИли отправь `skip` чтобы использовать адрес по умолчанию.',
+          parse_mode: 'Markdown'
+        })
+      });
+
+      return res.status(200).json({ ok: true });
+    }
+
+    // ─── Step 2: receive address → send appointment email ───────────
+    if (awaitingAddress[incomingChatId]) {
+      const { clientName, clientEmail, originalMsgId, sessionDate } = awaitingAddress[incomingChatId];
+      delete awaitingAddress[incomingChatId];
+
+      const address = incomingText.toLowerCase() === 'skip' ? null : incomingText;
+      const icsContent = generateIcs({ clientName, clientEmail, sessionDate, address });
+      const googleUrl  = googleCalendarUrl({ sessionDate, address });
 
       if (clientEmail) {
         try {
-          await sendAppointmentCalendar({ name: clientName, email: clientEmail, sessionDate, icsContent, googleUrl });
+          await sendAppointmentCalendar({ name: clientName, email: clientEmail, sessionDate, address, icsContent, googleUrl });
         } catch (err) {
           console.error('Email #3b failed:', err.message);
         }
       }
 
-      // Update Airtable with session date
+      // Update Airtable with session date + address
       const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
       const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
       if (airtableToken && airtableBase && originalMsgId) {
@@ -166,10 +216,15 @@ module.exports = async (req, res) => {
           const findData = await findRes.json();
           if (findData.records?.length > 0) {
             const recordId = findData.records[0].id;
+            const fields = {
+              'Session Date': sessionDate.toISOString().split('T')[0],
+              'Status': '📅 Date Set'
+            };
+            if (address) fields['Address'] = address;
             await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
               method: 'PATCH',
               headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fields: { 'Session Date': sessionDate.toISOString().split('T')[0], 'Status': '📅 Date Set' } })
+              body: JSON.stringify({ fields })
             });
           }
         } catch (err) {
@@ -187,7 +242,7 @@ module.exports = async (req, res) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: incomingChatId,
-          text: `✅ Дата назначена: *${dateStr}*\nПисьмо с .ics отправлено на ${clientEmail || '—'}`,
+          text: `✅ Сессия назначена\n📅 *${dateStr}*\n📍 ${address || '_(адрес по умолчанию)_'}\n✉️ Письмо с .ics отправлено на ${clientEmail || '—'}`,
           parse_mode: 'Markdown'
         })
       });
@@ -223,12 +278,37 @@ module.exports = async (req, res) => {
     let ok = true;
     let name = extractField(msgText, 'CLIENT') || 'Client';
     let phone = extractField(msgText, 'PHONE') || '0';
+    let leadId = '';
 
     if (data?.startsWith('chat|')) {
       const parts = data.split('|');
       phone = parts[1] || phone;
       name = parts[2] || name;
-      ok = await createAirtableLead(msgText, msgId, chatId);
+      const createdId = await createAirtableLead(msgText, msgId, chatId);
+      if (createdId) {
+        ok = true;
+        leadId = createdId;
+      } else {
+        ok = false;
+      }
+    } else {
+      // cancel_delete: retrieve existing record
+      const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+      const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+      if (airtableToken && airtableBase && msgId) {
+        const formula = encodeURIComponent(`{Telegram Message ID} = '${msgId}'`);
+        try {
+          const findRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, {
+            headers: { 'Authorization': `Bearer ${airtableToken}` }
+          });
+          const findData = await findRes.json();
+          if (findData.records?.length > 0) {
+            leadId = findData.records[0].id;
+          }
+        } catch (err) {
+          console.error('Failed to retrieve existing record ID:', err.message);
+        }
+      }
     }
 
     const wa   = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
@@ -243,7 +323,7 @@ module.exports = async (req, res) => {
         ],
         [{ 
           text: '💳 Ссылка на депозит', 
-          url: `https://${req.headers.host || 'tattoodima.com'}/deposit?name=${encodeURIComponent(name)}&email=${encodeURIComponent(extractField(msgText, 'EMAIL') || '')}` 
+          url: `https://kaktuz.ink/deposit?name=${encodeURIComponent(name)}&email=${encodeURIComponent(extractField(msgText, 'EMAIL') || '')}${leadId ? `&leadId=${leadId}` : ''}` 
         }],
         [{ text: '📅 Назначить дату', callback_data: 'set_date' }],
         [{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]
@@ -325,9 +405,12 @@ ${extractField(msgText, 'NOTES') || 'None'}
     const clientEmail = extractField(msgText, 'EMAIL');
     const clientName  = extractField(msgText, 'CLIENT') || 'there';
     if (clientEmail) {
-      sendRejectionEmail({ name: clientName, email: clientEmail }).catch(err =>
-        console.error('Email #2 failed:', err.message)
-      );
+      try {
+        await sendRejectionEmail({ name: clientName, email: clientEmail });
+        console.log('Rejection email sent successfully');
+      } catch (err) {
+        console.error('Email #2 failed:', err.message);
+      }
     }
     await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
       method: 'POST',

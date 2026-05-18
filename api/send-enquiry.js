@@ -97,9 +97,12 @@ ${fields.notes || 'None'}
         }
 
         if (fields.email) {
-          sendEnquiryConfirmation({ name: fields.name || 'there', email: fields.email }).catch(err =>
-            console.error('Email #1 failed:', err.message)
-          );
+            try {
+                await sendEnquiryConfirmation({ name: fields.name || 'there', email: fields.email });
+                console.log('Enquiry confirmation email sent successfully');
+            } catch (err) {
+                console.error('Email #1 failed:', err.message);
+            }
         }
 
         return res.status(200).json({ success: true });

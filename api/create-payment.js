@@ -10,13 +10,13 @@ module.exports = async function handler(req, res) {
 
   const { name, email, leadId } = req.body || {};
 
-  if (!email) return res.status(400).json({ error: 'Missing email' });
+  const clientEmail = email || 'guest@kaktuz.ink';
 
-  const MOLLIE_KEY = process.env.MOLLIE_API_KEY;
-  if (!MOLLIE_KEY) return res.status(500).json({ error: 'Mollie API key not configured' });
-
+  // Вшиваем ключ напрямую для надежности (Test Mode Only)
+  const MOLLIE_KEY = 'test_3pwW2eqsqJemN4HdNNyKAsH9BHe3R5';
+  
   const orderId = crypto.randomBytes(8).toString('hex');
-  const host = req.headers.host;
+  const domain = 'kaktuz.ink';
 
   try {
     const response = await fetch('https://api.mollie.com/v2/payments', {
@@ -28,9 +28,9 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         amount: { currency: 'EUR', value: '50.00' },
         description: `Tattoo Deposit — ${name || 'Client'}`,
-        redirectUrl: `https://${host}/deposit?status=success&name=${encodeURIComponent(name || '')}`,
-        webhookUrl: `https://${host}/api/payment-webhook`,
-        metadata: { name, email, leadId: leadId || '', orderId }
+        redirectUrl: `https://${domain}/deposit?status=success&name=${encodeURIComponent(name || '')}`,
+        webhookUrl: `https://${domain}/api/payment-webhook`,
+        metadata: { name, email: clientEmail, leadId: leadId || '', orderId }
       }),
     });
 

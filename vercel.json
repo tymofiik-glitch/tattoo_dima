@@ -1,9 +1,11 @@
 {
   "cleanUrls": true,
-  "rewrites": [
-    { "source": "/.netlify/functions/:path*", "destination": "/api/:path*" }
-  ],
+  "regions": ["fra1"],
+  "trailingSlash": false,
   "crons": [
-    { "path": "/api/cron-aftercare", "schedule": "0 10 * * *" }
+    {
+      "path": "/api/cron-aftercare",
+      "schedule": "0 9 * * *"
+    }
   ]
 }

@@ -31,15 +31,15 @@ module.exports = async function handler(req, res) {
       // 1. Update Airtable Status
       if (leadId) {
         try {
-          await fetch(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_NAME}/${leadId}`, {
+          await fetch(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/CRM_Leads/${leadId}`, {
             method: 'PATCH',
             headers: {
-              'Authorization': `Bearer ${process.env.AIRTABLE_API_KEY}`,
+              'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               fields: {
-                "Status": "Deposit Paid",
+                "Status": "💳 Deposit Paid",
                 "Mollie Payment ID": id,
                 "Payment Date": new Date().toISOString()
               }
@@ -75,9 +75,12 @@ module.exports = async function handler(req, res) {
       }
 
       if (email) {
-        sendDepositConfirmation({ name: name || 'there', email }).catch(err =>
-          console.error('Email #3a failed:', err.message)
-        );
+        try {
+          await sendDepositConfirmation({ name: name || 'there', email });
+          console.log('Deposit confirmation email sent successfully');
+        } catch (err) {
+          console.error('Email #3a failed:', err.message);
+        }
       }
 
     } else {
