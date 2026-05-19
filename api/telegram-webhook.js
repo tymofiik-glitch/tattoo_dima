@@ -36,7 +36,56 @@ function parseAmsterdamDate(dateStr) {
 // Поддерживает значения на той же строке и на следующей
 function extractField(text, label) {
   if (!text) return '';
-  const clean = text.replace(/\*/g, '');
+  // Clean basic markdown formatting characters EXCEPT underscore (to preserve emails/IGs)
+  const clean = text.replace(/[*`\[\]\\]/g, '');
+  
+  // Regex patterns for the NEW template
+  const newPatterns = {
+    'CLIENT': /👤\s*([^\n]+)/,
+    'EMAIL': /📧\s*([^\n]+)/,
+    'IG': /📸\s*([^\n•]+)/,
+    'PHONE': /📱\s*([^\n•]+)/,
+    'SIZE': /📐\s*Size:\s*([^\n•]+)/i,
+    'PLACE': /📍\s*Place:\s*([^\n]+)/i,
+    'BUDGET': /💰\s*Budget:\s*([^\n]+)/i
+  };
+
+  if (newPatterns[label]) {
+    const match = clean.match(newPatterns[label]);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+
+  // Multiline blocks for IDEA and NOTES in the NEW template
+  if (label === 'IDEA' || label === 'NOTES') {
+    const header = label === 'IDEA' ? '📝 IDEA:' : '📓 NOTES:';
+    const lines = clean.split('\n');
+    let capture = false;
+    let result = [];
+    for (let line of lines) {
+      if (line.includes('TIMELINE') || (label === 'IDEA' && line.includes('📓 NOTES:'))) {
+        capture = false;
+        break;
+      }
+      if (capture) {
+        let val = line.trim();
+        if (val.startsWith('▎')) {
+          val = val.replace(/^▎\s*/, '');
+        }
+        // Remove leading/trailing underscores used for italics
+        val = val.replace(/^_/, '').replace(/_$/, '').trim();
+        
+        if (val && val !== 'N/A') {
+          result.push(val);
+        }
+      }
+      if (line.includes(header)) capture = true;
+    }
+    if (result.length > 0) return result.join('\n');
+  }
+
+  // Fallback to legacy label search
   const lines = clean.split('\n');
   const search = label.toUpperCase() + ':';
   for (let i = 0; i < lines.length; i++) {
@@ -44,9 +93,7 @@ function extractField(text, label) {
     const idx = upper.indexOf(search);
     if (idx !== -1) {
       const inline = lines[i].substring(idx + search.length).trim();
-      // Если значение на той же строке — возвращаем его
       if (inline) return inline;
-      // Иначе берём следующую непустую строку
       for (let j = i + 1; j < lines.length; j++) {
         const next = lines[j].trim();
         if (next && !next.startsWith('━')) return next;
