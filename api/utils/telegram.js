@@ -4,11 +4,11 @@
 // one source of truth.
 
 const STATUS_HEADERS = {
-  accepted:        '✅ *ЗАЯВКА ПРИНЯТА*',
-  deposit_paid:    '💳 *ДЕПОЗИТ ОПЛАЧЕН*',
-  date_set:        '📅 *ДАТА НАЗНАЧЕНА*',
-  session_done:    '🎨 *СЕАНС ЗАВЕРШЁН*',
-  error:           '⚠️ *ОШИБКА СОХРАНЕНИЯ*'
+  accepted:        '🟢 *NEW LEAD*',
+  deposit_paid:    '💳 *DEPOSIT PAID*',
+  date_set:        '📅 *DATE SET*',
+  session_done:    '✅ *COMPLETED*',
+  error:           '⚠️ *ERROR*'
 };
 
 function token() {
@@ -74,37 +74,50 @@ function buildMainMessage(fields, { status = 'accepted', timeline = [] } = {}) {
 
   const name      = escapeMd(fields.Name      || 'Unknown');
   const email     = escapeMd(fields.Email     || 'N/A');
-  const instagram = escapeMd(fields.Instagram || 'N/A');
+  const rawIg     = String(fields.Instagram || '').replace('@', '');
+  const instagram = rawIg ? escapeMd('@' + rawIg) : 'N/A';
   const phone     = escapeMd(fields.Phone     || 'N/A');
   const size      = escapeMd(fields.Size      || 'N/A');
   const placement = escapeMd(fields.Placement || 'N/A');
   const budget    = escapeMd(fields.Budget    || 'N/A');
-  const idea      = escapeMd(fields.Idea      || 'N/A');
-  const notes     = escapeMd(fields.Notes     || 'None');
+
+  const formatQuote = (text) => {
+    if (!text || text === 'N/A' || text === 'None') return '▎ _N/A_';
+    return String(text).split('\n').map(line => `▎ _${escapeMd(line)}_`).join('\n');
+  };
+
+  const ideaBlock  = formatQuote(fields.Idea);
+  const notesBlock = formatQuote(fields.Notes);
 
   const timelineBlock = timeline.length
     ? `\n\n📋 *TIMELINE*\n${timeline.map(escapeMd).join('\n')}`
     : '';
 
+  let hashtag = '';
+  if (status === 'accepted') hashtag = '#new\\_lead';
+  else if (status === 'deposit_paid') hashtag = '#deposit\\_paid';
+  else if (status === 'date_set') hashtag = '#date\\_set';
+  else if (status === 'session_done') hashtag = '#completed';
+  else if (status === 'error') hashtag = '#error';
+
   return `
 ${header}
-━━━━━━━━━━━━━━━━━━
-👤 *CLIENT:* ${name}
-📧 *EMAIL:* ${email}
-📸 *IG:* ${instagram}
-📞 *PHONE:* ${phone}
+👤 *${name}*
 
-🖼️ *TATTOO DETAILS*
-📐 *SIZE:* ${size}
-📍 *PLACE:* ${placement}
-💰 *BUDGET:* ${budget}
+📱 ${phone} • 📸 ${instagram}
+📧 ${email}
+
+🖼 *TATTOO DETAILS*
+📐 *Size:* ${size} • 📍 *Place:* ${placement}
+💰 *Budget:* ${budget}
 
 📝 *IDEA:*
-${idea}
+${ideaBlock}
 
 📓 *NOTES:*
-${notes}
-━━━━━━━━━━━━━━━━━━${timelineBlock}`.trim();
+${notesBlock}${timelineBlock}
+
+${hashtag}`.trim();
 }
 
 // Edits a message, falling back from text → caption (photos/media messages
