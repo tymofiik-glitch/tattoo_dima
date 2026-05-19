@@ -1,5 +1,6 @@
 const { sendRejectionEmail, sendAppointmentCalendar } = require('./utils/email');
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
+const { buildMainMessage, appendTimelineAndEdit } = require('./utils/telegram');
 
 // In-memory state for the two-step "set appointment" flow per chat.
 // Step 1: awaitingDate    — Alena enters date/time
@@ -185,7 +186,9 @@ module.exports = async (req, res) => {
         }
       }
 
-      // Update Airtable with session date
+      // Update Airtable with session date + Session Status, then refresh
+      // the Telegram main message with a new Timeline entry via the shared
+      // helper (keeps the card in sync across all bot/cron writers).
       const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
       const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
       if (airtableToken && airtableBase && originalMsgId) {
@@ -196,16 +199,28 @@ module.exports = async (req, res) => {
           });
           const findData = await findRes.json();
           if (findData.records?.length > 0) {
-            const recordId = findData.records[0].id;
+            const record = findData.records[0];
             const fields = {
-              'Session Date': sessionDate.toISOString().split('T')[0],
-              'Status': '📅 Date Set'
+              'Session Date':   sessionDate.toISOString().split('T')[0],
+              'Status':         '📅 Date Set',
+              'Session Status': 'scheduled'
             };
-            await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
+            await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
               method: 'PATCH',
               headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ fields })
             });
+
+            const merged = { ...record, fields: { ...record.fields, ...fields } };
+            const humanDate = sessionDate.toLocaleDateString('en-GB', {
+              year: 'numeric', month: 'short', day: 'numeric',
+              hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
+            });
+            await appendTimelineAndEdit(
+              merged,
+              `📅 Date set · ${humanDate}`,
+              { status: 'date_set' }
+            );
           }
         } catch (err) {
           console.error('Airtable session date update failed:', err.message);
@@ -310,27 +325,21 @@ module.exports = async (req, res) => {
       ]
     };
 
-    const newHeader = ok ? '✅ *ЗАЯВКА ПРИНЯТА*' : '⚠️ *ОШИБКА СОХРАНЕНИЯ*';
-      
-    const newText = `
-${newHeader}
-━━━━━━━━━━━━━━━━━━
-👤 *CLIENT:* ${name}
-📧 *EMAIL:* ${extractField(msgText, 'EMAIL') || 'N/A'}
-📸 *IG:* ${extractField(msgText, 'IG') || 'N/A'}
-📞 *PHONE:* ${phone}
-
-🖼️ *TATTOO DETAILS*
-📐 *SIZE:* ${extractField(msgText, 'SIZE') || 'N/A'}
-📍 *PLACE:* ${extractField(msgText, 'PLACE') || 'N/A'}
-💰 *BUDGET:* ${extractField(msgText, 'BUDGET') || 'N/A'}
-
-📝 *IDEA:*
-${extractField(msgText, 'IDEA') || 'N/A'}
-
-📓 *NOTES:*
-${extractField(msgText, 'NOTES') || 'None'}
-━━━━━━━━━━━━━━━━━━`.trim();
+    const cardFields = {
+      Name:      name,
+      Email:     extractField(msgText, 'EMAIL'),
+      Instagram: extractField(msgText, 'IG'),
+      Phone:     phone,
+      Size:      extractField(msgText, 'SIZE'),
+      Placement: extractField(msgText, 'PLACE'),
+      Budget:    extractField(msgText, 'BUDGET'),
+      Idea:      extractField(msgText, 'IDEA'),
+      Notes:     extractField(msgText, 'NOTES'),
+      Timeline:  ''
+    };
+    const newText = buildMainMessage(cardFields, {
+      status: ok ? 'accepted' : 'error'
+    });
 
     const method = message.caption ? 'editMessageCaption' : 'editMessageText';
     const payload = {

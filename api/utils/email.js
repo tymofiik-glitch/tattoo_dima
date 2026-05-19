@@ -282,12 +282,12 @@ async function sendAppointmentCalendar({ name, email, sessionDate, address, icsC
 }
 
 // ─── Email #4: Pre-care (7 days before session) ─────────────────────────
-async function sendPreCareEmail({ name, email, sessionDate, address }) {
+async function sendPreCareEmail({ name, email, sessionDate, address }, { idempotencyKey } = {}) {
   const resend = getResend();
   const studioAddress = address || process.env.STUDIO_ADDRESS || 'Address shared in your confirmation email';
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
 
-  return resend.emails.send({
+  const payload = {
     from: FROM(),
     to: email,
     subject: 'Preparing for your session · One week to go',
@@ -325,15 +325,19 @@ async function sendPreCareEmail({ name, email, sessionDate, address }) {
         <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Message Alena →</a></p>
       `
     })
-  });
+  };
+
+  return idempotencyKey
+    ? resend.emails.send(payload, { idempotencyKey })
+    : resend.emails.send(payload);
 }
 
 // ─── Email #5: Aftercare (3 days after session) ─────────────────────────
-async function sendAftercareEmail({ name, email }) {
+async function sendAftercareEmail({ name, email }, { idempotencyKey } = {}) {
   const resend = getResend();
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
 
-  return resend.emails.send({
+  const payload = {
     from: FROM(),
     to: email,
     subject: 'Aftercare reminder · Your tattoo by Dmytro',
@@ -367,7 +371,11 @@ async function sendAftercareEmail({ name, email }) {
         <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Message Alena →</a></p>
       `
     })
-  });
+  };
+
+  return idempotencyKey
+    ? resend.emails.send(payload, { idempotencyKey })
+    : resend.emails.send(payload);
 }
 
 module.exports = {
