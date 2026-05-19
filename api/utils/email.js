@@ -22,7 +22,7 @@ async function safeSend(resend, payload, options) {
   return result;
 }
 
-const FROM = () => process.env.RESEND_FROM || 'kaktuz <hello@kaktuz.ink>';
+const FROM = () => 'DMYTRO BILYNETS · the muse ink <hello@kaktuz.ink>';
 const WHATSAPP = () => process.env.ALENA_WHATSAPP || '';
 const INSTAGRAM_URL = 'https://instagram.com/kaktuz_tattooz';
 
@@ -33,9 +33,10 @@ function wrap({ title, sub, body }) {
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : null;
   const year = new Date().getFullYear();
 
-  // Thin botanical sprig — microrealism-inspired line art. SVG inlined as data URI
-  // so it loads instantly without an external image host. Color tuned to ink-3.
-  const branch = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 40' fill='none' stroke='%23b8956a' stroke-width='0.8' stroke-linecap='round'><path d='M10 20 Q60 20 120 20 Q180 20 230 20'/><path d='M40 20 Q42 14 48 12'/><path d='M40 20 Q38 26 32 28'/><path d='M70 20 Q72 13 79 11'/><path d='M70 20 Q68 27 61 29'/><path d='M100 20 Q103 12 111 10'/><path d='M100 20 Q97 28 89 30'/><path d='M130 20 Q132 13 139 11'/><path d='M130 20 Q128 27 121 29'/><path d='M160 20 Q163 12 171 10'/><path d='M160 20 Q157 28 149 30'/><path d='M190 20 Q192 14 198 12'/><path d='M190 20 Q188 26 182 28'/><ellipse cx='48' cy='10' rx='3' ry='1.5' transform='rotate(-25 48 10)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='32' cy='30' rx='3' ry='1.5' transform='rotate(25 32 30)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='80' cy='9' rx='3.2' ry='1.6' transform='rotate(-28 80 9)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='60' cy='30' rx='3.2' ry='1.6' transform='rotate(28 60 30)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='112' cy='8' rx='3.4' ry='1.7' transform='rotate(-28 112 8)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='88' cy='31' rx='3.4' ry='1.7' transform='rotate(28 88 31)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='140' cy='9' rx='3.2' ry='1.6' transform='rotate(-28 140 9)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='120' cy='30' rx='3.2' ry='1.6' transform='rotate(28 120 30)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='172' cy='8' rx='3.4' ry='1.7' transform='rotate(-28 172 8)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='148' cy='31' rx='3.4' ry='1.7' transform='rotate(28 148 31)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='198' cy='10' rx='3' ry='1.5' transform='rotate(-25 198 10)' fill='%23b8956a' fill-opacity='0.15'/><ellipse cx='182' cy='30' rx='3' ry='1.5' transform='rotate(25 182 30)' fill='%23b8956a' fill-opacity='0.15'/></svg>`;
+  // Thin botanical sprig — microrealism-inspired line art. SVG inlined as data URI.
+  // URL-encoded to prevent breaking email client HTML parsers in preview text.
+  const svgContent = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 40' fill='none' stroke='#b8956a' stroke-width='0.8' stroke-linecap='round'><path d='M10 20 Q60 20 120 20 Q180 20 230 20'/><path d='M40 20 Q42 14 48 12'/><path d='M40 20 Q38 26 32 28'/><path d='M70 20 Q72 13 79 11'/><path d='M70 20 Q68 27 61 29'/><path d='M100 20 Q103 12 111 10'/><path d='M100 20 Q97 28 89 30'/><path d='M130 20 Q132 13 139 11'/><path d='M130 20 Q128 27 121 29'/><path d='M160 20 Q163 12 171 10'/><path d='M160 20 Q157 28 149 30'/><path d='M190 20 Q192 14 198 12'/><path d='M190 20 Q188 26 182 28'/><ellipse cx='48' cy='10' rx='3' ry='1.5' transform='rotate(-25 48 10)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='32' cy='30' rx='3' ry='1.5' transform='rotate(25 32 30)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='80' cy='9' rx='3.2' ry='1.6' transform='rotate(-28 80 9)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='60' cy='30' rx='3.2' ry='1.6' transform='rotate(28 60 30)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='112' cy='8' rx='3.4' ry='1.7' transform='rotate(-28 112 8)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='88' cy='31' rx='3.4' ry='1.7' transform='rotate(28 88 31)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='140' cy='9' rx='3.2' ry='1.6' transform='rotate(-28 140 9)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='120' cy='30' rx='3.2' ry='1.6' transform='rotate(28 120 30)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='172' cy='8' rx='3.4' ry='1.7' transform='rotate(-28 172 8)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='148' cy='31' rx='3.4' ry='1.7' transform='rotate(28 148 31)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='198' cy='10' rx='3' ry='1.5' transform='rotate(-25 198 10)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='182' cy='30' rx='3' ry='1.5' transform='rotate(25 182 30)' fill='#b8956a' fill-opacity='0.15'/></svg>`;
+  const branch = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -49,6 +50,7 @@ function wrap({ title, sub, body }) {
 <title>${title}</title>
 </head>
 <body style="margin:0;padding:0;background:#f5f0e8;font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#1c1814;-webkit-font-smoothing:antialiased">
+<div style="display:none;font-size:1px;color:#f5f0e8;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${sub}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f0e8;padding:32px 16px">
 <tr><td align="center">
 <table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;background:#f5f0e8">
@@ -57,7 +59,7 @@ function wrap({ title, sub, body }) {
   </td></tr>
 
   <tr><td style="padding:8px 8px 32px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8a8478">
-    Dmytro Bilynets &nbsp;·&nbsp; kaktuz
+    Dmytro Bilynets &nbsp;·&nbsp; the muse ink
   </td></tr>
 
   <tr><td style="border-top:1px solid rgba(28,24,20,.12);padding:0"></td></tr>
@@ -76,7 +78,7 @@ function wrap({ title, sub, body }) {
   <tr><td style="padding:40px 8px 0;border-top:1px solid rgba(28,24,20,.12);margin-top:40px"></td></tr>
 
   <tr><td style="padding:28px 8px 8px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.7;color:#8a8478">
-    <p style="margin:0 0 8px;font-family:'Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;color:#4a4540">kaktuz · Den Haag</p>
+    <p style="margin:0 0 8px;font-family:'Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;color:#4a4540">the muse ink · Den Haag</p>
     <p style="margin:0">
       <a href="${INSTAGRAM_URL}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:1px">@kaktuz_tattooz</a>
       ${waLink ? `&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:1px">WhatsApp Alena</a>` : ''}
@@ -88,7 +90,7 @@ function wrap({ title, sub, body }) {
   </td></tr>
 
   <tr><td style="padding:8px 8px 24px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:400;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8a8478;opacity:.6">
-    © ${year} kaktuz · Private studio · By appointment only
+    © ${year} the muse ink · Private studio · By appointment only
   </td></tr>
 </table>
 </td></tr>
@@ -168,7 +170,7 @@ function noteCard(text) {
 function mapCard(address) {
   const isUrl = address && (address.startsWith('http://') || address.startsWith('https://'));
   const gmapsLink = isUrl ? address : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-  const displayAddress = isUrl ? 'kaktuz studio · Den Haag' : address;
+  const displayAddress = isUrl ? 'the muse ink studio · Den Haag' : address;
   return `<a href="${gmapsLink}" style="display:block;margin:8px 0 24px;text-decoration:none;border:1px solid rgba(28,24,20,.12);background:#ede8dc">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
@@ -217,7 +219,7 @@ async function sendRejectionEmail({ name, email }) {
         <p style="margin:0 0 20px">We sincerely appreciate your interest in working with Dmytro. After careful consideration, we're sorry to let you know that we're unable to take on your project at this time.</p>
         <p style="margin:0 0 20px">This may be due to the current schedule, the style of work requested, or simply the timing — it does not reflect on you or your idea.</p>
         <p style="margin:0 0 24px">We wish you all the best in bringing your vision to life with the right artist.</p>
-        <p style="margin:32px 0 0;font-family:'Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:16px;color:#4a4540">With warmth — kaktuz team.</p>
+        <p style="margin:32px 0 0;font-family:'Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:16px;color:#4a4540">With warmth — the muse ink team.</p>
       `
     })
   });
@@ -237,7 +239,7 @@ async function sendDepositConfirmation({ name, email }) {
         ${detailCard(
           detailRow('Deposit', '€50') +
           detailRow('Artist', 'Dmytro Bilynets') +
-          detailRow('Studio', 'kaktuz · Den Haag') +
+          detailRow('Studio', 'the muse ink · Den Haag') +
           detailRow('Date', 'To be confirmed', true)
         )}
         <p style="margin:0 0 20px">Your €50 deposit has been received and your slot is held. Alena will reach out personally to confirm the exact date and time of your session.</p>
@@ -274,7 +276,7 @@ async function sendAppointmentCalendar({ name, email, sessionDate, address, icsC
           detailRow('Date & Time', fullDate, true) +
           detailRow('Duration', '~3 hours') +
           detailRow('Artist', 'Dmytro Bilynets') +
-          detailRow('Studio', 'kaktuz') +
+          detailRow('Studio', 'the muse ink') +
           detailRow('Address', studioAddress)
         )}
 
