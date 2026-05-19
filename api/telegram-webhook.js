@@ -199,12 +199,30 @@ module.exports = async (req, res) => {
   if (body?.message?.text && !body?.callback_query) {
     const incomingText = body.message.text.trim();
     const incomingChatId = body.message.chat?.id;
+    const replyTo = body.message.reply_to_message;
 
-    // ─── Step 1: receive date → send appointment email immediately ───
-    if (awaitingDate[incomingChatId]) {
-      const { clientName, clientEmail, originalMsgId } = awaitingDate[incomingChatId];
-      delete awaitingDate[incomingChatId];
+    let originalMsgId = null;
+    let clientName = '';
+    let clientEmail = '';
 
+    // 1. Try to get target message ID from the reply text (serverless-safe)
+    if (replyTo?.text) {
+      const idMatch = replyTo.text.match(/\[ID:\s*(\d+)\]/);
+      if (idMatch) {
+        originalMsgId = idMatch[1];
+      }
+    }
+
+    const hasInMemory = awaitingDate[incomingChatId];
+
+    // 2. Fallback to in-memory if reply context didn't resolve an ID
+    if (!originalMsgId && hasInMemory) {
+      originalMsgId = hasInMemory.originalMsgId;
+      clientName = hasInMemory.clientName;
+      clientEmail = hasInMemory.clientEmail;
+    }
+
+    if (originalMsgId) {
       // Parse "YYYY-MM-DD HH:MM" (Amsterdam local time, DST-aware)
       const sessionDate = parseAmsterdamDate(incomingText);
       if (!sessionDate) {
@@ -213,12 +231,44 @@ module.exports = async (req, res) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: incomingChatId,
-            text: '⚠️ Не могу разобрать дату. Попробуй ещё раз в формате: 2025-06-15 14:00'
+            text: `⚠️ Не могу разобрать дату. Попробуй ещё раз в формате: 2025-06-15 14:00\n\n[ID: ${originalMsgId}]`,
+            reply_markup: { force_reply: true, selective: true }
           })
         });
-        awaitingDate[incomingChatId] = { clientName, clientEmail, originalMsgId };
+        // Keep the state active
+        if (!hasInMemory) {
+          awaitingDate[incomingChatId] = { originalMsgId };
+        }
         return res.status(200).json({ ok: true });
       }
+
+      // Fetch lead from Airtable to get full details or verify existence
+      const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+      const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+      let record = null;
+
+      if (airtableToken && airtableBase) {
+        const formula = encodeURIComponent(`{Telegram Message ID} = '${originalMsgId}'`);
+        try {
+          const findRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, {
+            headers: { 'Authorization': `Bearer ${airtableToken}` }
+          });
+          const findData = await findRes.json();
+          if (findData.records?.length > 0) {
+            record = findData.records[0];
+            clientName = record.fields.Name || clientName || 'Client';
+            clientEmail = record.fields.Email || clientEmail || '';
+          }
+        } catch (err) {
+          console.error('Airtable lead fetch failed:', err.message);
+        }
+      }
+
+      // If we don't have in-memory fallback data and Airtable fetch failed, use default placeholder
+      if (!clientName) clientName = 'Client';
+
+      // Clean up in-memory state since we have resolved it
+      delete awaitingDate[incomingChatId];
 
       // Address is null (automatically falls back to default studio address)
       const address = null;
@@ -241,39 +291,29 @@ module.exports = async (req, res) => {
       // Update Airtable with session date + Session Status, then refresh
       // the Telegram main message with a new Timeline entry via the shared
       // helper (keeps the card in sync across all bot/cron writers).
-      const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
-      const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
-      if (airtableToken && airtableBase && originalMsgId) {
-        const formula = encodeURIComponent(`{Telegram Message ID} = '${originalMsgId}'`);
+      if (record && airtableToken && airtableBase) {
         try {
-          const findRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, {
-            headers: { 'Authorization': `Bearer ${airtableToken}` }
+          const fields = {
+            'Session Date':   sessionDate.toISOString().split('T')[0],
+            'Status':         '📅 Date Set',
+            'Session Status': 'scheduled'
+          };
+          await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields })
           });
-          const findData = await findRes.json();
-          if (findData.records?.length > 0) {
-            const record = findData.records[0];
-            const fields = {
-              'Session Date':   sessionDate.toISOString().split('T')[0],
-              'Status':         '📅 Date Set',
-              'Session Status': 'scheduled'
-            };
-            await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
-              method: 'PATCH',
-              headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fields })
-            });
 
-            const merged = { ...record, fields: { ...record.fields, ...fields } };
-            const humanDate = sessionDate.toLocaleDateString('en-GB', {
-              year: 'numeric', month: 'short', day: 'numeric',
-              hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
-            });
-            await appendTimelineAndEdit(
-              merged,
-              `📅 Date set · ${humanDate}`,
-              { status: 'date_set' }
-            );
-          }
+          const merged = { ...record, fields: { ...record.fields, ...fields } };
+          const humanDate = sessionDate.toLocaleDateString('en-GB', {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
+          });
+          await appendTimelineAndEdit(
+            merged,
+            `📅 Date set · ${humanDate}`,
+            { status: 'date_set' }
+          );
         } catch (err) {
           console.error('Airtable session date update failed:', err.message);
         }
@@ -489,8 +529,9 @@ module.exports = async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `📅 Введи дату и время сеанса для *${escapeMd(clientName)}* в формате:\n\`2025-06-15 14:00\``,
-        parse_mode: 'Markdown'
+        text: `📅 Введи дату и время сеанса для *${escapeMd(clientName)}* в формате:\n\`2025-06-15 14:00\`\n\n[ID: ${msgId}]`,
+        parse_mode: 'Markdown',
+        reply_markup: { force_reply: true, selective: true }
       })
     });
   }

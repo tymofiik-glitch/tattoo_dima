@@ -4,6 +4,7 @@
   "description": "Tattoo studio website",
   "dependencies": {
     "busboy": "^1.6.0",
+    "dotenv": "^17.4.2",
     "resend": "^6.12.3"
   },
   "engines": {
