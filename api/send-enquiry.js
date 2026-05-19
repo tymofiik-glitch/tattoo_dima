@@ -1,5 +1,6 @@
 const Busboy = require('busboy');
 const { sendEnquiryConfirmation } = require('./utils/email');
+const { escapeMd, notifyAlena } = require('./utils/telegram');
 
 module.exports = async (req, res) => {
     // Enable CORS
@@ -53,21 +54,21 @@ module.exports = async (req, res) => {
         const messageText = `
 ✨ *NEW TATTOO ENQUIRY* ✨
 ━━━━━━━━━━━━━━━━━━
-👤 *CLIENT:* ${fields.name || 'N/A'}
-📧 *EMAIL:* ${fields.email || 'N/A'}
-📸 *IG:* ${fields.instagram || 'N/A'}
-📞 *PHONE:* ${fields.phone || 'N/A'}
+👤 *CLIENT:* ${escapeMd(fields.name || 'N/A')}
+📧 *EMAIL:* ${escapeMd(fields.email || 'N/A')}
+📸 *IG:* ${escapeMd(fields.instagram || 'N/A')}
+📞 *PHONE:* ${escapeMd(fields.phone || 'N/A')}
 
 🖼️ *TATTOO DETAILS*
-📐 *SIZE:* ${displaySize}
-📍 *PLACE:* ${fields.placement || 'N/A'}
-💰 *BUDGET:* ${displayBudget}
+📐 *SIZE:* ${escapeMd(displaySize)}
+📍 *PLACE:* ${escapeMd(fields.placement || 'N/A')}
+💰 *BUDGET:* ${escapeMd(displayBudget)}
 
 📝 *IDEA:*
-${fields.idea || 'N/A'}
+${escapeMd(fields.idea || 'N/A')}
 
 📓 *NOTES:*
-${fields.notes || 'None'}
+${escapeMd(fields.notes || 'None')}
 ━━━━━━━━━━━━━━━━━━
         `.trim();
 
@@ -78,22 +79,41 @@ ${fields.notes || 'None'}
             ]]
         };
 
-        // Send to Telegram
-        if (fileUploads.length > 0) {
-            const formData = new FormData();
-            formData.append('chat_id', chatId);
-            formData.append('photo', new Blob([fileUploads[0].content], { type: fileUploads[0].contentType }), fileUploads[0].filename);
-            formData.append('caption', messageText);
-            formData.append('parse_mode', 'Markdown');
-            formData.append('reply_markup', JSON.stringify(keyboard));
-
-            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
-        } else {
-            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        // Send to Telegram. Treat 4xx as a real failure: returning success
+        // here hides bad-Markdown rejections and leaves Alena unaware that
+        // a lead arrived. On Markdown parse rejection, retry once as plain
+        // text so the lead still surfaces (degraded, but visible).
+        async function sendToTelegram(useMarkdown) {
+            if (fileUploads.length > 0) {
+                const formData = new FormData();
+                formData.append('chat_id', chatId);
+                formData.append('photo', new Blob([fileUploads[0].content], { type: fileUploads[0].contentType }), fileUploads[0].filename);
+                formData.append('caption', messageText);
+                if (useMarkdown) formData.append('parse_mode', 'Markdown');
+                formData.append('reply_markup', JSON.stringify(keyboard));
+                return fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
+            }
+            const payload = { chat_id: chatId, text: messageText, reply_markup: keyboard };
+            if (useMarkdown) payload.parse_mode = 'Markdown';
+            return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: 'Markdown', reply_markup: keyboard })
+                body: JSON.stringify(payload)
             });
+        }
+
+        let tgRes = await sendToTelegram(true);
+        if (!tgRes.ok) {
+            const errBody = await tgRes.text();
+            console.error('Telegram Markdown send failed:', tgRes.status, errBody);
+            tgRes = await sendToTelegram(false);
+            if (tgRes.ok) {
+                await notifyAlena(`⚠️ Markdown parse failed on enquiry — отправлено в plain text. Проверь данные клиента, в них могут быть символы \`_*[\\\`\`.\nFirst error: ${errBody.substring(0, 200)}`);
+            }
+        }
+        if (!tgRes.ok) {
+            const errBody = await tgRes.text();
+            throw new Error(`Telegram send failed: ${tgRes.status} ${errBody.substring(0, 300)}`);
         }
 
         if (fields.email) {
