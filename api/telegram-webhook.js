@@ -230,7 +230,12 @@ module.exports = async (req, res) => {
           await sendAppointmentCalendar({ name: clientName, email: clientEmail, sessionDate, address, icsContent, googleUrl });
         } catch (err) {
           console.error('Email #3b failed:', err.message);
+          const { notifyAlena } = require('./utils/telegram');
+          await notifyAlena(`⚠️ Error sending calendar email: ${err.message}\nEmail: ${clientEmail}\nName: ${clientName}`);
         }
+      } else {
+        const { notifyAlena } = require('./utils/telegram');
+        await notifyAlena(`⚠️ Could not extract client email to send calendar. Parsed Name: ${clientName}`);
       }
 
       // Update Airtable with session date + Session Status, then refresh
