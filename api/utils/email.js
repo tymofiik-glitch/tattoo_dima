@@ -4,6 +4,24 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
+// Resend SDK returns { data, error } instead of throwing on API errors,
+// which made every email call here look successful even when the key was
+// invalid or the request was rejected. Wrap every send in this guard so
+// failures propagate to callers (cron, webhooks) that have their own
+// error-handling and alerting.
+async function safeSend(resend, payload, options) {
+  const result = options
+    ? await resend.emails.send(payload, options)
+    : await resend.emails.send(payload);
+  if (result?.error) {
+    const e = result.error;
+    const err = new Error(`Resend ${e.statusCode || ''} ${e.name || ''}: ${e.message || 'unknown'}`.trim());
+    err.resend = e;
+    throw err;
+  }
+  return result;
+}
+
 const FROM = () => process.env.RESEND_FROM || 'kaktuz <hello@kaktuz.ink>';
 const WHATSAPP = () => process.env.ALENA_WHATSAPP || '';
 const INSTAGRAM_URL = 'https://instagram.com/kaktuz_tattooz';
@@ -169,7 +187,7 @@ function mapCard(address) {
 // ─── Email #1: Enquiry confirmation ─────────────────────────────────────
 async function sendEnquiryConfirmation({ name, email }) {
   const resend = getResend();
-  return resend.emails.send({
+  return safeSend(resend, {
     from: FROM(),
     to: email,
     subject: 'Your enquiry has been received · Dmytro Bilynets',
@@ -188,7 +206,7 @@ async function sendEnquiryConfirmation({ name, email }) {
 // ─── Email #2: Polite rejection ────────────────────────────────────────
 async function sendRejectionEmail({ name, email }) {
   const resend = getResend();
-  return resend.emails.send({
+  return safeSend(resend, {
     from: FROM(),
     to: email,
     subject: 'Regarding your enquiry · Dmytro Bilynets',
@@ -208,7 +226,7 @@ async function sendRejectionEmail({ name, email }) {
 // ─── Email #3a: Deposit received (date TBC) ─────────────────────────────
 async function sendDepositConfirmation({ name, email }) {
   const resend = getResend();
-  return resend.emails.send({
+  return safeSend(resend, {
     from: FROM(),
     to: email,
     subject: 'Deposit received · Your spot is secured',
@@ -244,7 +262,7 @@ async function sendAppointmentCalendar({ name, email, sessionDate, address, icsC
   const studioAddress = address || process.env.STUDIO_ADDRESS || 'Address provided by Alena';
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
 
-  return resend.emails.send({
+  return safeSend(resend, {
     from: FROM(),
     to: email,
     subject: `Your appointment is confirmed · ${weekday}`,
@@ -327,9 +345,7 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
     })
   };
 
-  return idempotencyKey
-    ? resend.emails.send(payload, { idempotencyKey })
-    : resend.emails.send(payload);
+  return safeSend(resend, payload, idempotencyKey ? { idempotencyKey } : undefined);
 }
 
 // ─── Email #5: Aftercare (3 days after session) ─────────────────────────
@@ -373,9 +389,7 @@ async function sendAftercareEmail({ name, email }, { idempotencyKey } = {}) {
     })
   };
 
-  return idempotencyKey
-    ? resend.emails.send(payload, { idempotencyKey })
-    : resend.emails.send(payload);
+  return safeSend(resend, payload, idempotencyKey ? { idempotencyKey } : undefined);
 }
 
 module.exports = {

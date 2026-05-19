@@ -15,6 +15,14 @@ function token() {
   return process.env.TELEGRAM_BOT_TOKEN;
 }
 
+// Escape characters that would break Telegram's legacy `Markdown` parse mode
+// when they appear inside user-supplied field values (Name, IG, Notes, etc).
+// Keeping legacy Markdown rather than switching to MarkdownV2 because the
+// rest of the bot already uses it; escaping per-value is the smallest fix.
+function escapeMd(v) {
+  return String(v ?? '').replace(/([_*`\[\]])/g, '\\$1');
+}
+
 function alenaChatId() {
   return process.env.TELEGRAM_CHAT_ID;
 }
@@ -28,23 +36,54 @@ function airtableAuth() {
   return { 'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN?.trim()}` };
 }
 
+// Default keyboard derived from record state + lifecycle status, so timeline
+// edits don't accidentally strip Alena's action buttons.
+//   accepted     → WA/IG + deposit link + set_date + delete
+//   deposit_paid → WA/IG + set_date + delete   (deposit link removed)
+//   date_set     → WA/IG + set_date + delete   (lets her reschedule)
+//   session_done → WA/IG only (no further actions expected)
+function buildKeyboard(fields, status) {
+  const phone = String(fields.Phone || '').replace(/[^0-9]/g, '');
+  const igRaw = String(fields.Instagram || '').replace('@', '');
+  const wa  = phone ? `https://wa.me/${phone}` : null;
+  const ig  = igRaw ? `https://instagram.com/${igRaw}` : null;
+  const top = [];
+  if (wa) top.push({ text: '📱 WhatsApp', url: wa });
+  if (ig) top.push({ text: '📸 Instagram', url: ig });
+
+  const rows = top.length ? [top] : [];
+
+  if (status === 'accepted' || status === 'error') {
+    const depositUrl = `https://kaktuz.ink/deposit?name=${encodeURIComponent(fields.Name || '')}&email=${encodeURIComponent(fields.Email || '')}`;
+    rows.push([{ text: '💳 Ссылка на депозит', url: depositUrl }]);
+    rows.push([{ text: '📅 Назначить дату', callback_data: 'set_date' }]);
+    rows.push([{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]);
+  } else if (status === 'deposit_paid' || status === 'date_set') {
+    rows.push([{ text: '📅 Назначить дату', callback_data: 'set_date' }]);
+    rows.push([{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]);
+  }
+  // session_done: only contact buttons; no further action buttons.
+
+  return { inline_keyboard: rows };
+}
+
 // Renders the canonical client card. `timeline` is an array of strings
 // (newest at the bottom) appended after the details block.
 function buildMainMessage(fields, { status = 'accepted', timeline = [] } = {}) {
   const header = STATUS_HEADERS[status] || STATUS_HEADERS.accepted;
 
-  const name      = fields.Name      || 'Unknown';
-  const email     = fields.Email     || 'N/A';
-  const instagram = fields.Instagram || 'N/A';
-  const phone     = fields.Phone     || 'N/A';
-  const size      = fields.Size      || 'N/A';
-  const placement = fields.Placement || 'N/A';
-  const budget    = fields.Budget    || 'N/A';
-  const idea      = fields.Idea      || 'N/A';
-  const notes     = fields.Notes     || 'None';
+  const name      = escapeMd(fields.Name      || 'Unknown');
+  const email     = escapeMd(fields.Email     || 'N/A');
+  const instagram = escapeMd(fields.Instagram || 'N/A');
+  const phone     = escapeMd(fields.Phone     || 'N/A');
+  const size      = escapeMd(fields.Size      || 'N/A');
+  const placement = escapeMd(fields.Placement || 'N/A');
+  const budget    = escapeMd(fields.Budget    || 'N/A');
+  const idea      = escapeMd(fields.Idea      || 'N/A');
+  const notes     = escapeMd(fields.Notes     || 'None');
 
   const timelineBlock = timeline.length
-    ? `\n\n📋 *TIMELINE*\n${timeline.join('\n')}`
+    ? `\n\n📋 *TIMELINE*\n${timeline.map(escapeMd).join('\n')}`
     : '';
 
   return `
@@ -157,16 +196,19 @@ async function appendTimelineAndEdit(record, line, { status, replyMarkup } = {})
 
   const updatedFields = { ...fields, Timeline: serializeTimeline(next) };
   const text = buildMainMessage(updatedFields, { status, timeline: next });
-  const result = await editMainMessage({ chatId, messageId, text, replyMarkup });
+  const markup = replyMarkup || buildKeyboard(updatedFields, status);
+  const result = await editMainMessage({ chatId, messageId, text, replyMarkup: markup });
   return { ok: true, telegramOk: result.ok };
 }
 
 module.exports = {
   STATUS_HEADERS,
   buildMainMessage,
+  buildKeyboard,
   editMainMessage,
   notifyAlena,
   appendTimelineAndEdit,
   parseTimeline,
-  serializeTimeline
+  serializeTimeline,
+  escapeMd
 };

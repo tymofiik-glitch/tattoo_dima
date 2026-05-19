@@ -111,7 +111,9 @@ async function releaseLock(recordId, lockField) {
 
 function buildFilter(cfg, target) {
   const ttlClause = `OR(NOT({${cfg.lockField}}), IS_BEFORE({${cfg.lockField}}, DATEADD(NOW(),-${LOCK_TTL_MIN},'minutes')))`;
-  return `AND({Session Date} = '${target}', NOT({${cfg.sentField}}), ${cfg.extraFilter}, ${ttlClause})`;
+  // Airtable date fields can't be compared to a string with `=` — use IS_SAME.
+  const dateClause = `IS_SAME({Session Date}, '${target}', 'day')`;
+  return `AND(${dateClause}, NOT({${cfg.sentField}}), ${cfg.extraFilter}, ${ttlClause})`;
 }
 
 function formatErrorAlert(type, record, err) {

@@ -1,6 +1,6 @@
 const { sendRejectionEmail, sendAppointmentCalendar } = require('./utils/email');
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
-const { buildMainMessage, appendTimelineAndEdit } = require('./utils/telegram');
+const { buildMainMessage, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
 
 // In-memory state for the two-step "set appointment" flow per chat.
 // Step 1: awaitingDate    — Alena enters date/time
@@ -237,7 +237,7 @@ module.exports = async (req, res) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: incomingChatId,
-          text: `✅ Сессия назначена\n📅 *${dateStr}*\n📍 _(адрес по умолчанию)_\n✉️ Письмо с .ics отправлено на ${clientEmail || '—'}`,
+          text: `✅ Сессия назначена\n📅 *${escapeMd(dateStr)}*\n📍 _(адрес по умолчанию)_\n✉️ Письмо с .ics отправлено на ${escapeMd(clientEmail || '—')}`,
           parse_mode: 'Markdown'
         })
       });
@@ -437,7 +437,7 @@ module.exports = async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `📅 Введи дату и время сеанса для *${clientName}* в формате:\n\`2025-06-15 14:00\``,
+        text: `📅 Введи дату и время сеанса для *${escapeMd(clientName)}* в формате:\n\`2025-06-15 14:00\``,
         parse_mode: 'Markdown'
       })
     });

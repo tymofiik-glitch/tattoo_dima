@@ -1,5 +1,5 @@
 const { sendDepositConfirmation } = require('./utils/email');
-const { appendTimelineAndEdit } = require('./utils/telegram');
+const { appendTimelineAndEdit, notifyAlena, escapeMd } = require('./utils/telegram');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -25,10 +25,13 @@ module.exports = async function handler(req, res) {
     const { name, email, leadId, orderId } = payment.metadata;
     console.log('Payment SUCCESS:', id, payment.metadata);
 
-    // 1. Update Airtable status + payment metadata.
+    // 1. Update Airtable status + payment metadata. Surface failures here
+    //    explicitly — silent Airtable errors leave records in a half-paid
+    //    state that downstream filters (pre-care) silently exclude.
+    let telegramMessageId = null;
     if (leadId) {
       try {
-        await fetch(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/CRM_Leads/${leadId}`, {
+        const patchRes = await fetch(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/CRM_Leads/${leadId}`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
@@ -42,14 +45,23 @@ module.exports = async function handler(req, res) {
             }
           })
         });
+        if (!patchRes.ok) {
+          const errText = await patchRes.text();
+          throw new Error(`Airtable ${patchRes.status}: ${errText}`);
+        }
         console.log('Airtable updated for lead:', leadId);
       } catch (err) {
-        console.error('Airtable update failed:', err);
+        console.error('Airtable update failed:', err.message);
+        await notifyAlena(
+          `⚠️ *PAYMENT WEBHOOK ERROR*\n` +
+          `Lead: \`${leadId}\`\nPayment: \`${id}\`\n` +
+          `Airtable PATCH failed: ${err.message}\n` +
+          `Manager action needed: запиши депозит вручную.`
+        );
       }
     }
 
     // 2. Fetch lead and re-render the Telegram card via the shared helper.
-    let telegramMessageId = null;
     if (leadId) {
       try {
         const airtableRes = await fetch(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/CRM_Leads/${leadId}`, {
@@ -58,28 +70,11 @@ module.exports = async function handler(req, res) {
         if (airtableRes.ok) {
           const airtableData = await airtableRes.json();
           telegramMessageId = airtableData.fields?.['Telegram Message ID'];
-
-          const phone = airtableData.fields?.Phone || '';
-          const igRaw = (airtableData.fields?.Instagram || '').replace('@', '');
-          const wa = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
-          const ig = igRaw ? `https://instagram.com/${igRaw}` : null;
-
-          const replyMarkup = {
-            inline_keyboard: [
-              [
-                { text: '📱 WhatsApp', url: wa },
-                ...(ig ? [{ text: '📸 Instagram', url: ig }] : [])
-              ],
-              [{ text: '📅 Назначить дату', callback_data: 'set_date' }],
-              [{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]
-            ]
-          };
-
           const today = new Date().toISOString().split('T')[0];
           await appendTimelineAndEdit(
             airtableData,
             `💳 Deposit paid · ${today}`,
-            { status: 'deposit_paid', replyMarkup }
+            { status: 'deposit_paid' }
           );
         } else {
           console.error('Failed to fetch Airtable lead. Status:', airtableRes.status);
@@ -92,10 +87,10 @@ module.exports = async function handler(req, res) {
     // 3. Reply notification in thread (kept separate so Alena sees an
     //    explicit "new payment arrived" ping, not just a silent card edit).
     const message = `💰 *Deposit Received!* \n\n` +
-                    `👤 *Client:* ${name || 'Unknown'}\n` +
-                    `📧 *Email:* ${email || 'N/A'}\n` +
+                    `👤 *Client:* ${escapeMd(name || 'Unknown')}\n` +
+                    `📧 *Email:* ${escapeMd(email || 'N/A')}\n` +
                     `💶 *Amount:* ${payment.amount.value} ${payment.amount.currency}\n` +
-                    `🆔 *Order:* ${orderId || id}\n\n` +
+                    `🆔 *Order:* ${escapeMd(orderId || id)}\n\n` +
                     `✅ Все процессы успешно выполнены!`;
 
     try {
@@ -123,6 +118,12 @@ module.exports = async function handler(req, res) {
         console.log('Deposit confirmation email sent successfully');
       } catch (err) {
         console.error('Email #3a failed:', err.message);
+        await notifyAlena(
+          `⚠️ *EMAIL FAILED* (deposit confirmation)\n` +
+          `Client: ${email}\nPayment: \`${id}\`\n` +
+          `Error: ${err.message}\n` +
+          `Manager action: напиши клиенту вручную, что депозит получен.`
+        );
       }
     }
 
