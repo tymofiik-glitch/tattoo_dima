@@ -51,26 +51,21 @@ module.exports = async (req, res) => {
         const displaySize = sizeMap[fields.size] || fields.size || 'Not specified';
         const displayBudget = budgetMap[fields.budget] || fields.budget || 'Not specified';
 
-        const messageText = `
-✨ *NEW TATTOO ENQUIRY* ✨
-━━━━━━━━━━━━━━━━━━
-👤 *CLIENT:* ${escapeMd(fields.name || 'N/A')}
-📧 *EMAIL:* ${escapeMd(fields.email || 'N/A')}
-📸 *IG:* ${escapeMd(fields.instagram || 'N/A')}
-📞 *PHONE:* ${escapeMd(fields.phone || 'N/A')}
+        // Map form fields to the Airtable schema expected by buildMainMessage
+        const mappedFields = {
+            Name: fields.name,
+            Email: fields.email,
+            Instagram: fields.instagram,
+            Phone: fields.phone,
+            Size: displaySize,
+            Placement: fields.placement,
+            Budget: displayBudget,
+            Idea: fields.idea,
+            Notes: fields.notes
+        };
 
-🖼️ *TATTOO DETAILS*
-📐 *SIZE:* ${escapeMd(displaySize)}
-📍 *PLACE:* ${escapeMd(fields.placement || 'N/A')}
-💰 *BUDGET:* ${escapeMd(displayBudget)}
-
-📝 *IDEA:*
-${escapeMd(fields.idea || 'N/A')}
-
-📓 *NOTES:*
-${escapeMd(fields.notes || 'None')}
-━━━━━━━━━━━━━━━━━━
-        `.trim();
+        const { buildMainMessage } = require('./utils/telegram');
+        const messageText = buildMainMessage(mappedFields, { status: 'accepted' });
 
         const keyboard = {
             inline_keyboard: [[
