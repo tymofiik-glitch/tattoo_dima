@@ -37,16 +37,16 @@ function wrap({ title, sub, body }) {
   // <img>), so we render the ornament with plain HTML: a thin gold rule with
   // a small diamond glyph in the middle. Works in Gmail, Apple Mail, iCloud,
   // Outlook web + desktop, and falls back gracefully in plain-text clients.
-  // bgcolor + height="1" on a nested td — the only approach that survives
-  // Gmail's stripping of background-image and works in iCloud Mail too.
-  // valign="middle" on the outer td centers the 1px nested table vertically.
-  const ornamentLine = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%"><tr><td height="1" bgcolor="#c8a87a" style="height:1px;font-size:0;line-height:0;mso-line-height-rule:exactly;background-color:#c8a87a"></td></tr></table>`;
+  // inline-block span with border-bottom inside a vertical-align:middle td.
+  // Inline elements ARE centred by vertical-align:middle in both Gmail and
+  // iCloud Mail. With height:0 the border sits exactly at the row's midpoint.
+  const ornamentLine = `<span style="display:inline-block;width:100%;height:0;border-bottom:1px solid #c8a87a;font-size:0;line-height:0">​</span>`;
   const ornament = (width = 200) => `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;width:${width}px">
-      <tr valign="middle">
-        <td valign="middle" style="vertical-align:middle;padding:0">${ornamentLine}</td>
-        <td valign="middle" style="vertical-align:middle;padding:0 11px;white-space:nowrap;font-family:Georgia,serif;font-size:13px;color:#b8956a;line-height:1">&#10070;</td>
-        <td valign="middle" style="vertical-align:middle;padding:0">${ornamentLine}</td>
+      <tr>
+        <td style="padding:0;vertical-align:middle">${ornamentLine}</td>
+        <td style="padding:0 11px;white-space:nowrap;font-family:Georgia,serif;font-size:13px;color:#b8956a;vertical-align:middle;line-height:1">&#10070;</td>
+        <td style="padding:0;vertical-align:middle">${ornamentLine}</td>
       </tr>
     </table>`;
 
