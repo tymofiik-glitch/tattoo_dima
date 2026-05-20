@@ -312,39 +312,27 @@
     }
   }
 
-  // Handle return from Mollie: verify real payment status before showing success
+  // Handle return from Mollie: show success immediately, verify in background
   if (status === 'success') {
     const paymentId = sessionStorage.getItem('molliePaymentId');
     sessionStorage.removeItem('molliePaymentId');
 
-    if (paymentId) {
-      // Verify with server — only show success if Mollie confirms 'paid'
-      document.getElementById('depositCard').style.display = 'none';
-      document.getElementById('successOverlay').style.opacity = '0';
-      document.getElementById('successOverlay').style.pointerEvents = 'auto';
-      document.getElementById('successOverlay').style.display = 'flex';
+    document.getElementById('depositCard').style.display = 'none';
+    document.getElementById('successOverlay').classList.add('show');
 
+    // Background verification — if payment genuinely failed, restore form
+    if (paymentId) {
       fetch(`/api/verify-payment?id=${encodeURIComponent(paymentId)}`)
         .then(r => r.json())
         .then(d => {
-          if (d.status === 'paid') {
-            document.getElementById('successOverlay').classList.add('show');
-          } else {
-            // Payment not completed — let user try again
+          if (d.status !== 'paid' && d.status !== 'pending' && d.status !== 'authorized') {
+            document.getElementById('successOverlay').classList.remove('show');
             document.getElementById('depositCard').style.display = '';
-            document.getElementById('successOverlay').style.display = 'none';
             const btn = document.querySelector('.pay-btn');
             if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
           }
         })
-        .catch(() => {
-          // On network error, show success optimistically (webhook will confirm)
-          document.getElementById('successOverlay').classList.add('show');
-        });
-    } else {
-      // No stored payment id — show success (legacy path)
-      document.getElementById('depositCard').style.display = 'none';
-      document.getElementById('successOverlay').classList.add('show');
+        .catch(() => { /* keep success visible on network error */ });
     }
   }
 

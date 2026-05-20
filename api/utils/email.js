@@ -37,13 +37,15 @@ function wrap({ title, sub, body }) {
   // <img>), so we render the ornament with plain HTML: a thin gold rule with
   // a small diamond glyph in the middle. Works in Gmail, Apple Mail, iCloud,
   // Outlook web + desktop, and falls back gracefully in plain-text clients.
-  const ornamentLine = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td height="1" bgcolor="#c4a47a" style="font-size:0;line-height:0;opacity:.55">&nbsp;</td></tr></table>`;
+  // background linear-gradient creates a 1px line centred vertically — works
+  // in Gmail and Apple Mail / iCloud Mail without needing nested tables.
+  const lineBg = "background:linear-gradient(#c9a96e,#c9a96e) no-repeat center/100% 1px";
   const ornament = (width = 200) => `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;width:${width}px">
       <tr>
-        <td valign="middle" style="vertical-align:middle;padding:0;font-size:0;line-height:0">${ornamentLine}</td>
-        <td valign="middle" style="vertical-align:middle;padding:0 11px;white-space:nowrap;font-family:Georgia,serif;font-size:12px;color:#b8956a;line-height:1;opacity:.8">&#10070;</td>
-        <td valign="middle" style="vertical-align:middle;padding:0;font-size:0;line-height:0">${ornamentLine}</td>
+        <td style="padding:0;vertical-align:middle;font-size:0;line-height:0;${lineBg}">&nbsp;</td>
+        <td style="padding:0 11px;white-space:nowrap;font-family:Georgia,serif;font-size:13px;color:#b8956a;vertical-align:middle;line-height:1">&#10070;</td>
+        <td style="padding:0;vertical-align:middle;font-size:0;line-height:0;${lineBg}">&nbsp;</td>
       </tr>
     </table>`;
 
@@ -251,14 +253,15 @@ async function sendBookingConfirmation({ name, email, sessionDate, address, icsC
     heroTitle = `You're booked.`;
     heroSub   = `Session confirmed, ${name}.`;
     dateSection = `
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-             style="margin:8px 0 28px;background:#1c1814;border-left:2px solid #b8956a">
-        <tr><td style="padding:20px 24px">
-          <p style="margin:0 0 4px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
-                    font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:#8a8478">Your session</p>
-          <p style="margin:0;font-family:Didot,'Didot LT STD','Fraunces',Georgia,serif;
-                    font-style:italic;font-size:22px;line-height:1.25;color:#b8956a">${fullDate}</p>
-        </td></tr>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 28px">
+        <tr>
+          <td bgcolor="#1c1814" style="background-color:#1c1814;border-left:3px solid #b8956a;padding:20px 24px">
+            <p style="margin:0 0 6px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+                      font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:#6b6560">Your session</p>
+            <p style="margin:0;font-family:Didot,'Didot LT STD','Fraunces',Georgia,serif;
+                      font-style:italic;font-size:21px;line-height:1.3;color:#b8956a">${fullDate}</p>
+          </td>
+        </tr>
       </table>`;
     attachments = [{ filename: 'appointment.ics', content: Buffer.from(icsContent).toString('base64') }];
   } else {
