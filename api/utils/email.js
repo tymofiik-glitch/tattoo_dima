@@ -33,10 +33,18 @@ function wrap({ title, sub, body }) {
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : null;
   const year = new Date().getFullYear();
 
-  // Thin botanical sprig — microrealism-inspired line art. SVG inlined as data URI.
-  // URL-encoded to prevent breaking email client HTML parsers in preview text.
-  const svgContent = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 40' fill='none' stroke='#b8956a' stroke-width='0.8' stroke-linecap='round'><path d='M10 20 Q60 20 120 20 Q180 20 230 20'/><path d='M40 20 Q42 14 48 12'/><path d='M40 20 Q38 26 32 28'/><path d='M70 20 Q72 13 79 11'/><path d='M70 20 Q68 27 61 29'/><path d='M100 20 Q103 12 111 10'/><path d='M100 20 Q97 28 89 30'/><path d='M130 20 Q132 13 139 11'/><path d='M130 20 Q128 27 121 29'/><path d='M160 20 Q163 12 171 10'/><path d='M160 20 Q157 28 149 30'/><path d='M190 20 Q192 14 198 12'/><path d='M190 20 Q188 26 182 28'/><ellipse cx='48' cy='10' rx='3' ry='1.5' transform='rotate(-25 48 10)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='32' cy='30' rx='3' ry='1.5' transform='rotate(25 32 30)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='80' cy='9' rx='3.2' ry='1.6' transform='rotate(-28 80 9)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='60' cy='30' rx='3.2' ry='1.6' transform='rotate(28 60 30)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='112' cy='8' rx='3.4' ry='1.7' transform='rotate(-28 112 8)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='88' cy='31' rx='3.4' ry='1.7' transform='rotate(28 88 31)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='140' cy='9' rx='3.2' ry='1.6' transform='rotate(-28 140 9)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='120' cy='30' rx='3.2' ry='1.6' transform='rotate(28 120 30)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='172' cy='8' rx='3.4' ry='1.7' transform='rotate(-28 172 8)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='148' cy='31' rx='3.4' ry='1.7' transform='rotate(28 148 31)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='198' cy='10' rx='3' ry='1.5' transform='rotate(-25 198 10)' fill='#b8956a' fill-opacity='0.15'/><ellipse cx='182' cy='30' rx='3' ry='1.5' transform='rotate(25 182 30)' fill='#b8956a' fill-opacity='0.15'/></svg>`;
-  const branch = `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
+  // Minimal botanical divider — Gmail blocks SVG (both inline data-URI and
+  // <img>), so we render the ornament with plain HTML: a thin gold rule with
+  // a small diamond glyph in the middle. Works in Gmail, Apple Mail, iCloud,
+  // Outlook web + desktop, and falls back gracefully in plain-text clients.
+  const ornament = (width = 200) => `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;width:${width}px">
+      <tr>
+        <td style="height:1px;border-bottom:1px solid #b8956a;opacity:.6">&nbsp;</td>
+        <td style="padding:0 12px;font-family:Georgia,serif;font-size:14px;color:#b8956a;opacity:.7;line-height:1">&#10070;</td>
+        <td style="height:1px;border-bottom:1px solid #b8956a;opacity:.6">&nbsp;</td>
+      </tr>
+    </table>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -55,7 +63,7 @@ function wrap({ title, sub, body }) {
 <tr><td align="center">
 <table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;background:#f5f0e8">
   <tr><td style="padding:32px 8px 8px;text-align:center">
-    <img src="${branch}" alt="" width="200" height="34" style="display:inline-block;border:0;opacity:.85"/>
+    ${ornament(200)}
   </td></tr>
 
   <tr><td style="padding:8px 8px 32px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8a8478">
@@ -86,7 +94,7 @@ function wrap({ title, sub, body }) {
   </td></tr>
 
   <tr><td style="padding:24px 8px 8px;text-align:center">
-    <img src="${branch}" alt="" width="140" height="24" style="display:inline-block;border:0;opacity:.5"/>
+    ${ornament(140)}
   </td></tr>
 
   <tr><td style="padding:8px 8px 24px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:400;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8a8478;opacity:.6">
@@ -121,27 +129,16 @@ function secondaryButton(text, url) {
   return `<a href="${url}" style="display:inline-block;padding:14px 28px;background:transparent;color:#1c1814;border:1px solid rgba(28,24,20,.3);text-decoration:none;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;margin:8px 6px 8px 0">${text}</a>`;
 }
 
-// Calendar action block. Google Calendar gets a real clickable button.
-// Apple Calendar gets a styled "outline" tile that visually matches Google's
-// button but explains that the .ics attachment is the way to add the event —
-// because Apple doesn't expose a webcal:// deep link API for ad-hoc events.
-// Both tiles look like a pair: same height, icon, padding, typography.
+// Single Google Calendar button. Apple users add the event via the .ics
+// attachment at the bottom of the email — no separate button needed,
+// since Apple Mail / iOS auto-detect the attachment and surface a native
+// "Add to Calendar" affordance. The old Apple tile was a dead placeholder.
 function calendarButtons(googleUrl) {
-  // 16×16 line-icons in linen (#f5f0e8) for the filled Google button
-  // and in ink (#1c1814) for the outline Apple tile.
-  const appleIcon  = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c1814' stroke-width='1.4' stroke-linecap='round'><rect x='3' y='5' width='18' height='16' rx='2'/><line x1='3' y1='10' x2='21' y2='10'/><line x1='8' y1='3' x2='8' y2='7'/><line x1='16' y1='3' x2='16' y2='7'/><circle cx='12' cy='15.5' r='1.3' fill='%231c1814'/></svg>`;
-  const googleIcon = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f0e8' stroke-width='1.4' stroke-linecap='round'><rect x='3' y='5' width='18' height='16' rx='2'/><line x1='3' y1='10' x2='21' y2='10'/><line x1='8' y1='3' x2='8' y2='7'/><line x1='16' y1='3' x2='16' y2='7'/><circle cx='12' cy='15.5' r='1.3' fill='%23f5f0e8'/></svg>`;
-
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 8px">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0">
     <tr>
-      <td width="50%" valign="top" style="padding:0 6px 0 0">
-        <div style="display:block;padding:16px 14px;background:#f5f0e8;border:1px solid rgba(28,24,20,.18);color:#1c1814;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.18em;text-transform:uppercase">
-          <img src="${appleIcon}" alt="" width="14" height="14" style="vertical-align:-2px;margin-right:8px;border:0"/>Apple Calendar
-        </div>
-      </td>
-      <td width="50%" valign="top" style="padding:0 0 0 6px">
-        <a href="${googleUrl}" style="display:block;padding:16px 14px;background:#2d3d28;color:#f5f0e8;text-decoration:none;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.18em;text-transform:uppercase">
-          <img src="${googleIcon}" alt="" width="14" height="14" style="vertical-align:-2px;margin-right:8px;border:0"/>Google Calendar
+      <td align="center" style="padding:0">
+        <a href="${googleUrl}" style="display:inline-block;padding:14px 32px;background:#2d3d28;color:#f5f0e8;text-decoration:none;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase">
+          Add to Google Calendar
         </a>
       </td>
     </tr>
