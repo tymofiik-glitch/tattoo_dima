@@ -111,7 +111,7 @@ function wrap({ title, sub, body }) {
 function detailRow(label, value, gold = false) {
   return `<tr>
     <td style="padding:14px 0;border-bottom:1px solid rgba(28,24,20,.08);font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8a8478;width:40%">${label}</td>
-    <td style="padding:14px 0;border-bottom:1px solid rgba(28,24,20,.08);font-family:'Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;color:${gold ? '#b8956a' : '#1c1814'};text-align:right">${value}</td>
+    <td style="padding:14px 0;border-bottom:1px solid rgba(28,24,20,.08);font-family:Didot,'Didot LT STD','Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;color:${gold ? '#b8956a' : '#1c1814'};text-align:right">${value}</td>
   </tr>`;
 }
 
@@ -159,6 +159,12 @@ function noteCard(text) {
   </table>`;
 }
 
+function warningCard(text) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;background:#fff5f5;border-left:3px solid #d93838">
+    <tr><td style="padding:16px 20px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.75;color:#b32424">${text}</td></tr>
+  </table>`;
+}
+
 // Clickable address card that opens in Google Maps / Apple Maps.
 // We deliberately avoid <iframe> (blocked by all mail clients) and
 // static map images (proxy/CDN issues, slow loads in Gmail).
@@ -173,7 +179,7 @@ function mapCard(address) {
       <tr>
         <td style="padding:20px 24px" valign="middle">
           <p style="margin:0 0 4px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#8a8478">Studio location</p>
-          <p style="margin:0;font-family:'Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;color:#1c1814;line-height:1.4">${displayAddress}</p>
+          <p style="margin:0;font-family:Didot,'Didot LT STD','Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;color:#1c1814;line-height:1.4">${displayAddress}</p>
         </td>
         <td style="padding:20px 24px 20px 0;text-align:right;white-space:nowrap" valign="middle">
           <span style="font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#b8956a">Open in Maps →</span>
@@ -216,7 +222,7 @@ async function sendRejectionEmail({ name, email }) {
         <p style="margin:0 0 20px">We sincerely appreciate your interest in working with Dmytro. After careful consideration, we're sorry to let you know that we're unable to take on your project at this time.</p>
         <p style="margin:0 0 20px">This may be due to the current schedule, the style of work requested, or simply the timing — it does not reflect on you or your idea.</p>
         <p style="margin:0 0 24px">We wish you all the best in bringing your vision to life with the right artist.</p>
-        <p style="margin:32px 0 0;font-family:'Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:16px;color:#4a4540">With warmth — the muse ink team.</p>
+        <p style="margin:32px 0 0;font-family:Didot,'Didot LT STD','Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:16px;color:#4a4540">With warmth — the muse ink team.</p>
       `
     })
   });
@@ -247,7 +253,7 @@ async function sendDepositConfirmation({ name, email }) {
   });
 }
 
-// ─── Email #3b: Appointment confirmed with .ics + full details ──────────
+// ─── Email #3b: Appointment confirmed with .ics + full details (Deposit Paid) ──
 async function sendAppointmentCalendar({ name, email, sessionDate, address, icsContent, googleUrl }) {
   const resend = getResend();
 
@@ -270,6 +276,7 @@ async function sendAppointmentCalendar({ name, email, sessionDate, address, icsC
       sub: `Appointment confirmed, ${name}.`,
       body: `
         ${detailCard(
+          detailRow('Deposit', '€50 (Paid)', true) +
           detailRow('Date & Time', fullDate, true) +
           detailRow('Duration', '~3 hours') +
           detailRow('Artist', 'Dmytro Bilynets') +
@@ -277,14 +284,16 @@ async function sendAppointmentCalendar({ name, email, sessionDate, address, icsC
           detailRow('Address', studioAddress)
         )}
 
+        <p style="margin:0 0 20px">Your deposit of <strong>€50</strong> has been received, and your session is confirmed. Below are your appointment details, location directions, and calendar file.</p>
+
         <p style="margin:24px 0 8px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Add to your calendar</p>
         ${calendarButtons(googleUrl)}
         <p style="margin:8px 0 24px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.6;color:#8a8478;text-align:center">On iPhone or Mac, tap the attached <strong style="color:#4a4540;font-weight:500">appointment.ics</strong> to add it instantly.</p>
 
         <p style="margin:24px 0 12px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Arriving at the studio</p>
         ${mapCard(studioAddress)}
-        <p style="margin:0 0 16px">The studio is private and by appointment only. Please ring the bell at the entrance and Dmytro will let you in.</p>
-        <p style="margin:0 0 24px"><strong>Please arrive 5 minutes early</strong> so we can settle in without rushing.</p>
+        <p style="margin:0 0 16px">The studio is private and by appointment only. Dmytro will meet you at the entrance to let you in.</p>
+        <p style="margin:0 0 24px"><strong>Please arrive on time</strong> so we can begin the session as scheduled.</p>
 
         ${noteCard(`Any questions before your session? Reach Alena via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)">WhatsApp</a>.`)}
       `
@@ -331,8 +340,8 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
 
         ${infoSection('Logistics', [
           `<strong>Address:</strong> ${studioAddress}`,
-          'Private studio — ring the bell, Dmytro will let you in',
-          'Arrive 5 minutes early'
+          'Private studio — Dmytro will meet you at the entrance to let you in',
+          'Arrive on time'
         ])}
 
         ${mapCard(studioAddress)}
@@ -347,7 +356,7 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
   return safeSend(resend, payload, idempotencyKey ? { idempotencyKey } : undefined);
 }
 
-// ─── Email #5: Aftercare (3 days after session) ─────────────────────────
+// ─── Email #5: Aftercare (same day of session) ─────────────────────────
 async function sendAftercareEmail({ name, email }, { idempotencyKey } = {}) {
   const resend = getResend();
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
@@ -355,34 +364,66 @@ async function sendAftercareEmail({ name, email }, { idempotencyKey } = {}) {
   const payload = {
     from: FROM(),
     to: email,
-    subject: 'Aftercare reminder · Your tattoo by Dmytro',
+    subject: 'Aftercare instructions · Your tattoo by Dmytro',
     html: wrap({
-      title: 'How is it healing?',
-      sub: `Aftercare guide for ${name}.`,
+      title: 'Your aftercare guide.',
+      sub: `Instructions for ${name}.`,
       body: `
-        <p style="margin:0 0 24px">A few days have passed since your session. Here's a reminder of the key aftercare steps to keep your tattoo looking its best for years to come.</p>
+        <p style="margin:0 0 24px">Thank you for the session today. To ensure your tattoo heals perfectly, please follow these step-by-step instructions carefully.</p>
 
-        ${infoSection('Days 1–3', [
-          'Keep the area clean — gently wash 2× a day with lukewarm water and fragrance-free soap',
-          'Apply a thin layer of unscented healing cream (Bepanthen, Aquaphor, or similar) 2–3 times a day',
-          'Don\'t pick, scratch, or rub'
+        ${infoSection('Days 1–3 (The Protective Film)', [
+          '<strong>Leave the film on.</strong> Keep the protective film on your tattoo for 3 full days. It protects the fresh tattoo from bacteria.',
+          'You can shower normally, but do not submerge the area in water or let hot water hit it directly.',
+          'If fluid (blood or excess ink) builds up under the film, this is completely normal. Do not puncture the film.'
         ])}
 
-        ${infoSection('Days 4–14', [
-          'Peeling and itching are normal — never force the peel',
-          'Continue light moisturising',
-          '<strong>No swimming, baths, saunas, or sea water</strong>',
-          'Keep out of direct sunlight'
+        ${infoSection('Day 3 onwards (Film Removal & Washing)', [
+          'Gently peel off the film in a warm shower. Pull it slowly and parallel to your skin, not straight up.',
+          'Once off, wash the tattoo immediately with lukewarm water and a mild, fragrance-free soap (like Unicura or Sanex). Use your clean hands, never a washcloth.',
+          'Pat dry with a clean paper towel. Do not rub.'
         ])}
 
-        ${infoSection('Month 1 onwards', [
-          'Use <strong>SPF 50+</strong> on the tattoo whenever it\'s exposed to sun',
-          'This is the single most important thing for long-term ink longevity'
+        ${infoSection('Healing & Moisturizing (Weeks 1–3)', [
+          'Apply a very thin layer of healing cream (like Bepanthen, Aquaphor, or similar) 2–3 times a day.',
+          'Clean the tattoo gently twice a day before applying cream.',
+          'Never pick, scratch, or peel the flakes. Itching is a normal sign of healing.'
         ])}
 
-        ${noteCard(`If you notice anything unusual — excessive redness, swelling, or weeping after day 3 — message Alena immediately. We're here.`)}
+        ${infoSection('General Rules during Healing', [
+          '<strong>No swimming, baths, saunas, or sea water</strong> for at least 2 weeks.',
+          'Keep the tattoo out of direct sunlight. Once fully healed, always use <strong>SPF 50+</strong> sunscreen to protect the colors.'
+        ])}
 
-        <p style="margin:24px 0 8px">We'd love to see the healed result. Tag <a href="${INSTAGRAM_URL}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)"><strong>@kaktuz_tattooz</strong></a> on Instagram.</p>
+        ${warningCard('<strong>⚠️ IMPORTANT WARNING:</strong> If you notice anything unusual — such as <strong>persistent or spreading redness</strong>, swelling, throbbing pain, or weeping after day 3 — please contact Alena immediately. Do not ignore these symptoms as they can be signs of irritation or infection.')}
+
+        <p style="margin:24px 0 8px">We'd love to see the healed result. Please send a photo directly to Alena via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)"><strong>WhatsApp</strong></a> once your tattoo is fully healed.</p>
+        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Message Alena →</a></p>
+      `
+    })
+  };
+
+  return safeSend(resend, payload, idempotencyKey ? { idempotencyKey } : undefined);
+}
+
+// ─── Email #5b: Aftercare Reminder (3 days after session) ───────────────
+async function sendAftercareReminderEmail({ name, email }, { idempotencyKey } = {}) {
+  const resend = getResend();
+  const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
+
+  const payload = {
+    from: FROM(),
+    to: email,
+    subject: 'Aftercare reminder · Time to remove the film',
+    html: wrap({
+      title: 'Remove the film today.',
+      sub: `A quick reminder for ${name}.`,
+      body: `
+        <p style="margin:0 0 20px">It has been 3 days since your session. It is now time to gently remove the protective film from your tattoo.</p>
+        <p style="margin:0 0 20px">Please follow the step-by-step care instructions we sent you on the day of your session. You can refer to our previous email titled <strong>"Aftercare instructions · Your tattoo by Dmytro"</strong> for full details.</p>
+        <p style="margin:0 0 24px">Remember to wash it gently with fragrance-free soap, pat it dry, and apply a very thin layer of Bepanthen or Aquaphor 2–3 times a day. Do not pick or scratch.</p>
+        
+        ${warningCard('<strong>⚠️ IMPORTANT WARNING:</strong> If you notice any <strong>unusual redness</strong>, swelling, throbbing pain, or weeping, please contact Alena immediately via WhatsApp. We want to ensure your healing process goes smoothly.')}
+        
         <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Message Alena →</a></p>
       `
     })
@@ -397,5 +438,6 @@ module.exports = {
   sendDepositConfirmation,
   sendAppointmentCalendar,
   sendPreCareEmail,
-  sendAftercareEmail
+  sendAftercareEmail,
+  sendAftercareReminderEmail
 };

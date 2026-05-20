@@ -36,12 +36,55 @@ function airtableAuth() {
   return { 'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN?.trim()}` };
 }
 
-// Default keyboard derived from record state + lifecycle status, so timeline
-// edits don't accidentally strip Alena's action buttons.
-//   accepted     → WA/IG + deposit link + set_date + delete
-//   deposit_paid → WA/IG + set_date + delete   (deposit link removed)
-//   date_set     → WA/IG + set_date + delete   (lets her reschedule)
-//   session_done → WA/IG only (no further actions expected)
+// DST-aware parser: takes "YYYY-MM-DD HH:MM" (Amsterdam local) and returns a
+// proper Date with the right offset for that calendar day (CET vs CEST).
+function parseAmsterdamLocal(dateStr) {
+  const isoStr = dateStr.trim().replace(' ', 'T') + ':00';
+  const candidate = new Date(isoStr + '+01:00');
+  if (isNaN(candidate.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Amsterdam',
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', hour12: false
+  }).formatToParts(candidate);
+  const getVal = (type) => parseInt(parts.find(p => p.type === type).value, 10);
+  const hour = getVal('hour') === 24 ? 0 : getVal('hour');
+  const localUTC = Date.UTC(getVal('year'), getVal('month') - 1, getVal('day'), hour, getVal('minute'));
+  const offsetHours = (localUTC - candidate.getTime()) / 3600000;
+  const offsetStr = '+' + String(offsetHours).padStart(2, '0') + ':00';
+  return new Date(isoStr + offsetStr);
+}
+
+// Parses session datetime (Amsterdam local) from the Timeline string.
+// Returns a Date object or null. Looks for the line written by telegram-webhook:
+//   "📅 Date set · 15 Jun 2025, 14:00"
+function getSessionDateTime(fields) {
+  const sessionDateStr = fields?.['Session Date'];
+  if (!sessionDateStr) return null;
+  const timeline = fields?.Timeline || '';
+  for (const line of String(timeline).split('\n')) {
+    const m = line.match(/📅\s*Date\s*set\s*·\s*[^\n,]+,\s*(\d{2}):(\d{2})/i);
+    if (m) {
+      const d = parseAmsterdamLocal(`${sessionDateStr} ${m[1]}:${m[2]}`);
+      if (d) return d;
+    }
+  }
+  return parseAmsterdamLocal(`${sessionDateStr} 12:00`);
+}
+
+function formatShortDate(date) {
+  if (!date) return '';
+  return date.toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    timeZone: 'Europe/Amsterdam'
+  });
+}
+
+// Single-CTA keyboard derived from lifecycle:
+//   accepted (no date)        → WA/IG · 📅 Время + депозит · 🗑 delete
+//   accepted (date set)       → WA/IG · 💳 Ссылка на депозит · {date} · 📝 Изменить дату · 🗑 delete
+//   deposit_paid / date_set   → WA/IG · 📝 Изменить дату · 🗑 delete
+//   session_done              → WA/IG only
 function buildKeyboard(fields, status) {
   const phone = String(fields.Phone || '').replace(/[^0-9]/g, '');
   const igRaw = String(fields.Instagram || '').replace('@', '');
@@ -53,16 +96,29 @@ function buildKeyboard(fields, status) {
 
   const rows = top.length ? [top] : [];
 
-  if (status === 'accepted' || status === 'error') {
-    const depositUrl = `https://kaktuz.ink/deposit?name=${encodeURIComponent(fields.Name || '')}&email=${encodeURIComponent(fields.Email || '')}`;
-    rows.push([{ text: '💳 Ссылка на депозит', url: depositUrl }]);
-    rows.push([{ text: '📅 Назначить дату', callback_data: 'set_date' }]);
-    rows.push([{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]);
-  } else if (status === 'deposit_paid' || status === 'date_set') {
-    rows.push([{ text: '📅 Назначить дату', callback_data: 'set_date' }]);
-    rows.push([{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]);
+  const depositPaid = status === 'deposit_paid' || !!fields['Mollie Payment ID'];
+  const sessionDate = getSessionDateTime(fields);
+  const dateSet = !!sessionDate;
+
+  if (status === 'session_done') return { inline_keyboard: rows };
+
+  if (!dateSet && !depositPaid) {
+    rows.push([{ text: '📅 Время + депозит', callback_data: 'set_date' }]);
+  } else if (dateSet && !depositPaid) {
+    const shortDate = formatShortDate(sessionDate);
+    const depositUrl =
+      `https://kaktuz.ink/deposit` +
+      `?name=${encodeURIComponent(fields.Name || '')}` +
+      `&email=${encodeURIComponent(fields.Email || '')}` +
+      (fields.id ? `&leadId=${fields.id}` : '') +
+      `&date=${encodeURIComponent(sessionDate.toISOString())}`;
+    rows.push([{ text: `💳 Ссылка на депозит · ${shortDate}`, url: depositUrl }]);
+    rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }]);
+  } else {
+    rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }]);
   }
-  // session_done: only contact buttons; no further action buttons.
+
+  rows.push([{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]);
 
   return { inline_keyboard: rows };
 }
@@ -207,7 +263,7 @@ async function appendTimelineAndEdit(record, line, { status, replyMarkup } = {})
 
   if (!messageId || !chatId) return { ok: true, telegramOk: false };
 
-  const updatedFields = { ...fields, Timeline: serializeTimeline(next) };
+  const updatedFields = { ...fields, id: record.id, Timeline: serializeTimeline(next) };
   const text = buildMainMessage(updatedFields, { status, timeline: next });
   const markup = replyMarkup || buildKeyboard(updatedFields, status);
   const result = await editMainMessage({ chatId, messageId, text, replyMarkup: markup });
@@ -223,5 +279,7 @@ module.exports = {
   appendTimelineAndEdit,
   parseTimeline,
   serializeTimeline,
+  getSessionDateTime,
+  formatShortDate,
   escapeMd
 };

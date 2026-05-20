@@ -28,7 +28,7 @@ function generateIcs({ clientName, clientEmail, sessionDate, address, durationHo
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//kaktuz//Tattoo Appointment//EN',
+    'PRODID:-//the muse ink//Tattoo Appointment//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:REQUEST',
     'BEGIN:VEVENT',
@@ -37,9 +37,9 @@ function generateIcs({ clientName, clientEmail, sessionDate, address, durationHo
     `DTSTART:${toIcsDate(start)}`,
     `DTEND:${toIcsDate(end)}`,
     'SUMMARY:Tattoo appointment · Dmytro Bilynets',
-    `DESCRIPTION:${escapeText(`Your tattoo session with Dmytro Bilynets at kaktuz studio.\nAddress: ${location}`)}`,
+    `DESCRIPTION:${escapeText(`Your tattoo session with Dmytro Bilynets at the muse ink.\nAddress: ${location}`)}`,
     `LOCATION:${escapeText(location)}`,
-    `ORGANIZER;CN=kaktuz:mailto:${organizerEmail}`,
+    `ORGANIZER;CN=the muse ink:mailto:${organizerEmail}`,
     `ATTENDEE;CN=${escapeText(clientName)}:mailto:${clientEmail || 'unknown@unknown.com'}`,
     'STATUS:CONFIRMED',
     'END:VEVENT',
@@ -70,7 +70,7 @@ function googleCalendarUrl({ sessionDate, address, durationHours = 3 }) {
     action: 'TEMPLATE',
     text: 'Tattoo appointment · Dmytro Bilynets',
     dates: `${fmt(start)}/${fmt(end)}`,
-    details: 'Your tattoo session at kaktuz studio with Dmytro Bilynets.',
+    details: 'Your tattoo session at the muse ink with Dmytro Bilynets.',
     location,
   });
 

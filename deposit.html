@@ -250,6 +250,10 @@
       <span class="label">Artist</span>
       <span class="value">Dmytro Bilynets</span>
     </div>
+    <div class="info-row" id="sessionRow" style="display:none">
+      <span class="label">Session</span>
+      <span class="value" id="sessionDate">—</span>
+    </div>
     <div class="info-row">
       <span class="label">Deposit</span>
       <span class="value amount-value">€50</span>
@@ -290,9 +294,23 @@
   const clientName  = params.get('name')  ? decodeURIComponent(params.get('name'))  : null;
   const clientEmail = params.get('email') ? decodeURIComponent(params.get('email')) : null;
   const leadId      = params.get('leadId') ? params.get('leadId') : null;
+  const sessionRaw  = params.get('date')  ? decodeURIComponent(params.get('date'))  : null;
   const status      = params.get('status');
 
   if (clientName) document.getElementById('clientName').textContent = clientName;
+
+  if (sessionRaw) {
+    const d = new Date(sessionRaw);
+    if (!isNaN(d.getTime())) {
+      const formatted = d.toLocaleString('en-GB', {
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit',
+        timeZone: 'Europe/Amsterdam'
+      });
+      document.getElementById('sessionDate').textContent = formatted;
+      document.getElementById('sessionRow').style.display = 'flex';
+    }
+  }
 
   // Handle return from Mollie
   if (status === 'success') {

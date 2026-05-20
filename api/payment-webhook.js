@@ -1,5 +1,6 @@
-const { sendDepositConfirmation } = require('./utils/email');
-const { appendTimelineAndEdit, notifyAlena, escapeMd } = require('./utils/telegram');
+const { sendDepositConfirmation, sendAppointmentCalendar } = require('./utils/email');
+const { generateIcs, googleCalendarUrl } = require('./utils/ics');
+const { appendTimelineAndEdit, notifyAlena, escapeMd, getSessionDateTime } = require('./utils/telegram');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -22,34 +23,62 @@ module.exports = async function handler(req, res) {
       return res.status(200).send('OK');
     }
 
-    const { name, email, leadId, orderId } = payment.metadata;
+    const { name, email, leadId } = payment.metadata;
     console.log('Payment SUCCESS:', id, payment.metadata);
 
-    // 1. Update Airtable status + payment metadata. Surface failures here
-    //    explicitly — silent Airtable errors leave records in a half-paid
-    //    state that downstream filters (pre-care) silently exclude.
+    let record = null;
     let telegramMessageId = null;
+    let hasSessionDate = false;
+
+    // 1. Fetch lead from Airtable first to check if Session Date is set
     if (leadId) {
       try {
+        const airtableRes = await fetch(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/CRM_Leads/${leadId}`, {
+          headers: { 'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}` }
+        });
+        if (airtableRes.ok) {
+          record = await airtableRes.json();
+          telegramMessageId = record.fields?.['Telegram Message ID'];
+          hasSessionDate = !!record.fields?.['Session Date'];
+        } else {
+          console.error('Failed to fetch Airtable lead. Status:', airtableRes.status);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Airtable lead:', err.message);
+      }
+    }
+
+    // 2. Update Airtable status + payment metadata
+    if (leadId) {
+      try {
+        const targetStatus = hasSessionDate ? "📅 Date Set" : "💳 Deposit Paid";
+        const patchFields = {
+          "Status": targetStatus,
+          "Mollie Payment ID": id,
+          "Payment Date": new Date().toISOString()
+        };
+        if (hasSessionDate) {
+          patchFields["Session Status"] = "scheduled";
+        }
+
         const patchRes = await fetch(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/CRM_Leads/${leadId}`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            fields: {
-              "Status": "💳 Deposit Paid",
-              "Mollie Payment ID": id,
-              "Payment Date": new Date().toISOString()
-            }
-          })
+          body: JSON.stringify({ fields: patchFields })
         });
         if (!patchRes.ok) {
           const errText = await patchRes.text();
           throw new Error(`Airtable ${patchRes.status}: ${errText}`);
         }
         console.log('Airtable updated for lead:', leadId);
+
+        // Update local record representation
+        if (record) {
+          record.fields = { ...record.fields, ...patchFields };
+        }
       } catch (err) {
         console.error('Airtable update failed:', err.message);
         await notifyAlena(
@@ -61,42 +90,83 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // 2. Fetch lead and re-render the Telegram card via the shared helper.
-    if (leadId) {
+    // 3. Re-render the Telegram card with timeline update
+    if (record) {
       try {
-        const airtableRes = await fetch(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/CRM_Leads/${leadId}`, {
-          headers: { 'Authorization': `Bearer ${process.env.AIRTABLE_TOKEN}` }
-        });
-        if (airtableRes.ok) {
-          const airtableData = await airtableRes.json();
-          telegramMessageId = airtableData.fields?.['Telegram Message ID'];
-          const today = new Date().toISOString().split('T')[0];
-          await appendTimelineAndEdit(
-            airtableData,
-            `💳 Deposit paid · ${today}`,
-            { status: 'deposit_paid' }
-          );
-        } else {
-          console.error('Failed to fetch Airtable lead. Status:', airtableRes.status);
-        }
+        const today = new Date().toISOString().split('T')[0];
+        const statusOverride = hasSessionDate ? 'date_set' : 'deposit_paid';
+        await appendTimelineAndEdit(
+          record,
+          `💳 Deposit paid · ${today}`,
+          { status: statusOverride }
+        );
       } catch (err) {
         console.error('Failed to refresh Telegram main message:', err.message);
       }
     }
 
-    // 3. Reply notification in thread (kept separate so Alena sees an
-    //    explicit "new payment arrived" ping, not just a silent card edit).
-    const message = `💰 *Deposit Received!* \n\n` +
-                    `👤 *Client:* ${escapeMd(name || 'Unknown')}\n` +
-                    `📧 *Email:* ${escapeMd(email || 'N/A')}\n` +
-                    `💶 *Amount:* ${payment.amount.value} ${payment.amount.currency}\n` +
-                    `🆔 *Order:* ${escapeMd(orderId || id)}\n\n` +
-                    `✅ Все процессы успешно выполнены!`;
+    // 4. Send email first so the Telegram reply can confirm it was sent.
+    const sessionDate = record ? getSessionDateTime(record.fields) : null;
+    let emailSent = false;
+    let emailError = null;
+
+    if (email) {
+      try {
+        if (sessionDate) {
+          const clientName = name || record?.fields?.Name || 'Client';
+          const clientEmail = email || record?.fields?.Email || '';
+          const address = record?.fields?.Address || null;
+          const icsContent = generateIcs({ clientName, clientEmail, sessionDate, address });
+          const googleUrl  = googleCalendarUrl({ sessionDate, address });
+
+          await sendAppointmentCalendar({ name: clientName, email: clientEmail, sessionDate, address, icsContent, googleUrl });
+          console.log('Unified calendar email sent successfully');
+        } else {
+          await sendDepositConfirmation({ name: name || 'there', email });
+          console.log('Deposit confirmation email sent successfully');
+        }
+        emailSent = true;
+      } catch (err) {
+        console.error('Email sending failed:', err.message);
+        emailError = err.message;
+        await notifyAlena(
+          `⚠️ *EMAIL FAILED*\n` +
+          `Client: ${email}\nPayment: \`${id}\`\n` +
+          `Error: ${err.message}\n` +
+          `Manager action: напиши клиенту вручную.`
+        );
+      }
+    }
+
+    // 5. Single combined reply: deposit paid + email status + session time
+    const sessionLine = sessionDate
+      ? sessionDate.toLocaleString('en-GB', {
+          weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
+        })
+      : null;
+
+    const lines = [
+      `💰 *Депозит оплачен*`,
+      ``,
+      `👤 *Client:* ${escapeMd(name || 'Unknown')}`,
+      `💶 *Amount:* ${payment.amount.value} ${payment.amount.currency}`
+    ];
+    if (sessionLine) lines.push(`📅 *Session:* ${escapeMd(sessionLine)} (Amsterdam)`);
+    if (emailSent) {
+      lines.push(`✉️ *Email sent:* ${escapeMd(email || '—')}`);
+    } else if (email) {
+      lines.push(`⚠️ *Email FAILED:* ${escapeMd(emailError || 'unknown')}`);
+    }
+    lines.push(``);
+    lines.push(sessionLine
+      ? `✅ Сессия подтверждена, календарь отправлен клиенту.`
+      : `✅ Депозит зафиксирован. Дата ещё не назначена.`);
 
     try {
       const sendPayload = {
         chat_id: process.env.TELEGRAM_CHAT_ID,
-        text: message,
+        text: lines.join('\n'),
         parse_mode: 'Markdown'
       };
       if (telegramMessageId) {
@@ -110,21 +180,6 @@ module.exports = async function handler(req, res) {
       console.log('Telegram notification sent');
     } catch (err) {
       console.error('Telegram notification failed:', err);
-    }
-
-    if (email) {
-      try {
-        await sendDepositConfirmation({ name: name || 'there', email });
-        console.log('Deposit confirmation email sent successfully');
-      } catch (err) {
-        console.error('Email #3a failed:', err.message);
-        await notifyAlena(
-          `⚠️ *EMAIL FAILED* (deposit confirmation)\n` +
-          `Client: ${email}\nPayment: \`${id}\`\n` +
-          `Error: ${err.message}\n` +
-          `Manager action: напиши клиенту вручную, что депозит получен.`
-        );
-      }
     }
 
     res.status(200).send('OK');

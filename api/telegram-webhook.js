@@ -1,6 +1,6 @@
 const { sendRejectionEmail, sendAppointmentCalendar } = require('./utils/email');
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
-const { buildMainMessage, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
+const { buildMainMessage, buildKeyboard, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
 
 // In-memory state for the two-step "set appointment" flow per chat.
 // Step 1: awaitingDate    — Alena enters date/time
@@ -246,6 +246,7 @@ module.exports = async (req, res) => {
       const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
       const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
       let record = null;
+      let depositPaid = false;
 
       if (airtableToken && airtableBase) {
         const formula = encodeURIComponent(`{Telegram Message ID} = '${originalMsgId}'`);
@@ -258,6 +259,7 @@ module.exports = async (req, res) => {
             record = findData.records[0];
             clientName = record.fields.Name || clientName || 'Client';
             clientEmail = record.fields.Email || clientEmail || '';
+            depositPaid = record.fields.Status === '💳 Deposit Paid' || !!record.fields['Mollie Payment ID'];
           }
         } catch (err) {
           console.error('Airtable lead fetch failed:', err.message);
@@ -275,13 +277,19 @@ module.exports = async (req, res) => {
       const icsContent = generateIcs({ clientName, clientEmail, sessionDate, address });
       const googleUrl  = googleCalendarUrl({ sessionDate, address });
 
+      let emailSent = false;
       if (clientEmail) {
-        try {
-          await sendAppointmentCalendar({ name: clientName, email: clientEmail, sessionDate, address, icsContent, googleUrl });
-        } catch (err) {
-          console.error('Email #3b failed:', err.message);
-          const { notifyAlena } = require('./utils/telegram');
-          await notifyAlena(`⚠️ Error sending calendar email: ${err.message}\nEmail: ${clientEmail}\nName: ${clientName}`);
+        if (depositPaid) {
+          try {
+            await sendAppointmentCalendar({ name: clientName, email: clientEmail, sessionDate, address, icsContent, googleUrl });
+            emailSent = true;
+          } catch (err) {
+            console.error('Email #3b failed:', err.message);
+            const { notifyAlena } = require('./utils/telegram');
+            await notifyAlena(`⚠️ Error sending calendar email: ${err.message}\nEmail: ${clientEmail}\nName: ${clientName}`);
+          }
+        } else {
+          console.log('Deposit not paid yet. Skipping calendar email.');
         }
       } else {
         const { notifyAlena } = require('./utils/telegram');
@@ -295,7 +303,7 @@ module.exports = async (req, res) => {
         try {
           const fields = {
             'Session Date':   sessionDate.toISOString().split('T')[0],
-            'Status':         '📅 Date Set',
+            'Status':         depositPaid ? '📅 Date Set' : (record.fields.Status || '💬 In Progress'),
             'Session Status': 'scheduled'
           };
           await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
@@ -312,7 +320,7 @@ module.exports = async (req, res) => {
           await appendTimelineAndEdit(
             merged,
             `📅 Date set · ${humanDate}`,
-            { status: 'date_set' }
+            { status: depositPaid ? 'date_set' : 'accepted' }
           );
         } catch (err) {
           console.error('Airtable session date update failed:', err.message);
@@ -324,12 +332,19 @@ module.exports = async (req, res) => {
         hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
       });
 
+      let responseText = `✅ Дата сохранена\n📅 *${escapeMd(dateStr)}*`;
+      if (depositPaid) {
+        responseText += `\n✉️ Письмо с календарём отправлено на ${escapeMd(clientEmail || '—')}`;
+      } else {
+        responseText += `\n💳 В карточке клиента активирована кнопка _«Ссылка на депозит»_ с этой датой. Отправь её клиенту.`;
+      }
+
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: incomingChatId,
-          text: `✅ Сессия назначена\n📅 *${escapeMd(dateStr)}*\n📍 _(адрес по умолчанию)_\n✉️ Письмо с .ics отправлено на ${escapeMd(clientEmail || '—')}`,
+          text: responseText,
           parse_mode: 'Markdown'
         })
       });
@@ -366,6 +381,7 @@ module.exports = async (req, res) => {
     let name = extractField(msgText, 'CLIENT') || 'Client';
     let phone = extractField(msgText, 'PHONE') || '0';
     let leadId = '';
+    let existingRecordFields = {};
 
     if (data?.startsWith('chat|')) {
       const parts = data.split('|');
@@ -391,31 +407,13 @@ module.exports = async (req, res) => {
           const findData = await findRes.json();
           if (findData.records?.length > 0) {
             leadId = findData.records[0].id;
+            existingRecordFields = findData.records[0].fields || {};
           }
         } catch (err) {
           console.error('Failed to retrieve existing record ID:', err.message);
         }
       }
     }
-
-    const wa   = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
-    const igRaw = extractField(msgText, 'IG').replace('@', '');
-    const ig   = igRaw ? `https://instagram.com/${igRaw}` : null;
-
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '📱 WhatsApp', url: wa },
-          ...(ig ? [{ text: '📸 Instagram', url: ig }] : [])
-        ],
-        [{ 
-          text: '💳 Ссылка на депозит', 
-          url: `https://kaktuz.ink/deposit?name=${encodeURIComponent(name)}&email=${encodeURIComponent(extractField(msgText, 'EMAIL') || '')}${leadId ? `&leadId=${leadId}` : ''}` 
-        }],
-        [{ text: '📅 Назначить дату', callback_data: 'set_date' }],
-        [{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]
-      ]
-    };
 
     const cardFields = {
       Name:      name,
@@ -427,10 +425,16 @@ module.exports = async (req, res) => {
       Budget:    extractField(msgText, 'BUDGET'),
       Idea:      extractField(msgText, 'IDEA'),
       Notes:     extractField(msgText, 'NOTES'),
-      Timeline:  ''
+      Timeline:  existingRecordFields.Timeline || '',
+      'Session Date': existingRecordFields['Session Date'],
+      'Mollie Payment ID': existingRecordFields['Mollie Payment ID'],
+      id: leadId
     };
+
+    const keyboard = buildKeyboard(cardFields, ok ? 'accepted' : 'error');
     const newText = buildMainMessage(cardFields, {
-      status: ok ? 'accepted' : 'error'
+      status: ok ? 'accepted' : 'error',
+      timeline: existingRecordFields.Timeline ? existingRecordFields.Timeline.split('\n').filter(Boolean) : []
     });
 
     const method = message.caption ? 'editMessageCaption' : 'editMessageText';
@@ -529,7 +533,7 @@ module.exports = async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `📅 Введи дату и время сеанса для *${escapeMd(clientName)}* в формате:\n\`2025-06-15 14:00\`\n\n[ID: ${msgId}]`,
+        text: `📅 Введи дату и время сеанса для *${escapeMd(clientName)}* в формате:\n\`2025-06-15 14:00\`\n\nПосле этого в карточке появится кнопка _«Ссылка на депозит»_ с этой датой.\n\n[ID: ${msgId}]`,
         parse_mode: 'Markdown',
         reply_markup: { force_reply: true, selective: true }
       })

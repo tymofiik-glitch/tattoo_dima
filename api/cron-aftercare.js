@@ -1,10 +1,11 @@
-const { sendAftercareEmail, sendPreCareEmail } = require('./utils/email');
+const { sendAftercareEmail, sendPreCareEmail, sendAftercareReminderEmail } = require('./utils/email');
 const { notifyAlena, appendTimelineAndEdit } = require('./utils/telegram');
 
-// Daily cron — scans Airtable and triggers two email types with strong
+// Daily cron — scans Airtable and triggers three email types with strong
 // idempotency guarantees (Airtable lock TTL + Resend Idempotency-Key):
-//   • Pre-care   — 7 days BEFORE the session, only if deposit is paid
-//   • Aftercare  — 3 days AFTER the session,  only if session is `completed`
+//   • Pre-care           — 7 days BEFORE the session, only if deposit is paid
+//   • Aftercare (Day 0)  — Day of the session, only if scheduled or completed
+//   • Aftercare Reminder — 3 days AFTER the session, only if completed
 // Also runs autoMarkCompleted to flip past `scheduled` sessions to `completed`.
 
 const LOCK_TTL_MIN = 10;
@@ -26,8 +27,8 @@ const TYPE_CONFIG = {
   aftercare: {
     sentField:    'AftercareSentAt',
     lockField:    'AftercareLockedAt',
-    extraFilter:  "{Session Status} = 'completed'",
-    targetOffset: -3,
+    extraFilter:  "OR({Session Status} = 'scheduled', {Session Status} = 'completed')",
+    targetOffset: 0,
     send: (record, opts) => sendAftercareEmail({
       name: record.fields.Name || 'there',
       email: record.fields.Email
@@ -37,6 +38,24 @@ const TYPE_CONFIG = {
       await appendTimelineAndEdit(
         record,
         `✅ Aftercare sent · ${today}`,
+        { status: 'session_done' }
+      );
+    }
+  },
+  aftercare_reminder: {
+    sentField:    'AftercareReminderSentAt',
+    lockField:    'AftercareReminderLockedAt',
+    extraFilter:  "{Session Status} = 'completed'",
+    targetOffset: -3,
+    send: (record, opts) => sendAftercareReminderEmail({
+      name: record.fields.Name || 'there',
+      email: record.fields.Email
+    }, opts),
+    onSuccess: async (record) => {
+      const today = new Date().toISOString().split('T')[0];
+      await appendTimelineAndEdit(
+        record,
+        `✅ Aftercare reminder sent · ${today}`,
         { status: 'session_done' }
       );
     }
@@ -89,12 +108,8 @@ async function getRecord(recordId) {
   return r.json();
 }
 
-// Try to take the lock atomically-ish: PATCH our timestamp, then GET back
-// and verify that our value won. If two cron instances race, one will see
-// a timestamp newer than its own write and back off.
 async function acquireLock(record, lockField, myStamp) {
   await patchRecord(record.id, { [lockField]: myStamp });
-  // Small settle delay so the second writer's PATCH is visible in our GET.
   await new Promise(r => setTimeout(r, 300));
   const fresh = await getRecord(record.id);
   const current = fresh.fields?.[lockField];
@@ -111,7 +126,6 @@ async function releaseLock(recordId, lockField) {
 
 function buildFilter(cfg, target) {
   const ttlClause = `OR(NOT({${cfg.lockField}}), IS_BEFORE({${cfg.lockField}}, DATEADD(NOW(),-${LOCK_TTL_MIN},'minutes')))`;
-  // Airtable date fields can't be compared to a string with `=` — use IS_SAME.
   const dateClause = `IS_SAME({Session Date}, '${target}', 'day')`;
   return `AND(${dateClause}, NOT({${cfg.sentField}}), ${cfg.extraFilter}, ${ttlClause})`;
 }
@@ -153,7 +167,6 @@ async function processBatch(type, target) {
 
       if (cfg.onSuccess) {
         try {
-          // Re-fetch so onSuccess sees the freshly patched SentAt.
           const fresh = await getRecord(record.id);
           await cfg.onSuccess(fresh);
         } catch (err) {
@@ -174,10 +187,6 @@ async function processBatch(type, target) {
   return { target, sent, failed, skipped, total: records.length };
 }
 
-// Sweep: any record whose session date is in the past and still marked
-// `scheduled` is auto-flipped to `completed`. Manager can override to
-// `no-show` / `cancelled` before this runs (or after — aftercare gate
-// re-checks via the filter on the next day's cron).
 async function autoMarkCompleted() {
   const formula = `AND(IS_BEFORE({Session Date}, TODAY()), {Session Status} = 'scheduled')`;
   const records = await fetchRecords(formula);
@@ -205,21 +214,24 @@ module.exports = async (req, res) => {
   try {
     const completedSweep = await autoMarkCompleted();
     const preRes  = await processBatch('precare',   targetDate(+7));
-    const postRes = await processBatch('aftercare', targetDate(-3));
+    const postRes = await processBatch('aftercare', targetDate(0));
+    const remRes  = await processBatch('aftercare_reminder', targetDate(-3));
 
     const summary = {
       ok: true,
       autoCompleted: completedSweep,
       preCare:   preRes,
-      aftercare: postRes
+      aftercare: postRes,
+      aftercareReminder: remRes
     };
 
-    const totalFailed = preRes.failed + postRes.failed;
+    const totalFailed = preRes.failed + postRes.failed + remRes.failed;
     if (totalFailed > 0) {
       await notifyAlena(
         `📊 Cron ${new Date().toISOString().split('T')[0]}: ` +
         `precare ${preRes.sent}/${preRes.total}, ` +
         `aftercare ${postRes.sent}/${postRes.total}, ` +
+        `reminder ${remRes.sent}/${remRes.total}, ` +
         `*failures: ${totalFailed}*`
       );
     }
