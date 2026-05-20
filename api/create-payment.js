@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
       throw new Error(data.detail || 'Failed to create payment');
     }
 
-    return res.status(200).json({ checkoutUrl: data._links.checkout.href });
+    return res.status(200).json({ checkoutUrl: data._links.checkout.href, paymentId: data.id });
   } catch (err) {
     console.error('Payment creation error:', err.message);
     return res.status(500).json({ error: err.message });

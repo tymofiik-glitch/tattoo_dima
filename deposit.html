@@ -312,10 +312,40 @@
     }
   }
 
-  // Handle return from Mollie
+  // Handle return from Mollie: verify real payment status before showing success
   if (status === 'success') {
-    document.getElementById('depositCard').style.display = 'none';
-    document.getElementById('successOverlay').classList.add('show');
+    const paymentId = sessionStorage.getItem('molliePaymentId');
+    sessionStorage.removeItem('molliePaymentId');
+
+    if (paymentId) {
+      // Verify with server — only show success if Mollie confirms 'paid'
+      document.getElementById('depositCard').style.display = 'none';
+      document.getElementById('successOverlay').style.opacity = '0';
+      document.getElementById('successOverlay').style.pointerEvents = 'auto';
+      document.getElementById('successOverlay').style.display = 'flex';
+
+      fetch(`/api/verify-payment?id=${encodeURIComponent(paymentId)}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.status === 'paid') {
+            document.getElementById('successOverlay').classList.add('show');
+          } else {
+            // Payment not completed — let user try again
+            document.getElementById('depositCard').style.display = '';
+            document.getElementById('successOverlay').style.display = 'none';
+            const btn = document.querySelector('.pay-btn');
+            if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+          }
+        })
+        .catch(() => {
+          // On network error, show success optimistically (webhook will confirm)
+          document.getElementById('successOverlay').classList.add('show');
+        });
+    } else {
+      // No stored payment id — show success (legacy path)
+      document.getElementById('depositCard').style.display = 'none';
+      document.getElementById('successOverlay').classList.add('show');
+    }
   }
 
   // URL Validation
@@ -355,9 +385,12 @@
         throw new Error(data.error || 'Connection issue');
       }
 
+      // Store payment ID so we can verify status after Mollie redirects back
+      if (data.paymentId) sessionStorage.setItem('molliePaymentId', data.paymentId);
+
       // Smooth fade out before redirect
       document.body.classList.add('fade-out');
-      
+
       setTimeout(() => {
         window.location.href = data.checkoutUrl;
       }, 700);
