@@ -1,4 +1,4 @@
-const { sendDepositConfirmation, sendAppointmentCalendar } = require('./utils/email');
+const { sendBookingConfirmation } = require('./utils/email');
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
 const { appendTimelineAndEdit, notifyAlena, escapeMd, getSessionDateTime } = require('./utils/telegram');
 
@@ -112,19 +112,13 @@ module.exports = async function handler(req, res) {
 
     if (email) {
       try {
-        if (sessionDate) {
-          const clientName = name || record?.fields?.Name || 'Client';
-          const clientEmail = email || record?.fields?.Email || '';
-          const address = record?.fields?.Address || null;
-          const icsContent = generateIcs({ clientName, clientEmail, sessionDate, address });
-          const googleUrl  = googleCalendarUrl({ sessionDate, address });
+        const clientName = name || record?.fields?.Name || 'Client';
+        const address = record?.fields?.Address || null;
+        const icsContent = sessionDate ? generateIcs({ clientName, clientEmail: email, sessionDate, address }) : null;
+        const googleUrl  = sessionDate ? googleCalendarUrl({ sessionDate, address }) : null;
 
-          await sendAppointmentCalendar({ name: clientName, email: clientEmail, sessionDate, address, icsContent, googleUrl });
-          console.log('Unified calendar email sent successfully');
-        } else {
-          await sendDepositConfirmation({ name: name || 'there', email });
-          console.log('Deposit confirmation email sent successfully');
-        }
+        await sendBookingConfirmation({ name: clientName, email, sessionDate, address, icsContent, googleUrl });
+        console.log('Booking confirmation email sent');
         emailSent = true;
       } catch (err) {
         console.error('Email sending failed:', err.message);

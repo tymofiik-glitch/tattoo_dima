@@ -228,82 +228,94 @@ async function sendRejectionEmail({ name, email }) {
   });
 }
 
-// ─── Email #3a: Deposit received (date TBC) ─────────────────────────────
-async function sendDepositConfirmation({ name, email }) {
+// ─── Email #3: Booking confirmation (deposit + date + calendar) ─────────
+// Sent immediately after deposit payment. If sessionDate is provided the
+// email includes the confirmed date, a Google Calendar button, and an .ics
+// attachment. If no date yet (edge-case), the date row shows "To be confirmed".
+async function sendBookingConfirmation({ name, email, sessionDate, address, icsContent, googleUrl }) {
   const resend = getResend();
-  return safeSend(resend, {
-    from: FROM(),
-    to: email,
-    subject: 'Deposit received · Your spot is secured',
-    html: wrap({
-      title: 'Your spot is secured.',
-      sub: `Thank you, ${name}.`,
-      body: `
-        ${detailCard(
-          detailRow('Deposit', '€50') +
-          detailRow('Artist', 'Dmytro Bilynets') +
-          detailRow('Studio', 'the muse ink · Den Haag') +
-          detailRow('Date', 'To be confirmed', true)
-        )}
-        <p style="margin:0 0 20px">Your €50 deposit has been received and your slot is held. Alena will reach out personally to confirm the exact date and time of your session.</p>
-        <p style="margin:0 0 24px">Once the date is set, you'll receive a separate confirmation with calendar invite and full studio details.</p>
-        <p style="margin:32px 0 0;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;line-height:1.7;color:#8a8478">The deposit is deducted from the final price. Non-refundable in case of cancellation within 48 hours of the session.</p>
-      `
-    })
-  });
-}
-
-// ─── Email #3b: Appointment confirmed with .ics + full details (Deposit Paid) ──
-async function sendAppointmentCalendar({ name, email, sessionDate, address, icsContent, googleUrl }) {
-  const resend = getResend();
-
-  const startDate = new Date(sessionDate);
-  const weekday = startDate.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'Europe/Amsterdam' });
-  const fullDate = startDate.toLocaleDateString('en-GB', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
-  });
-
-  const studioAddress = address || process.env.STUDIO_ADDRESS || 'Address provided by Alena';
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
+  const studioAddress = address || process.env.STUDIO_ADDRESS || 'Shared before your session';
+
+  let subject, heroTitle, heroSub, dateSection, attachments;
+
+  if (sessionDate) {
+    const d = new Date(sessionDate);
+    const weekday = d.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'Europe/Amsterdam' });
+    const fullDate = d.toLocaleDateString('en-GB', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
+    });
+    subject  = `Your session is confirmed · ${weekday}`;
+    heroTitle = `You're booked.`;
+    heroSub   = `Session confirmed, ${name}.`;
+    dateSection = `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+             style="margin:8px 0 28px;background:#1c1814;border-left:2px solid #b8956a">
+        <tr><td style="padding:20px 24px">
+          <p style="margin:0 0 4px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+                    font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:#8a8478">Your session</p>
+          <p style="margin:0;font-family:Didot,'Didot LT STD','Fraunces',Georgia,serif;
+                    font-style:italic;font-size:22px;line-height:1.25;color:#b8956a">${fullDate}</p>
+        </td></tr>
+      </table>`;
+    attachments = [{ filename: 'appointment.ics', content: Buffer.from(icsContent).toString('base64') }];
+  } else {
+    subject   = 'Deposit received · Your spot is secured';
+    heroTitle = 'Your spot is secured.';
+    heroSub   = `Deposit confirmed, ${name}.`;
+    dateSection = '';
+    attachments = [];
+  }
+
+  const calendarSection = sessionDate && googleUrl ? `
+    <p style="margin:24px 0 8px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+              font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Add to your calendar</p>
+    ${calendarButtons(googleUrl)}
+    <p style="margin:8px 0 28px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+              font-size:12px;line-height:1.6;color:#8a8478;text-align:center">
+      On iPhone or Mac, tap the attached
+      <strong style="color:#4a4540;font-weight:500">appointment.ics</strong>
+      to add it instantly.
+    </p>` : '';
+
+  const arrivalSection = sessionDate ? `
+    <p style="margin:28px 0 10px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+              font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Finding the studio</p>
+    ${mapCard(studioAddress)}
+    <p style="margin:0 0 8px">The studio is private and by appointment only.
+      Dmytro will meet you at the entrance.</p>
+    <p style="margin:0 0 24px"><strong>Please arrive on time</strong>
+      so we can begin the session as scheduled.</p>` : `
+    <p style="margin:0 0 24px">Alena will be in touch to confirm your exact date and time.
+      Once confirmed, you'll receive full studio details and a calendar invite.</p>`;
 
   return safeSend(resend, {
     from: FROM(),
     to: email,
-    subject: `Your appointment is confirmed · ${weekday}`,
+    subject,
     html: wrap({
-      title: `See you on ${weekday}.`,
-      sub: `Appointment confirmed, ${name}.`,
+      title: heroTitle,
+      sub: heroSub,
       body: `
+        ${dateSection}
         ${detailCard(
-          detailRow('Deposit', '€50 (Paid)', true) +
-          detailRow('Date & Time', fullDate, true) +
-          detailRow('Duration', '~3 hours') +
+          detailRow('Deposit', '€50 — Paid', true) +
+          (sessionDate ? detailRow('Duration', '~3 hours') : '') +
           detailRow('Artist', 'Dmytro Bilynets') +
-          detailRow('Studio', 'the muse ink') +
-          detailRow('Address', studioAddress)
+          detailRow('Studio', 'the muse ink · Den Haag')
         )}
-
-        <p style="margin:0 0 20px">Your deposit of <strong>€50</strong> has been received, and your session is confirmed. Below are your appointment details, location directions, and calendar file.</p>
-
-        <p style="margin:24px 0 8px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Add to your calendar</p>
-        ${calendarButtons(googleUrl)}
-        <p style="margin:8px 0 24px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:12px;line-height:1.6;color:#8a8478;text-align:center">On iPhone or Mac, tap the attached <strong style="color:#4a4540;font-weight:500">appointment.ics</strong> to add it instantly.</p>
-
-        <p style="margin:24px 0 12px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Arriving at the studio</p>
-        ${mapCard(studioAddress)}
-        <p style="margin:0 0 16px">The studio is private and by appointment only. Dmytro will meet you at the entrance to let you in.</p>
-        <p style="margin:0 0 24px"><strong>Please arrive on time</strong> so we can begin the session as scheduled.</p>
-
-        ${noteCard(`Any questions before your session? Reach Alena via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)">WhatsApp</a>.`)}
+        ${calendarSection}
+        ${arrivalSection}
+        ${noteCard(`Questions before your session? Reach Alena via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)">WhatsApp</a>.`)}
+        <p style="margin:28px 0 0;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+                  font-size:11px;line-height:1.7;color:#8a8478">
+          The deposit is deducted from the final price.
+          Non-refundable if cancelled within 48 hours of the session.
+        </p>
       `
     }),
-    attachments: [
-      {
-        filename: 'appointment.ics',
-        content: Buffer.from(icsContent).toString('base64')
-      }
-    ]
+    attachments
   });
 }
 
@@ -435,8 +447,7 @@ async function sendAftercareReminderEmail({ name, email }, { idempotencyKey } = 
 module.exports = {
   sendEnquiryConfirmation,
   sendRejectionEmail,
-  sendDepositConfirmation,
-  sendAppointmentCalendar,
+  sendBookingConfirmation,
   sendPreCareEmail,
   sendAftercareEmail,
   sendAftercareReminderEmail

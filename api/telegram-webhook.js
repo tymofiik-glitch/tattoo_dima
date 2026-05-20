@@ -1,5 +1,4 @@
-const { sendRejectionEmail, sendAppointmentCalendar } = require('./utils/email');
-const { generateIcs, googleCalendarUrl } = require('./utils/ics');
+const { sendRejectionEmail } = require('./utils/email');
 const { buildMainMessage, buildKeyboard, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
 
 // In-memory state for the two-step "set appointment" flow per chat.
@@ -272,29 +271,8 @@ module.exports = async (req, res) => {
       // Clean up in-memory state since we have resolved it
       delete awaitingDate[incomingChatId];
 
-      // Address is null (automatically falls back to default studio address)
-      const address = null;
-      const icsContent = generateIcs({ clientName, clientEmail, sessionDate, address });
-      const googleUrl  = googleCalendarUrl({ sessionDate, address });
-
-      let emailSent = false;
-      if (clientEmail) {
-        if (depositPaid) {
-          try {
-            await sendAppointmentCalendar({ name: clientName, email: clientEmail, sessionDate, address, icsContent, googleUrl });
-            emailSent = true;
-          } catch (err) {
-            console.error('Email #3b failed:', err.message);
-            const { notifyAlena } = require('./utils/telegram');
-            await notifyAlena(`⚠️ Error sending calendar email: ${err.message}\nEmail: ${clientEmail}\nName: ${clientName}`);
-          }
-        } else {
-          console.log('Deposit not paid yet. Skipping calendar email.');
-        }
-      } else {
-        const { notifyAlena } = require('./utils/telegram');
-        await notifyAlena(`⚠️ Could not extract client email to send calendar. Parsed Name: ${clientName}`);
-      }
+      // Booking confirmation email is sent by payment-webhook when deposit is paid.
+      // No email is triggered here — date is saved and deposit link is shown in the card.
 
       // Update Airtable with session date + Session Status, then refresh
       // the Telegram main message with a new Timeline entry via the shared
