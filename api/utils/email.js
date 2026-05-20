@@ -37,12 +37,13 @@ function wrap({ title, sub, body }) {
   // <img>), so we render the ornament with plain HTML: a thin gold rule with
   // a small diamond glyph in the middle. Works in Gmail, Apple Mail, iCloud,
   // Outlook web + desktop, and falls back gracefully in plain-text clients.
+  const ornamentLine = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td height="1" bgcolor="#c4a47a" style="font-size:0;line-height:0;opacity:.55">&nbsp;</td></tr></table>`;
   const ornament = (width = 200) => `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;width:${width}px">
       <tr>
-        <td style="height:1px;border-bottom:1px solid #b8956a;opacity:.6">&nbsp;</td>
-        <td style="padding:0 12px;font-family:Georgia,serif;font-size:14px;color:#b8956a;opacity:.7;line-height:1">&#10070;</td>
-        <td style="height:1px;border-bottom:1px solid #b8956a;opacity:.6">&nbsp;</td>
+        <td valign="middle" style="vertical-align:middle;padding:0;font-size:0;line-height:0">${ornamentLine}</td>
+        <td valign="middle" style="vertical-align:middle;padding:0 11px;white-space:nowrap;font-family:Georgia,serif;font-size:12px;color:#b8956a;line-height:1;opacity:.8">&#10070;</td>
+        <td valign="middle" style="vertical-align:middle;padding:0;font-size:0;line-height:0">${ornamentLine}</td>
       </tr>
     </table>`;
 
