@@ -92,7 +92,7 @@ function buildKeyboard(fields, status) {
   const ig  = igRaw ? `https://instagram.com/${igRaw}` : null;
   const top = [];
   if (wa) top.push({ text: '📱 WhatsApp', url: wa });
-  if (ig) top.push({ text: '📸 Instagram', url: ig });
+  if (ig) top.push({ text: `📸 @${igRaw}`, url: ig });
 
   const rows = top.length ? [top] : [];
 
@@ -130,8 +130,12 @@ function buildMainMessage(fields, { status = 'accepted', timeline = [] } = {}) {
 
   const name      = escapeMd(fields.Name      || 'Unknown');
   const email     = escapeMd(fields.Email     || 'N/A');
-  const rawIg     = String(fields.Instagram || '').replace('@', '');
-  const instagram = rawIg ? escapeMd('@' + rawIg) : 'N/A';
+  const rawIg     = String(fields.Instagram || '').replace(/@+/g, '');
+  // Markdown hyperlink — brackets must NOT be escaped, only the handle text inside
+  const igHandle  = rawIg.replace(/[_*`[\]]/g, '\\$1');
+  const instagram = rawIg
+    ? `[@${igHandle}](https://instagram.com/${rawIg})`
+    : 'N/A';
   const phone     = escapeMd(fields.Phone     || 'N/A');
   const size      = escapeMd(fields.Size      || 'N/A');
   const placement = escapeMd(fields.Placement || 'N/A');
