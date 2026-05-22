@@ -197,10 +197,10 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 /* мобиль — одна колонка нормальной ширины */
 @media(max-width:580px){.ba-g{grid-template-columns:1fr;max-width:400px;margin-left:auto;margin-right:auto}}
 .ba-w{position:relative;aspect-ratio:3/4;overflow:hidden;cursor:ew-resize;user-select:none;-webkit-user-select:none;border:.5px solid var(--rule);touch-action:none}
-.ba-bef{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block}
-.ba-clip{position:absolute;top:0;right:0;bottom:0;width:50%;overflow:hidden;z-index:2}
-/* after — полная ширина контейнера, центрировано */
-.ba-af{position:absolute;top:0;left:0;bottom:0;width:200%;height:100%;object-fit:cover;object-position:center center;display:block}
+.ba-bef{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block;z-index:1}
+/* Fresh layer — same size as healed, clipped from the left via clip-path.
+   Slider only changes the clip boundary, never the image dimensions. */
+.ba-af{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block;z-index:2;clip-path:inset(0 0 0 50%)}
 .ba-hl{position:absolute;top:0;bottom:0;z-index:3;left:50%;width:2px;background:rgba(245,240,232,.9);transform:translateX(-50%);display:flex;align-items:center;justify-content:center;pointer-events:none}
 .ba-hb{width:36px;height:36px;border-radius:50%;background:rgba(245,240,232,.95);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink-2);box-shadow:0 2px 12px rgba(0,0,0,.22);flex-shrink:0;letter-spacing:2px}
 .ba-lb{position:absolute;bottom:10px;z-index:4;font-family:var(--micro);font-size:9px;letter-spacing:.12em;text-transform:uppercase;background:rgba(12,10,6,.65);color:rgba(245,240,232,.85);padding:4px 10px;pointer-events:none}
@@ -592,9 +592,7 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
     <div class="rev d1">
       <div class="ba-w" id="ba1">
         <img class="ba-bef" src="img/ananas-healed.jpg" alt="Ananas healed" style="object-position:center 25%"/>
-        <div class="ba-clip" id="ba1c">
-          <img class="ba-af" src="img/ananas-fresh.jpg" alt="Ananas fresh" style="object-position:center 25%"/>
-        </div>
+        <img class="ba-af" src="img/ananas-fresh.jpg" alt="Ananas fresh" style="object-position:center 25%"/>
         <div class="ba-hl" id="ba1h"><div class="ba-hb">◁▷</div></div>
         <span class="ba-lb l">Healed</span><span class="ba-lb r">Fresh</span>
       </div>
@@ -603,9 +601,7 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
     <div class="rev d2">
       <div class="ba-w" id="ba2">
         <img class="ba-bef" src="img/crown-healed.jpg" alt="Crown healed" style="object-position:center 20%"/>
-        <div class="ba-clip" id="ba2c">
-          <img class="ba-af" src="img/crown-fresh.jpg" alt="Crown fresh" style="object-position:center 20%"/>
-        </div>
+        <img class="ba-af" src="img/crown-fresh.jpg" alt="Crown fresh" style="object-position:center 20%"/>
         <div class="ba-hl" id="ba2h"><div class="ba-hb">◁▷</div></div>
         <span class="ba-lb l">Healed</span><span class="ba-lb r">Fresh</span>
       </div>
@@ -614,9 +610,7 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
     <div class="rev d3">
       <div class="ba-w" id="ba3">
         <img class="ba-bef" src="img/law-healed.jpg" alt="Law healed" style="object-position:center 20%"/>
-        <div class="ba-clip" id="ba3c">
-          <img class="ba-af" src="img/law-fresh.jpg" alt="Law fresh" style="object-position:center 20%"/>
-        </div>
+        <img class="ba-af" src="img/law-fresh.jpg" alt="Law fresh" style="object-position:center 20%"/>
         <div class="ba-hl" id="ba3h"><div class="ba-hb">◁▷</div></div>
         <span class="ba-lb l">Healed</span><span class="ba-lb r">Fresh</span>
       </div>
@@ -988,15 +982,16 @@ wtr.addEventListener('scroll',()=>{
   wdots.forEach((d,i)=>d.classList.toggle('active',i===idx));
 },{passive:true});
 
-function initBA(id,cid,hid){
-  const w=document.getElementById(id),c=document.getElementById(cid),h=document.getElementById(hid);
-  if(!w||!c||!h)return;
+function initBA(id,hid){
+  const w=document.getElementById(id),h=document.getElementById(hid);
+  const af=w&&w.querySelector('.ba-af');
+  if(!w||!af||!h)return;
   let dr=false;
   function setPos(cx){
     const r=w.getBoundingClientRect();
-    const p=Math.max(.03,Math.min(.97,(cx-r.left)/r.width));
-    const pct=(1-p)*100;
-    c.style.width=pct+'%';
+    const p=Math.max(.02,Math.min(.98,(cx-r.left)/r.width));
+    // clip-path never changes image size — only the visible boundary moves
+    af.style.clipPath=`inset(0 0 0 ${p*100}%)`;
     h.style.left=p*100+'%';
   }
   w.addEventListener('mousedown',e=>{dr=true;setPos(e.clientX);e.preventDefault()});
@@ -1005,11 +1000,14 @@ function initBA(id,cid,hid){
   w.addEventListener('touchstart',e=>{dr=true;setPos(e.touches[0].clientX)},{passive:false});
   document.addEventListener('touchmove',e=>{if(dr){e.preventDefault();setPos(e.touches[0].clientX)}},{passive:false});
   document.addEventListener('touchend',()=>{dr=false});
-  setPos(w.getBoundingClientRect().left + w.getBoundingClientRect().width * 0.5);
+  // init at 50% — equal split
+  w.addEventListener('load',()=>setPos(w.getBoundingClientRect().left+w.getBoundingClientRect().width*.5),{once:true});
+  setPos(0); // will recalculate after paint
+  requestAnimationFrame(()=>setPos(w.getBoundingClientRect().left+w.getBoundingClientRect().width*.5));
 }
-initBA('ba1','ba1c','ba1h');
-initBA('ba2','ba2c','ba2h');
-initBA('ba3','ba3c','ba3h');
+initBA('ba1','ba1h');
+initBA('ba2','ba2h');
+initBA('ba3','ba3h');
 
 let bop=false;
 const bst=document.getElementById('bst'),bh=document.getElementById('bh'),bit=document.getElementById('bit'),bcb=document.getElementById('bcb'),bis=document.querySelectorAll('.bi');
