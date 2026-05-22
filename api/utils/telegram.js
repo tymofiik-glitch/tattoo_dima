@@ -113,9 +113,9 @@ function buildKeyboard(fields, status) {
       (fields.id ? `&leadId=${fields.id}` : '') +
       `&date=${encodeURIComponent(sessionDate.toISOString())}`;
     rows.push([{ text: `💳 Ссылка на депозит · ${shortDate}`, url: depositUrl }]);
-    rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }]);
+    rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }, { text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   } else {
-    rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }]);
+    rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }, { text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   }
 
   rows.push([{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]);

@@ -516,6 +516,77 @@ module.exports = async (req, res) => {
         reply_markup: { force_reply: true, selective: true }
       })
     });
+
+  } else if (data === 'ask_no_show') {
+    const clientName = extractField(msgText, 'CLIENT') || 'Client';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: msgId,
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: `⚠️ No-show для ${clientName}? Aftercare не отправится.`, callback_data: 'ignore' }],
+            [
+              { text: '✅ Да, no-show', callback_data: 'confirm_no_show' },
+              { text: '🔙 Отмена', callback_data: 'cancel_no_show' }
+            ]
+          ]
+        }
+      })
+    });
+
+  } else if (data === 'cancel_no_show') {
+    // Restore normal keyboard by re-fetching record state
+    const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+    const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+    if (airtableToken && airtableBase && msgId) {
+      const formula = encodeURIComponent(`{Telegram Message ID} = '${msgId}'`);
+      try {
+        const r = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, {
+          headers: { 'Authorization': `Bearer ${airtableToken}` }
+        });
+        const d = await r.json();
+        if (d.records?.length > 0) {
+          const rec = d.records[0];
+          const fields = { ...rec.fields, id: rec.id };
+          const status = rec.fields['Mollie Payment ID'] ? 'deposit_paid' : 'accepted';
+          await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildKeyboard(fields, status) })
+          });
+        }
+      } catch (err) { console.error('cancel_no_show restore failed:', err.message); }
+    }
+
+  } else if (data === 'confirm_no_show') {
+    const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+    const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+    if (airtableToken && airtableBase && msgId) {
+      const formula = encodeURIComponent(`{Telegram Message ID} = '${msgId}'`);
+      try {
+        const findRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, {
+          headers: { 'Authorization': `Bearer ${airtableToken}` }
+        });
+        const findData = await findRes.json();
+        if (findData.records?.length > 0) {
+          const rec = findData.records[0];
+          await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${rec.id}`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { 'Session Status': 'no-show', 'Status': '⚠️ No-show' } })
+          });
+          const today = new Date().toISOString().split('T')[0];
+          await appendTimelineAndEdit(
+            { ...rec, fields: { ...rec.fields, id: rec.id, 'Session Status': 'no-show', 'Status': '⚠️ No-show' } },
+            `⚠️ No-show · ${today}`,
+            { status: 'session_done' }
+          );
+        }
+      } catch (err) { console.error('confirm_no_show failed:', err.message); }
+    }
   }
 
   return res.status(200).json({ ok: true });
