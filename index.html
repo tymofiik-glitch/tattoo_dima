@@ -225,9 +225,11 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 .box-st.open .box-lid{transform:perspective(400px) rotateX(-132deg);opacity:0}
 .box-bow{position:absolute;bottom:125px;left:50%;transform:translateX(-50%);width:38px;height:22px;z-index:4;transition:opacity .3s,transform .4s}
 .box-st.open .box-bow{opacity:0;transform:translateX(-50%) translateY(-12px)}
-.bh{font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.9rem;transition:opacity .4s,color .2s;cursor:pointer}
-.bh:hover{color:var(--gold)}
+.bh{font-family:var(--micro);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:1.1rem;transition:opacity .4s,color .2s;cursor:pointer;font-weight:500}
+.bh:hover{color:var(--ink)}
 .bh.hid{opacity:0}.bhd{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:bl 2s ease-in-out infinite}
+@keyframes boxBounce{0%,100%{transform:translateY(0) scale(1)}45%{transform:translateY(-7px) scale(1.04)}75%{transform:translateY(-3px) scale(1.01)}}
+.box-st:not(.open){animation:boxBounce 2.8s ease-in-out 2s 2}
 .bit{font-family:var(--micro);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:1.6rem 0 .9rem;opacity:0;transition:opacity .5s .2s;text-align:center}
 .bit.vis{opacity:1}
 .bg{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:.4rem}
@@ -349,6 +351,17 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
 .fcol a:hover{color:rgba(245,240,232,.82)}
 .fb{border-top:.5px solid rgba(245,240,232,.07);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:9px;font-family:var(--micro);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,240,232,.22)}
 
+/* LANG SWITCHER */
+.n-lang{display:flex;align-items:center;gap:5px;margin-left:8px}
+.n-lang-btn{background:none;border:none;font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,240,232,.4);cursor:pointer;padding:3px 2px;transition:color .2s;line-height:1}
+.n-lang-btn.active{color:rgba(245,240,232,.9)}
+nav.sc .n-lang-btn{color:rgba(28,24,20,.3)}
+nav.sc .n-lang-btn.active{color:var(--ink)}
+.n-lang-sep{font-family:var(--micro);font-size:8px;color:rgba(245,240,232,.2)}
+nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
+.lang-toast{position:fixed;top:0;left:0;right:0;z-index:300;background:var(--olive);color:var(--linen);font-family:var(--micro);font-size:10px;letter-spacing:.16em;text-transform:uppercase;text-align:center;padding:10px 20px;transform:translateY(-100%);transition:transform .35s cubic-bezier(.2,.7,.2,1);pointer-events:none}
+.lang-toast.show{transform:translateY(0)}
+
 /* FAB */
 .fab{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(18px);z-index:80;background:var(--olive);color:var(--linen);font-family:var(--micro);font-size:10px;letter-spacing:.18em;text-transform:uppercase;padding:14px 32px;border:none;cursor:pointer;box-shadow:0 8px 32px -8px rgba(0,0,0,.48);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .35s,transform .35s cubic-bezier(.2,.7,.2,1),background .2s}
 .fab.vis{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
@@ -428,6 +441,11 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
   <a href="#top" class="n-logo">Dmytro Bilynets</a>
   <div class="n-links" id="nlinks"><a href="#work">Work</a><a href="#about">About</a><a href="#booking">Book</a></div>
   <div style="display:flex;align-items:center;gap:12px">
+    <div class="n-lang">
+      <button class="n-lang-btn active" id="btnEN" onclick="setLang('en')">EN</button>
+      <span class="n-lang-sep">·</span>
+      <button class="n-lang-btn" id="btnNL" onclick="setLang('nl')">NL</button>
+    </div>
     <button class="n-book om">Reserve →</button>
     <button class="n-ham" id="nham" aria-label="Menu">☰</button>
   </div>
@@ -662,12 +680,14 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
       </div>
       <div class="bi" id="bi5">
         <svg width="50" height="50" viewBox="0 0 52 52" fill="none">
-          <rect x="8" y="12" width="36" height="30" rx="2" fill="#1a1814" stroke="#3d4a35" stroke-width=".8"/>
-          <ellipse cx="16" cy="32" rx="6" ry="9" fill="none" stroke="#b8956a" stroke-width=".8"/>
-          <ellipse cx="26" cy="34" rx="6" ry="7" fill="none" stroke="#b8956a" stroke-width=".8"/>
-          <ellipse cx="36" cy="32" rx="6" ry="9" fill="none" stroke="#b8956a" stroke-width=".8"/>
+          <rect x="7" y="13" width="38" height="28" rx="2" fill="#f5f0e8" stroke="#c9bfaa" stroke-width=".8"/>
+          <path d="M7 19 L26 30 L45 19" fill="none" stroke="#b8956a" stroke-width=".9"/>
+          <line x1="13" y1="33" x2="24" y2="33" stroke="#c9bfaa" stroke-width=".7"/>
+          <line x1="13" y1="37" x2="20" y2="37" stroke="#c9bfaa" stroke-width=".7"/>
+          <circle cx="38" cy="36" r="7" fill="#2d3d28"/>
+          <path d="M35 36 L37.5 38.5 L41.5 33.5" fill="none" stroke="#f5f0e8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <div class="bi-n">Healing Guide</div><div class="bi-d">Step-by-step aftercare</div>
+        <div class="bi-n">Aftercare Guide</div><div class="bi-d">Sent to your email</div>
       </div>
     </div>
     <button class="bcb" id="bcb" onclick="toggleBox()">Close the box ✦</button>
@@ -1000,6 +1020,17 @@ mo.querySelectorAll('[data-n]').forEach(b=>b.addEventListener('click',()=>{
 }));
 mo.querySelectorAll('[data-b]').forEach(b=>b.addEventListener('click',()=>gTo(Number(b.dataset.b))));
 
+// Language switcher
+function setLang(lang){
+  document.getElementById('btnEN').classList.toggle('active', lang==='en');
+  document.getElementById('btnNL').classList.toggle('active', lang==='nl');
+  if(lang==='nl'){
+    const t=document.getElementById('langToast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),4500);
+  }
+}
+
 // Instagram — auto-prefix @
 (function(){
   const ig=document.querySelector('input[name="instagram"]');
@@ -1124,5 +1155,6 @@ if (document.readyState === 'complete') {
   window.addEventListener('load', initMap);
 }
 </script>
+<div class="lang-toast" id="langToast">The artist communicates in English only · Sessions are conducted in English</div>
 </body>
 </html>

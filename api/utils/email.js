@@ -93,7 +93,7 @@ function wrap({ title, sub, body }) {
     <p style="margin:0 0 8px;font-family:'Fraunces','Cormorant Garamond',Georgia,serif;font-style:italic;font-size:17px;color:#4a4540">the muse ink · Den Haag</p>
     <p style="margin:0">
       <a href="${INSTAGRAM_URL}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:1px">@kaktuz_tattooz</a>
-      ${waLink ? `&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:1px">WhatsApp Alena</a>` : ''}
+      ${waLink ? `&nbsp;&nbsp;·&nbsp;&nbsp;<a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:1px">WhatsApp</a>` : ''}
     </p>
   </td></tr>
 
@@ -290,7 +290,7 @@ async function sendBookingConfirmation({ name, email, sessionDate, address, icsC
       Dmytro will meet you at the entrance.</p>
     <p style="margin:0 0 24px"><strong>Please arrive on time</strong>
       so we can begin the session as scheduled.</p>` : `
-    <p style="margin:0 0 24px">Alena will be in touch to confirm your exact date and time.
+    <p style="margin:0 0 24px">Our manager will be in touch to confirm your exact date and time.
       Once confirmed, you'll receive full studio details and a calendar invite.</p>`;
 
   return safeSend(resend, {
@@ -310,7 +310,7 @@ async function sendBookingConfirmation({ name, email, sessionDate, address, icsC
         )}
         ${calendarSection}
         ${arrivalSection}
-        ${noteCard(`Questions before your session? Reach Alena via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)">WhatsApp</a>.`)}
+        ${noteCard(`Questions before your session? Message us via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)">WhatsApp</a>.`)}
         <p style="margin:28px 0 0;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
                   font-size:11px;line-height:1.7;color:#8a8478">
           The deposit is deducted from the final price.
@@ -348,7 +348,7 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
 
         ${infoSection('What to bring', [
           'ID / passport',
-          'Remaining balance — payment method confirmed with Alena',
+          'Remaining balance — payment method confirmed with the studio',
           'A snack & water if your session is over 2 hours',
           'Comfortable, loose clothing that gives access to the tattoo area'
         ])}
@@ -361,9 +361,9 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
 
         ${mapCard(studioAddress)}
 
-        ${noteCard(`Need to reschedule? Let Alena know <strong>at least 48 hours in advance</strong> — deposits are non-refundable within 48 hours of the session.`)}
+        ${noteCard(`Need to reschedule? Let us know <strong>at least 48 hours in advance</strong> — deposits are non-refundable within 48 hours of the session.`)}
 
-        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Message Alena →</a></p>
+        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Contact the studio →</a></p>
       `
     })
   };
@@ -409,10 +409,10 @@ async function sendAftercareEmail({ name, email }, { idempotencyKey } = {}) {
           'Keep the tattoo out of direct sunlight. Once fully healed, always use <strong>SPF 50+</strong> sunscreen to protect the colors.'
         ])}
 
-        ${warningCard('<strong>⚠️ IMPORTANT WARNING:</strong> If you notice anything unusual — such as <strong>persistent or spreading redness</strong>, swelling, throbbing pain, or weeping after day 3 — please contact Alena immediately. Do not ignore these symptoms as they can be signs of irritation or infection.')}
+        ${warningCard('<strong>⚠️ IMPORTANT WARNING:</strong> If you notice anything unusual — such as <strong>persistent or spreading redness</strong>, swelling, throbbing pain, or weeping after day 3 — please contact the studio immediately. Do not ignore these symptoms as they can be signs of irritation or infection.')}
 
-        <p style="margin:24px 0 8px">We'd love to see the healed result. Please send a photo directly to Alena via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)"><strong>WhatsApp</strong></a> once your tattoo is fully healed.</p>
-        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Message Alena →</a></p>
+        <p style="margin:24px 0 8px">We'd love to see the healed result. Please send a photo to the studio via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)"><strong>WhatsApp</strong></a> once your tattoo is fully healed.</p>
+        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Contact the studio →</a></p>
       `
     })
   };
@@ -437,9 +437,9 @@ async function sendAftercareReminderEmail({ name, email }, { idempotencyKey } = 
         <p style="margin:0 0 20px">Please follow the step-by-step care instructions we sent you on the day of your session. You can refer to our previous email titled <strong>"Aftercare instructions · Your tattoo by Dmytro"</strong> for full details.</p>
         <p style="margin:0 0 24px">Remember to wash it gently with fragrance-free soap, pat it dry, and apply a very thin layer of Bepanthen or Aquaphor 2–3 times a day. Do not pick or scratch.</p>
         
-        ${warningCard('<strong>⚠️ IMPORTANT WARNING:</strong> If you notice any <strong>unusual redness</strong>, swelling, throbbing pain, or weeping, please contact Alena immediately via WhatsApp. We want to ensure your healing process goes smoothly.')}
+        ${warningCard('<strong>⚠️ IMPORTANT WARNING:</strong> If you notice any <strong>unusual redness</strong>, swelling, throbbing pain, or weeping, please contact the studio immediately via WhatsApp. We want to ensure your healing process goes smoothly.')}
         
-        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Message Alena →</a></p>
+        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Contact the studio →</a></p>
       `
     })
   };
