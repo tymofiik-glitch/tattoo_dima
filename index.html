@@ -351,6 +351,19 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
 .fcol a:hover{color:rgba(245,240,232,.82)}
 .fb{border-top:.5px solid rgba(245,240,232,.07);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:9px;font-family:var(--micro);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,240,232,.22)}
 
+/* PORTFOLIO GALLERY */
+.pg-s{background:var(--linen-2);padding:var(--sec) 0}
+.pg-head{padding:0 var(--pad);margin-bottom:clamp(28px,4vw,48px)}
+.pg{columns:3 220px;column-gap:8px;padding:0 var(--pad)}
+.pg-item{break-inside:avoid;margin-bottom:8px;display:block;overflow:hidden;position:relative}
+.pg-item img{width:100%;height:auto;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.pg-item:hover img{transform:scale(1.03)}
+.pg-item.pg-hidden{display:none}
+.pg-more{display:block;margin:36px auto 0;font-family:var(--micro);font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:13px 32px;background:none;border:1px solid rgba(26,24,20,.25);color:var(--ink-2);cursor:pointer;transition:background .25s,color .25s}
+.pg-more:hover{background:var(--olive);color:var(--linen);border-color:var(--olive)}
+.pg-more:disabled{display:none}
+@media(max-width:580px){.pg{columns:2 160px;column-gap:6px}.pg-item{margin-bottom:6px}}
+
 /* LANG SWITCHER */
 .n-lang{display:flex;align-items:center;gap:5px;margin-left:8px}
 .n-lang-btn{background:none;border:none;font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,240,232,.4);cursor:pointer;padding:3px 2px;transition:color .2s;line-height:1}
@@ -577,6 +590,70 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
     <div class="wd"></div><div class="wd"></div><div class="wd"></div>
     <div class="wd"></div><div class="wd"></div><div class="wd"></div>
   </div>
+</section>
+
+<div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
+
+<!-- PORTFOLIO GALLERY -->
+<section class="pg-s" id="gallery">
+  <div class="pg-head rev">
+    <div class="ey"><span class="gd">✦</span>Portfolio</div>
+    <h2 class="sh">All the <em>work.</em></h2>
+    <p style="margin-top:14px;color:var(--ink-3);font-size:13px;line-height:1.9;max-width:38ch">Every piece is custom-designed. No flash. No repeats.</p>
+  </div>
+  <div class="pg" id="pgGrid">
+    <div class="pg-item"><img src="img/work-01.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-02.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-03.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-04.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-05.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-06.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-07.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-08.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-09.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-10.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-11.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-12.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-13.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-14.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-15.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-16.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-17.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item"><img src="img/work-18.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-19.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-20.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-21.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-22.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-23.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-24.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-25.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-26.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-27.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-28.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-29.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-30.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-31.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-32.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-33.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-34.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-35.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-36.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-37.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-38.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-39.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-40.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-41.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-42.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-43.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-44.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-45.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-46.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-47.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-48.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-49.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="pg-item pg-hidden"><img src="img/work-50.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+  </div>
+  <button class="pg-more" id="pgMore" onclick="pgLoadMore()">Show all 50 works →</button>
 </section>
 
 <div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
@@ -1049,6 +1126,12 @@ mo.querySelectorAll('[data-n]').forEach(b=>b.addEventListener('click',()=>{
   if(ok)gTo(Number(b.dataset.n));
 }));
 mo.querySelectorAll('[data-b]').forEach(b=>b.addEventListener('click',()=>gTo(Number(b.dataset.b))));
+
+// Portfolio gallery load more
+function pgLoadMore(){
+  document.querySelectorAll('.pg-hidden').forEach(el=>el.classList.remove('pg-hidden'));
+  document.getElementById('pgMore').disabled=true;
+}
 
 // Language switcher
 function setLang(lang){
