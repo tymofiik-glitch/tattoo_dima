@@ -164,28 +164,16 @@ nav.sc .n-book:hover{background:var(--olive);color:var(--linen)}
 .tc .l{font-family:var(--micro);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
 @media(max-width:580px){.trust-g{grid-template-columns:repeat(2,1fr)}.tc:nth-child(odd){border-right:.5px solid var(--rule)}.tc{border-bottom:.5px solid var(--rule)}}
 
-/* WORK SCROLL */
+/* WORK SCROLL — infinite carousel, JS clones cards for seamless loop */
 .work-s{padding:var(--sec) 0}
-.work-h{padding:0 var(--pad);margin-bottom:clamp(24px,3.5vw,44px);display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
-.wf{display:flex;gap:0}
-.wfb{font-family:var(--micro);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:8px 16px;border:.5px solid var(--rule);background:none;color:var(--ink-3);transition:all .2s}
-.wfb:not(:last-child){border-right:none}
-.wfb.active,.wfb:hover{background:var(--olive);color:var(--linen);border-color:var(--olive)}
-.work-tr{display:flex;gap:10px;overflow-x:auto;padding:0 var(--pad) 14px;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory}
+.work-h{padding:0 var(--pad);margin-bottom:clamp(24px,3.5vw,44px)}
+.work-tr{display:flex;gap:10px;overflow-x:auto;padding:0 0 4px;scrollbar-width:none;-ms-overflow-style:none;cursor:grab}
 .work-tr::-webkit-scrollbar{display:none}
-.wc{flex:0 0 clamp(240px,36vw,340px);aspect-ratio:3/4;position:relative;overflow:hidden;scroll-snap-align:start;border:.5px solid var(--rule)}
-.wc img{width:100%;height:100%;object-fit:cover;transition:transform .65s cubic-bezier(.2,.7,.2,1),filter .4s}
-.wc:hover img{transform:scale(1.06);filter:brightness(1.06)}
-.wc-meta{position:absolute;bottom:0;left:0;right:0;padding:18px 16px 14px;background:linear-gradient(to top,rgba(14,11,7,.85),transparent);opacity:0;transition:opacity .3s}
-.wc:hover .wc-meta{opacity:1}
-.wc-n{font-family:var(--serif);font-style:italic;font-size:17px;color:#f5f0e8;display:block;margin-bottom:3px}
-.wc-t{font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,240,232,.48)}
-.wb{position:absolute;top:12px;left:12px;font-family:var(--micro);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;background:rgba(245,240,232,.9);color:var(--ink-2)}
-.wb.fr{background:rgba(45,61,40,.85);color:rgba(245,240,232,.85)}
-.wdots{display:flex;justify-content:center;gap:6px;margin-top:14px;padding:0 var(--pad)}
-.wd{width:4px;height:4px;border-radius:50%;background:var(--rule);transition:all .3s}
-.wd.active{background:var(--olive);width:18px;border-radius:2px}
-@media(max-width:460px){.wc{flex:0 0 82vw}}
+.work-tr.is-dragging{cursor:grabbing}
+.wc{flex:0 0 clamp(220px,28vw,300px);aspect-ratio:3/4;position:relative;overflow:hidden;flex-shrink:0;border:.5px solid var(--rule)}
+.wc img{width:100%;height:100%;object-fit:cover;transition:transform .65s cubic-bezier(.2,.7,.2,1);pointer-events:none}
+.wc:hover img{transform:scale(1.05)}
+@media(max-width:460px){.wc{flex:0 0 72vw}}
 
 /* HEALED */
 .ba-g{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:38px}
@@ -351,18 +339,6 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
 .fcol a:hover{color:rgba(245,240,232,.82)}
 .fb{border-top:.5px solid rgba(245,240,232,.07);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:9px;font-family:var(--micro);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,240,232,.22)}
 
-/* PORTFOLIO GALLERY */
-.pg-s{background:var(--linen-2);padding:var(--sec) 0}
-.pg-head{padding:0 var(--pad);margin-bottom:clamp(28px,4vw,48px)}
-.pg{columns:3 220px;column-gap:8px;padding:0 var(--pad)}
-.pg-item{break-inside:avoid;margin-bottom:8px;display:block;overflow:hidden;position:relative}
-.pg-item img{width:100%;height:auto;display:block;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
-.pg-item:hover img{transform:scale(1.03)}
-.pg-item.pg-hidden{display:none}
-.pg-more{display:block;margin:36px auto 0;font-family:var(--micro);font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:13px 32px;background:none;border:1px solid rgba(26,24,20,.25);color:var(--ink-2);cursor:pointer;transition:background .25s,color .25s}
-.pg-more:hover{background:var(--olive);color:var(--linen);border-color:var(--olive)}
-.pg-more:disabled{display:none}
-@media(max-width:580px){.pg{columns:2 160px;column-gap:6px}.pg-item{margin-bottom:6px}}
 
 /* LANG SWITCHER */
 .n-lang{display:flex;align-items:center;gap:5px;margin-left:8px}
@@ -511,150 +487,66 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
 
 <!-- WORK -->
 <section class="work-s" id="work">
-  <div class="work-h">
-    <div class="rev">
-      <div class="ey"><span class="gd">✦</span>Selected Work</div>
-      <h2 class="sh">The <em>portfolio.</em></h2>
-    </div>
-    <div class="wf rev d1">
-      <button class="wfb active" data-f="all">All</button>
-      <button class="wfb" data-f="healed">Healed</button>
-      <button class="wfb" data-f="fresh">Fresh</button>
-    </div>
+  <div class="work-h rev">
+    <div class="ey"><span class="gd">✦</span>Selected Work</div>
+    <h2 class="sh">The <em>portfolio.</em></h2>
   </div>
   <div class="work-tr" id="wtr">
-    <div class="wc" data-st="healed">
-      <img src="img/ananas-healed.jpg" alt="Ananas microrealism healed" style="object-position:center 25%"/>
-      <div class="wb">Healed</div>
-      <div class="wc-meta"><span class="wc-n">Ananas</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="fresh">
-      <img src="img/ananas-fresh.jpg" alt="Ananas microrealism fresh" style="object-position:center 25%"/>
-      <div class="wb fr">Fresh</div>
-      <div class="wc-meta"><span class="wc-n">Ananas</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="healed">
-      <img src="img/crown-healed.jpg" alt="Crown microrealism healed" style="object-position:center 20%"/>
-      <div class="wb">Healed</div>
-      <div class="wc-meta"><span class="wc-n">Crown</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="fresh">
-      <img src="img/crown-fresh.jpg" alt="Crown microrealism fresh" style="object-position:center 20%"/>
-      <div class="wb fr">Fresh</div>
-      <div class="wc-meta"><span class="wc-n">Crown</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="healed">
-      <img src="img/law-healed.jpg" alt="Law microrealism healed" style="object-position:center 20%"/>
-      <div class="wb">Healed</div>
-      <div class="wc-meta"><span class="wc-n">Law</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="fresh">
-      <img src="img/law-fresh.jpg" alt="Law microrealism fresh" style="object-position:center 20%"/>
-      <div class="wb fr">Fresh</div>
-      <div class="wc-meta"><span class="wc-n">Law</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="healed">
-      <img src="img/healed-moth.jpg" alt="Moth microrealism healed" style="object-position:center 15%"/>
-      <div class="wb">Healed · 7 mo</div>
-      <div class="wc-meta"><span class="wc-n">Moth</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="healed">
-      <img src="img/healed-butterfly.jpg" alt="Butterfly microrealism healed" style="object-position:center 30%"/>
-      <div class="wb">Healed · 6 mo</div>
-      <div class="wc-meta"><span class="wc-n">Butterfly</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="healed">
-      <img src="img/healed-flower.jpg" alt="Botanical fine line healed" style="object-position:center 20%"/>
-      <div class="wb">Healed · 1 yr</div>
-      <div class="wc-meta"><span class="wc-n">Botanical</span><span class="wc-t">Fine Line</span></div>
-    </div>
-    <div class="wc" data-st="healed">
-      <img src="img/healed-bird.jpg" alt="Sparrow microrealism healed" style="object-position:center 25%"/>
-      <div class="wb">Healed · 1 yr</div>
-      <div class="wc-meta"><span class="wc-n">Sparrow</span><span class="wc-t">Microrealism</span></div>
-    </div>
-    <div class="wc" data-st="fresh">
-      <img src="img/fresh-dsc9.jpg" alt="Fresh microrealism" style="object-position:center 30%"/>
-      <div class="wb fr">Fresh</div>
-      <div class="wc-meta"><span class="wc-n">Microrealism</span><span class="wc-t">Fresh</span></div>
-    </div>
-    <div class="wc" data-st="fresh">
-      <img src="img/fresh-dsc10.jpg" alt="Fresh microrealism" style="object-position:center 30%"/>
-      <div class="wb fr">Fresh</div>
-      <div class="wc-meta"><span class="wc-n">Microrealism</span><span class="wc-t">Fresh</span></div>
-    </div>
-  </div>
-  <div class="wdots" id="wdots">
-    <div class="wd active"></div><div class="wd"></div><div class="wd"></div>
-    <div class="wd"></div><div class="wd"></div><div class="wd"></div>
-    <div class="wd"></div><div class="wd"></div><div class="wd"></div>
-    <div class="wd"></div><div class="wd"></div><div class="wd"></div>
+    <div class="wc"><img src="img/work-01.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-02.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-03.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-04.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-05.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-06.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-07.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-08.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-09.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-10.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-11.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-12.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-13.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-14.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-15.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-16.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-17.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-18.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-19.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-20.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-21.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-22.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-23.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-24.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-25.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-26.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-27.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-28.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-29.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-30.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-31.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-32.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-33.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-34.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-35.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-36.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-37.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-38.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-39.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-40.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-41.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-42.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-43.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-44.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-45.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-46.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-47.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-48.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-49.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
+    <div class="wc"><img src="img/work-50.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
   </div>
 </section>
 
 <div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
 
-<!-- PORTFOLIO GALLERY -->
-<section class="pg-s" id="gallery">
-  <div class="pg-head rev">
-    <div class="ey"><span class="gd">✦</span>Portfolio</div>
-    <h2 class="sh">All the <em>work.</em></h2>
-    <p style="margin-top:14px;color:var(--ink-3);font-size:13px;line-height:1.9;max-width:38ch">Every piece is custom-designed. No flash. No repeats.</p>
-  </div>
-  <div class="pg" id="pgGrid">
-    <div class="pg-item"><img src="img/work-01.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-02.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-03.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-04.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-05.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-06.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-07.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-08.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-09.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-10.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-11.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-12.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-13.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-14.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-15.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-16.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-17.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item"><img src="img/work-18.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-19.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-20.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-21.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-22.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-23.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-24.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-25.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-26.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-27.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-28.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-29.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-30.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-31.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-32.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-33.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-34.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-35.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-36.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-37.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-38.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-39.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-40.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-41.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-42.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-43.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-44.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-45.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-46.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-47.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-48.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-49.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-    <div class="pg-item pg-hidden"><img src="img/work-50.jpg" alt="Tattoo by Dmytro Bilynets" loading="lazy"/></div>
-  </div>
-  <button class="pg-more" id="pgMore" onclick="pgLoadMore()">Show all 50 works →</button>
-</section>
 
 <div class="div"><span class="dl"></span><span class="ds">✦</span><span class="dl"></span></div>
 
@@ -1043,22 +935,6 @@ if(nham){
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.1});
 document.querySelectorAll('.rev').forEach(el=>io.observe(el));
 
-const wtr=document.getElementById('wtr'),wdots=document.querySelectorAll('.wd');
-document.querySelectorAll('.wfb').forEach(b=>b.addEventListener('click',()=>{
-  const f=b.dataset.f;
-  document.querySelectorAll('.wfb').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  wtr.querySelectorAll('.wc').forEach(c=>c.style.display=(f==='all'||c.dataset.st===f)?'':'none');
-  wtr.scrollLeft=0;
-}));
-wtr.addEventListener('scroll',()=>{
-  const cards=[...wtr.querySelectorAll('.wc')].filter(c=>c.style.display!=='none');
-  if(!cards.length)return;
-  const cw=cards[0].offsetWidth+10;
-  const idx=Math.min(Math.round(wtr.scrollLeft/cw),wdots.length-1);
-  wdots.forEach((d,i)=>d.classList.toggle('active',i===idx));
-},{passive:true});
-
 function initBA(id,hid){
   const w=document.getElementById(id),h=document.getElementById(hid);
   const af=w&&w.querySelector('.ba-af');
@@ -1127,11 +1003,40 @@ mo.querySelectorAll('[data-n]').forEach(b=>b.addEventListener('click',()=>{
 }));
 mo.querySelectorAll('[data-b]').forEach(b=>b.addEventListener('click',()=>gTo(Number(b.dataset.b))));
 
-// Portfolio gallery load more
-function pgLoadMore(){
-  document.querySelectorAll('.pg-hidden').forEach(el=>el.classList.remove('pg-hidden'));
-  document.getElementById('pgMore').disabled=true;
-}
+// Infinite auto-scroll carousel
+(function(){
+  const tr=document.getElementById('wtr');
+  if(!tr)return;
+  // Clone all original cards for seamless loop
+  [...tr.children].forEach(c=>tr.appendChild(c.cloneNode(true)));
+  const half=()=>tr.scrollWidth/2;
+  let paused=false,dragging=false,dragX=0,dragScroll=0;
+  (function tick(){
+    if(!paused&&!dragging){
+      tr.scrollLeft+=0.6;
+      if(tr.scrollLeft>=half())tr.scrollLeft-=half();
+    }
+    requestAnimationFrame(tick);
+  })();
+  tr.addEventListener('mouseenter',()=>paused=true);
+  tr.addEventListener('mouseleave',()=>paused=false);
+  tr.addEventListener('mousedown',e=>{dragging=true;paused=true;dragX=e.clientX;dragScroll=tr.scrollLeft;tr.classList.add('is-dragging')});
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    tr.scrollLeft=dragScroll-(e.clientX-dragX);
+    if(tr.scrollLeft<0)tr.scrollLeft+=half();
+    if(tr.scrollLeft>=half())tr.scrollLeft-=half();
+  });
+  document.addEventListener('mouseup',()=>{if(dragging){dragging=false;paused=false;tr.classList.remove('is-dragging')}});
+  tr.addEventListener('touchstart',e=>{dragging=true;paused=true;dragX=e.touches[0].clientX;dragScroll=tr.scrollLeft},{passive:true});
+  tr.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    tr.scrollLeft=dragScroll-(e.touches[0].clientX-dragX);
+    if(tr.scrollLeft<0)tr.scrollLeft+=half();
+    if(tr.scrollLeft>=half())tr.scrollLeft-=half();
+  },{passive:true});
+  tr.addEventListener('touchend',()=>{dragging=false;paused=false});
+})();
 
 // Language switcher
 function setLang(lang){
