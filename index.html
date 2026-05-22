@@ -412,6 +412,14 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
 .ucl{background:none;border:0;cursor:pointer;font-family:var(--micro);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);transition:color .2s}
 .ucl:hover{color:var(--ink)}
 .msucc{display:none}.msucc.act{display:block}
+
+/* PHONE FIELD WITH COUNTRY CODE */
+.ph-row{display:flex;align-items:center;border-bottom:1px solid rgba(26,24,20,.22);transition:border-color .25s,border-width .25s}
+.ph-row:focus-within{border-bottom-color:var(--olive);border-bottom-width:1.5px}
+.ph-cc{background:transparent;border:0;padding:10px 6px 12px 0;font-family:var(--sans);font-size:15px;color:var(--ink);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;min-width:0;white-space:nowrap;flex-shrink:0}
+.ph-div{width:1px;height:18px;background:rgba(26,24,20,.15);margin:0 10px;flex-shrink:0}
+.ph-num{background:transparent;border:0;padding:10px 0 12px;font-family:var(--sans);font-size:16px;color:var(--ink);outline:none;flex:1;min-width:0;font-weight:400}
+.ph-num::placeholder{color:var(--ink-3);font-weight:300}
 </style>
 </head>
 <body>
@@ -811,7 +819,29 @@ footer{background:var(--ink);color:rgba(245,240,232,.48);padding:clamp(36px,5.5v
         <div class="mf"><label>Your name</label><input type="text" name="name" placeholder="Full name" required autocomplete="name"/></div>
         <div class="mf"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required autocomplete="email"/></div>
         <div class="mf"><label>Instagram <span style="color:var(--ink-3);font-size:10px;letter-spacing:0">— we check your profile to see if styles match</span></label><input type="text" name="instagram" placeholder="@yourhandle" required/></div>
-        <div class="mf"><label>Phone / WhatsApp</label><input type="tel" name="phone" placeholder="+31 6 00000000" required autocomplete="tel"/></div>
+        <div class="mf">
+          <label>Phone / WhatsApp</label>
+          <div class="ph-row" id="phRow">
+            <select class="ph-cc" id="phCC" aria-label="Country code">
+              <option value="+31" selected>🇳🇱 +31</option>
+              <option value="+32">🇧🇪 +32</option>
+              <option value="+49">🇩🇪 +49</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+34">🇪🇸 +34</option>
+              <option value="+39">🇮🇹 +39</option>
+              <option value="+48">🇵🇱 +48</option>
+              <option value="+380">🇺🇦 +380</option>
+              <option value="+90">🇹🇷 +90</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+61">🇦🇺 +61</option>
+              <option value="+7">🇷🇺 +7</option>
+            </select>
+            <div class="ph-div"></div>
+            <input type="tel" class="ph-num" id="phNum" placeholder="6 12 345 678" required autocomplete="tel-national"/>
+          </div>
+          <input type="hidden" name="phone" id="phFull" value="+31"/>
+        </div>
         <div class="mn"><span class="mnote">Sessions from €150 · Deposit €50</span><button type="button" class="mnext" data-n="2">Continue →</button></div>
       </div>
       <div class="mp" data-p="2">
@@ -960,10 +990,27 @@ function gTo(n){
 }
 mo.querySelectorAll('[data-n]').forEach(b=>b.addEventListener('click',()=>{
   const pan=b.closest('.mp'),reqs=pan.querySelectorAll('input[required], textarea[required]');
-  let ok=true;reqs.forEach(i=>{if(!i.value.trim()){i.style.borderBottomColor='#a05030';ok=false}else i.style.borderBottomColor=''});
+  let ok=true;reqs.forEach(i=>{
+    const isEmpty=!i.value.trim();
+    if(isEmpty){ok=false;}
+    // ph-num lives inside .ph-row — highlight the row, not the input directly
+    if(i.id==='phNum'){const row=document.getElementById('phRow');if(row)row.style.borderBottomColor=isEmpty?'#a05030':'';}
+    else{i.style.borderBottomColor=isEmpty?'#a05030':'';}
+  });
   if(ok)gTo(Number(b.dataset.n));
 }));
 mo.querySelectorAll('[data-b]').forEach(b=>b.addEventListener('click',()=>gTo(Number(b.dataset.b))));
+
+// Phone country code + number → hidden field
+(function(){
+  const cc=document.getElementById('phCC');
+  const num=document.getElementById('phNum');
+  const full=document.getElementById('phFull');
+  if(!cc||!num||!full)return;
+  function sync(){full.value=(cc.value+' '+num.value.trim()).trim();}
+  cc.addEventListener('change',sync);
+  num.addEventListener('input',sync);
+})();
 mo.querySelectorAll('#scg .scc').forEach(c=>c.addEventListener('click',()=>{
   mo.querySelectorAll('#scg .scc').forEach(x=>x.classList.remove('act'));c.classList.add('act');
   document.getElementById('szv').value=c.dataset.sz;
