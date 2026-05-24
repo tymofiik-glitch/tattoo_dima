@@ -54,7 +54,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=GFS+Didot:ital,wght@0,400;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
 <style>
@@ -63,8 +63,8 @@
   --ink:#1c1814;--ink-2:#4a4540;--ink-3:#8a8478;
   --olive:#2d3d28;--olive-deep:#1e2c1a;
   --gold:#b8956a;--rule:rgba(26,24,20,.12);
-  --serif:Didot,'Didot LT STD','Playfair Display','Bodoni MT',Georgia,serif;
-  --serif-d:Didot,'Didot LT STD','Playfair Display','Bodoni MT',Georgia,serif;
+  --serif:'GFS Didot',Didot,'Didot LT STD','Playfair Display','Bodoni MT',Georgia,serif;
+  --serif-d:'GFS Didot',Didot,'Didot LT STD','Playfair Display','Bodoni MT',Georgia,serif;
   --sans:'Inter','Helvetica Neue',sans-serif;
   --micro:'Inter','Helvetica Neue',sans-serif;
   --pad:clamp(20px,5vw,80px);
@@ -379,10 +379,18 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
 .mf.idea-highlight{background:rgba(184,149,106,.06);border-left:2px solid var(--gold);padding:16px 18px;margin-bottom:26px}
 .mf.idea-highlight label{color:var(--ink) !important;font-weight:500}
 .mf label{display:block;font-family:var(--micro);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2);margin-bottom:10px;font-weight:500}
-.mf input,.mf textarea{width:100%;background:transparent;border:0;border-bottom:1px solid rgba(26,24,20,.22);padding:10px 0 12px;color:var(--ink);font-family:var(--sans);font-style:normal;font-weight:400;font-size:16px;outline:none;transition:border-color .25s,box-shadow .25s}
+.mf input,.mf textarea{width:100%;background:transparent;border:0;border-bottom:1px solid rgba(26,24,20,.22);padding:10px 0 12px;color:var(--ink);font-family:var(--sans);font-style:normal;font-weight:400;font-size:16px;outline:none;transition:border-color .25s,border-width .25s}
 .mf input:focus,.mf textarea:focus{border-bottom-color:var(--olive);border-bottom-width:1.5px}
 .mf input::placeholder,.mf textarea::placeholder{color:var(--ink-3);font-weight:300}
 .mf textarea{resize:none;line-height:1.65}
+.mf.err input,.mf.err textarea{border-bottom-color:#c0392b;border-bottom-width:2px}
+.ph-row.err{border-bottom-color:#c0392b!important;border-bottom-width:2px!important}
+.mf .err-msg{display:none;font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#c0392b;margin-top:5px}
+.mf.err .err-msg{display:block}
+.ph-row-wrap .err-msg{display:none;font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#c0392b;margin-top:5px}
+.ph-row-wrap.err .err-msg{display:block}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.mf.err{animation:shake .35s ease}
 .sc-g{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .scc{border:1px solid rgba(26,24,20,.18);background:transparent;cursor:pointer;padding:12px 5px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .2s,background .2s}
 .scc:hover{border-color:var(--olive)}
@@ -831,11 +839,12 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
       <div class="mp act" data-p="1">
         <p class="mey">Step 1 of 3</p>
         <h3 class="mt">Let's start<br/><em>with you.</em></h3>
-        <div class="mf"><label>Your name</label><input type="text" name="name" placeholder="Full name" required autocomplete="name"/></div>
-        <div class="mf"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required autocomplete="email"/></div>
-        <div class="mf"><label>Instagram <span style="color:var(--ink-3);font-size:10px;letter-spacing:0">— we check your profile to see if styles match</span></label><input type="text" name="instagram" placeholder="@yourhandle" required/></div>
+        <div class="mf"><label>Your name</label><input type="text" name="name" placeholder="Full name" required autocomplete="name"/><span class="err-msg">Required</span></div>
+        <div class="mf"><label>Email</label><input type="email" name="email" placeholder="you@example.com" required autocomplete="email"/><span class="err-msg">Required</span></div>
+        <div class="mf"><label>Instagram <span style="color:var(--ink-3);font-size:10px;letter-spacing:0">— we check your profile to see if styles match</span></label><input type="text" name="instagram" placeholder="@yourhandle" required/><span class="err-msg">Required</span></div>
         <div class="mf">
           <label>Phone / WhatsApp</label>
+          <div class="ph-row-wrap" id="phRowWrap">
           <div class="ph-row" id="phRow">
             <select class="ph-cc" id="phCC" aria-label="Country code">
               <option value="+31" selected>🇳🇱 +31</option>
@@ -854,6 +863,8 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
             <div class="ph-div"></div>
             <input type="tel" class="ph-num" id="phNum" placeholder="6 12 345 678" required autocomplete="tel-national"/>
           </div>
+          <span class="err-msg">Required</span>
+          </div>
           <input type="hidden" name="phone" id="phFull" value="+31"/>
         </div>
         <div class="mn"><span class="mnote">Sessions from €150 · Deposit €50</span><button type="button" class="mnext" data-n="2">Continue →</button></div>
@@ -861,7 +872,7 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
       <div class="mp" data-p="2">
         <p class="mey">Step 2 of 3</p>
         <h3 class="mt">What do you<br/><em>have in mind?</em></h3>
-        <div class="mf idea-highlight"><label>Describe your idea *</label><textarea name="idea" placeholder="Describe the subject, elements, style, and placement details. The more detail, the better Dmytro can prepare." required rows="3"></textarea></div>
+        <div class="mf idea-highlight"><label>Describe your idea *</label><textarea name="idea" placeholder="Describe the subject, elements, style, and placement details. The more detail, the better Dmytro can prepare." required rows="3"></textarea><span class="err-msg">Required</span></div>
         <div class="mf">
           <label>Approximate size</label>
           <div class="sc-g" id="scg">
@@ -994,10 +1005,21 @@ mo.querySelectorAll('[data-n]').forEach(b=>b.addEventListener('click',()=>{
   const pan=b.closest('.mp'),reqs=pan.querySelectorAll('input[required], textarea[required]');
   let ok=true;reqs.forEach(i=>{
     const isEmpty=!i.value.trim();
-    if(isEmpty){ok=false;}
-    // ph-num lives inside .ph-row — highlight the row, not the input directly
-    if(i.id==='phNum'){const row=document.getElementById('phRow');if(row)row.style.borderBottomColor=isEmpty?'#a05030':'';}
-    else{i.style.borderBottomColor=isEmpty?'#a05030':'';}
+    if(isEmpty)ok=false;
+    if(i.id==='phNum'){
+      const wrap=document.getElementById('phRowWrap'),row=document.getElementById('phRow');
+      if(wrap)wrap.classList.toggle('err',isEmpty);
+      if(row)row.classList.toggle('err',isEmpty);
+    } else {
+      const mfEl=i.closest('.mf');
+      if(mfEl)mfEl.classList.toggle('err',isEmpty);
+    }
+    if(isEmpty){
+      i.addEventListener('input',()=>{
+        if(i.id==='phNum'){document.getElementById('phRowWrap')?.classList.remove('err');document.getElementById('phRow')?.classList.remove('err');}
+        else{i.closest('.mf')?.classList.remove('err');}
+      },{once:true});
+    }
   });
   if(ok)gTo(Number(b.dataset.n));
 }));
