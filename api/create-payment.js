@@ -12,8 +12,7 @@ module.exports = async function handler(req, res) {
 
   const clientEmail = email || 'guest@kaktuz.ink';
 
-  // Вшиваем ключ напрямую для надежности (Test Mode Only)
-  const MOLLIE_KEY = 'test_3pwW2eqsqJemN4HdNNyKAsH9BHe3R5';
+  const MOLLIE_KEY = process.env.MOLLIE_API_KEY;
   
   const orderId = crypto.randomBytes(8).toString('hex');
   const domain = 'kaktuz.ink';

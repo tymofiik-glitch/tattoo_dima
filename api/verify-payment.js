@@ -8,7 +8,7 @@ module.exports = async function handler(req, res) {
   const { id } = req.query;
   if (!id || !id.startsWith('tr_')) return res.status(400).json({ error: 'Invalid payment id' });
 
-  const MOLLIE_KEY = process.env.MOLLIE_API_KEY || 'test_3pwW2eqsqJemN4HdNNyKAsH9BHe3R5';
+  const MOLLIE_KEY = process.env.MOLLIE_API_KEY;
 
   try {
     const r = await fetch(`https://api.mollie.com/v2/payments/${id}`, {

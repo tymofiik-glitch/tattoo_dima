@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
   const { id } = req.body;
   if (!id) return res.status(400).send('Missing payment ID');
 
-  const MOLLIE_KEY = process.env.MOLLIE_API_KEY || 'test_3pwW2eqsqJemN4HdNNyKAsH9BHe3R5';
+  const MOLLIE_KEY = process.env.MOLLIE_API_KEY;
 
   try {
     const response = await fetch(`https://api.mollie.com/v2/payments/${id}`, {
