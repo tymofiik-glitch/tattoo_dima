@@ -1,5 +1,6 @@
 const { sendAftercareEmail, sendPreCareEmail, sendAftercareReminderEmail } = require('./utils/email');
 const { notifyAlena, appendTimelineAndEdit } = require('./utils/telegram');
+const { setSecurityHeaders } = require('./utils/security');
 
 // Daily cron — scans Airtable and triggers three email types with strong
 // idempotency guarantees (Airtable lock TTL + Resend Idempotency-Key):
@@ -203,8 +204,15 @@ async function autoMarkCompleted() {
 }
 
 module.exports = async (req, res) => {
+  setSecurityHeaders(res);
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers['authorization'];
+  if (!cronSecret || !authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   if (!process.env.AIRTABLE_TOKEN || !process.env.AIRTABLE_BASE_ID) {

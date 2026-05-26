@@ -184,6 +184,12 @@ async function deleteAirtableLead(messageId) {
 }
 
 module.exports = async (req, res) => {
+  // Verify request came from Telegram via secret token
+  const secret = req.headers['x-telegram-bot-api-secret-token'];
+  if (!secret || secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   console.log('Webhook received, method:', req.method);
 
   // Vercel иногда не парсит body автоматически — обрабатываем оба случая
@@ -248,6 +254,9 @@ module.exports = async (req, res) => {
       let depositPaid = false;
 
       if (airtableToken && airtableBase) {
+        if (!/^\d+$/.test(String(originalMsgId))) {
+          return res.status(400).json({ error: 'Invalid message ID' });
+        }
         const formula = encodeURIComponent(`{Telegram Message ID} = '${originalMsgId}'`);
         try {
           const findRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, {

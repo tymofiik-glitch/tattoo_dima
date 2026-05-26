@@ -433,13 +433,30 @@ async function sendAftercareReminderEmail({ name, email }, { idempotencyKey } = 
       title: 'Remove the film today.',
       sub: `A quick reminder for ${name}.`,
       body: `
-        <p style="margin:0 0 20px">It has been 3 days since your session. It is now time to gently remove the protective film from your tattoo.</p>
-        <p style="margin:0 0 20px">Please follow the step-by-step care instructions we sent you on the day of your session. You can refer to our previous email titled <strong>"Aftercare instructions · Your tattoo by Dmytro"</strong> for full details.</p>
-        <p style="margin:0 0 24px">Remember to wash it gently with fragrance-free soap, pat it dry, and apply a very thin layer of Bepanthen or Aquaphor 2–3 times a day. Do not pick or scratch.</p>
+        <p style="margin:0 0 24px">It has been 3 days since your session. It is now time to gently remove the protective film from your tattoo. <strong>Stage 2 begins as soon as the film is off.</strong></p>
         
-        ${warningCard('<strong>⚠️ IMPORTANT WARNING:</strong> If you notice any <strong>unusual redness</strong>, swelling, throbbing pain, or weeping, please contact the studio immediately via WhatsApp. We want to ensure your healing process goes smoothly.')}
+        ${infoSection('Stage 2: Washing + Cream + Covering (next 4 days)', [
+          '<strong>Wash the tattoo 2–4 times a day</strong> with the soap I gave you (3 times is ideal).',
+          '<strong>Apply the cream I gave you afterwards.</strong> Apply a thin, semi-transparent layer — the tattoo should still be visible, but with a slight white haze.',
+          'The most important thing is that the tattoo stays constantly moisturized.'
+        ])}
         
-        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Contact the studio →</a></p>
+        ${infoSection('When to cover your tattoo', [
+          '<strong>If you leave the house</strong> (to work, public transport, etc.): Apply cream, cover the tattoo with two layers of paper towel, and secure with tape.',
+          '<strong>At night:</strong> Use this type of cover so the tattoo doesn’t rub against your sheets and stays moisturized.',
+          '<strong>Long sleeves:</strong> If you wear long-sleeved clothing, it’s best to protect the tattoo this way as well.',
+          '<em>*This bandage can be worn for 5–6 hours, then it should be removed, the tattoo washed, and if necessary, a new one applied.</em>'
+        ])}
+
+        ${infoSection('Stage 3: Only Washing & Moisturizing (last 3–4 days)', [
+          'At this point, you don’t need to cover the tattoo anymore.',
+          'Just continue to wash it regularly and keep it moisturized.',
+          'The skin may peel slightly — this is completely normal. <strong>Don’t scratch or pick at it</strong>, simply keep applying cream.'
+        ])}
+        
+        ${warningCard('<strong>General Rules (first 2 weeks):</strong> No swimming (sea, pool, lake, jacuzzi). No saunas, steam rooms, or tanning beds. Do not touch, scratch, or rub the tattoo. Treat the tattoo like a wound — because that’s exactly what it is.')}
+        
+        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Have any questions? Write to me →</a></p>
       `
     })
   };

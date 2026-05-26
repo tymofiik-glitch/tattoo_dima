@@ -1,14 +1,17 @@
 const { sendBookingConfirmation } = require('./utils/email');
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
 const { appendTimelineAndEdit, notifyAlena, escapeMd, getSessionDateTime } = require('./utils/telegram');
+const { setSecurityHeaders } = require('./utils/security');
 
 module.exports = async function handler(req, res) {
+  setSecurityHeaders(res);
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { id } = req.body;
   if (!id) return res.status(400).send('Missing payment ID');
+  if (!/^tr_[A-Za-z0-9]+$/.test(id)) return res.status(400).send('Invalid payment ID format');
 
   const MOLLIE_KEY = process.env.MOLLIE_API_KEY;
 

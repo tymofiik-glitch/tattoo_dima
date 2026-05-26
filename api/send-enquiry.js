@@ -1,13 +1,32 @@
 const Busboy = require('busboy');
 const { sendEnquiryConfirmation } = require('./utils/email');
 const { escapeMd, notifyAlena } = require('./utils/telegram');
+const { setCorsHeaders, setSecurityHeaders } = require('./utils/security');
+
+// In-memory rate limiter: max 5 submissions per IP per hour
+const rateLimitMap = new Map();
+const RATE_LIMIT = 5;
+const RATE_WINDOW_MS = 60 * 60 * 1000;
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const times = (rateLimitMap.get(ip) || []).filter(t => now - t < RATE_WINDOW_MS);
+  if (times.length >= RATE_LIMIT) return true;
+  times.push(now);
+  rateLimitMap.set(ip, times);
+  return false;
+}
+
+const MAX_FIELD_LEN = 3000;
+
+function sanitizeField(val) {
+  if (typeof val !== 'string') return '';
+  return val.slice(0, MAX_FIELD_LEN).trim();
+}
 
 module.exports = async (req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+    setCorsHeaders(res, req.headers.origin);
+    setSecurityHeaders(res);
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
@@ -17,6 +36,11 @@ module.exports = async (req, res) => {
     console.log('--- ENQUIRY REQUEST RECEIVED ---');
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+    if (isRateLimited(ip)) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+
     try {
         const fields = {};
         const fileUploads = [];
@@ -24,7 +48,7 @@ module.exports = async (req, res) => {
         // Use promise to handle busboy
         await new Promise((resolve, reject) => {
             const busboy = Busboy({ headers: req.headers });
-            busboy.on('field', (name, val) => { fields[name] = val; });
+            busboy.on('field', (name, val) => { fields[name] = sanitizeField(val); });
             busboy.on('file', (name, file, { filename, mimeType }) => {
                 const chunks = [];
                 file.on('data', (d) => chunks.push(d));
@@ -40,6 +64,13 @@ module.exports = async (req, res) => {
         });
 
         console.log('Parsed fields:', Object.keys(fields));
+
+        if (!fields.name || !fields.email || !fields.idea) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(fields.email)) {
+          return res.status(400).json({ error: 'Invalid email' });
+        }
 
         const token = process.env.TELEGRAM_BOT_TOKEN;
         const chatId = process.env.TELEGRAM_CHAT_ID;
