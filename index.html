@@ -69,19 +69,23 @@
   src: url('fonts/Didot-Bold.otf') format('opentype');
   font-weight: 400 700;
   font-style: italic;
-  font-synthesis: style; /* let browser synthesize italic if needed */
+  font-synthesis: style;
 }
 :root{
   --linen:#f5f0e8;--linen-2:#ede8dc;--linen-3:#e4dbd0;
   --ink:#1c1814;--ink-2:#4a4540;--ink-3:#8a8478;
   --olive:#2d3d28;--olive-deep:#1e2c1a;
   --gold:#b8956a;--rule:rgba(26,24,20,.12);
-  --serif:'Didot', 'GFS Didot', 'Playfair Display', Georgia, serif;
-  --serif-d:'Didot', 'GFS Didot', 'Playfair Display', Georgia, serif;
-  --sans:'Inter', 'Helvetica Neue', sans-serif;
-  --micro:'Inter', 'Helvetica Neue', sans-serif;
+  --serif:'GFS Didot','Playfair Display',Georgia,serif;
+  --serif-d:'GFS Didot','Playfair Display',Georgia,serif;
+  --sans:'Inter','Helvetica Neue',sans-serif;
+  --micro:'Inter','Helvetica Neue',sans-serif;
   --pad:clamp(20px,5vw,80px);
   --sec:clamp(64px,9vw,128px);
+}
+/* Didot — только для заголовков */
+h1, h2, h3 {
+  font-family: 'Didot', 'GFS Didot', 'Playfair Display', Georgia, serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
