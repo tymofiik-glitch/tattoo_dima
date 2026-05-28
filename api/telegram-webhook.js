@@ -212,7 +212,7 @@ module.exports = async (req, res) => {
 
     // 1. Try to get target message ID from the reply text (serverless-safe)
     if (replyTo?.text) {
-      const idMatch = replyTo.text.match(/\[ID:\s*(\d+)\]/);
+      const idMatch = replyTo.text.match(/ID:\s*(\d+)/);
       if (idMatch) {
         originalMsgId = idMatch[1];
       }
@@ -236,7 +236,7 @@ module.exports = async (req, res) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: incomingChatId,
-            text: `⚠️ Не могу разобрать дату. Попробуй ещё раз в формате: 2025-06-15 14:00\n\n[ID: ${originalMsgId}]`,
+            text: `⚠️ Не могу разобрать дату. Попробуй ещё раз в формате: 2025-06-15 14:00\n\nID: ${originalMsgId}`,
             reply_markup: { force_reply: true, selective: true }
           })
         });
@@ -520,7 +520,7 @@ module.exports = async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `📅 Введи дату и время сеанса для *${escapeMd(clientName)}* в формате:\n\`2025-06-15 14:00\`\n\nПосле этого в карточке появится кнопка _«Ссылка на депозит»_ с этой датой.\n\n[ID: ${msgId}]`,
+        text: `📅 Введи дату и время сеанса для *${escapeMd(clientName)}* в формате:\n\`2025-06-15 14:00\`\n\nПосле этого в карточке появится кнопка _«Ссылка на депозит»_ с этой датой.\n\nID: ${msgId}`,
         parse_mode: 'Markdown',
         reply_markup: { force_reply: true, selective: true }
       })
