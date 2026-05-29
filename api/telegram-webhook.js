@@ -53,12 +53,22 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
   const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
   const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
   const sessionDate   = parseAmsterdamDate(`${dateStr} ${timeStr}`);
-  if (!sessionDate) return;
+
+  // Always delete the calendar message first so the UI is clean
+  await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, message_id: calMsgId })
+  }).catch(() => {});
+
+  if (!sessionDate) {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '⚠️ Не удалось разобрать дату.' }) });
+    return;
+  }
 
   let record = null, depositPaid = false;
-  if (airtableToken && airtableBase) {
-    const formula = encodeURIComponent(`{Telegram Message ID} = '${cardMsgId}'`);
-    try {
+  try {
+    if (airtableToken && airtableBase) {
+      const formula = encodeURIComponent(`{Telegram Message ID} = '${cardMsgId}'`);
       const r = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, { headers: { 'Authorization': `Bearer ${airtableToken}` } });
       const d = await r.json();
       if (d.records?.length > 0) {
@@ -66,38 +76,41 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
         depositPaid = !!record.fields['Mollie Payment ID'];
         if (!isReschedule && depositPaid && record.fields['Session Date']) isReschedule = true;
       }
-    } catch(e) { console.error('saveSessionDate Airtable fetch:', e.message); }
-  }
+    }
+  } catch(e) { console.error('saveSessionDate Airtable fetch:', e.message); }
 
-  if (record && airtableToken && airtableBase) {
-    const fields = { 'Session Date': dateStr, 'Status': depositPaid ? '📅 Date Set' : (record.fields.Status || '💬 In Progress'), 'Session Status': 'scheduled' };
-    await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
-      method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields })
-    });
-    const humanDate = sessionDate.toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
-    await appendTimelineAndEdit({ ...record, fields: { ...record.fields, ...fields } }, `📅 Date set · ${humanDate}`, { status: depositPaid ? 'date_set' : 'accepted' });
-  }
+  try {
+    if (record && airtableToken && airtableBase) {
+      const fields = { 'Session Date': dateStr, 'Status': depositPaid ? '📅 Date Set' : (record.fields.Status || '💬 In Progress'), 'Session Status': 'scheduled' };
+      await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
+        method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields })
+      });
+      const humanDate = sessionDate.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
+      await appendTimelineAndEdit({ ...record, fields: { ...record.fields, ...fields } }, `📅 Date set · ${humanDate}`, { status: depositPaid ? 'date_set' : 'accepted' });
+    }
+  } catch(e) { console.error('saveSessionDate Airtable update:', e.message); }
 
-  if ((depositPaid || isReschedule) && record?.fields?.Email) {
-    try {
+  try {
+    if ((depositPaid || isReschedule) && record?.fields?.Email) {
       const address = record.fields.Address || null;
       const name = record.fields.Name || 'Client';
       const email = record.fields.Email;
       const icsContent = generateIcs({ clientName: name, clientEmail: email, sessionDate, address });
       const gUrl = googleCalendarUrl({ sessionDate, address });
       await sendBookingConfirmation({ name, email, sessionDate, address, icsContent, googleUrl: gUrl });
-    } catch(e) { console.error('saveSessionDate email:', e.message); }
-  }
+    }
+  } catch(e) { console.error('saveSessionDate email:', e.message); }
 
-  // Delete calendar message and notify
-  await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chat_id: chatId, message_id: calMsgId }) });
-  const dateLabel = sessionDate.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
+  const dateLabel = sessionDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
   const clientEmail = record?.fields?.Email || '';
   let txt = `✅ Дата ${isReschedule ? 'обновлена' : 'сохранена'}\n📅 *${escapeMd(dateLabel)}*`;
   if (depositPaid || isReschedule) txt += `\n✉️ Письмо с календарём → ${escapeMd(clientEmail || '—')}`;
   else txt += `\n💳 Кнопка депозита активирована в карточке.`;
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chat_id: chatId, text: txt, parse_mode: 'Markdown' }) });
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text: txt, parse_mode: 'Markdown' })
+  }).catch(e => console.error('saveSessionDate sendMessage:', e.message));
 }
 
 function parseAmsterdamDate(dateStr) {
