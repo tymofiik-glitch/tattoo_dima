@@ -86,7 +86,9 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
         method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields })
       });
-      const humanDate = sessionDate.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
+      const datePart = sessionDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Amsterdam' });
+      const timePart = sessionDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
+      const humanDate = `${datePart}, ${timePart}`;
       await appendTimelineAndEdit({ ...record, fields: { ...record.fields, ...fields } }, `📅 Date set · ${humanDate}`, { status: depositPaid ? 'date_set' : 'accepted' });
     }
   } catch(e) { console.error('saveSessionDate Airtable update:', e.message); }
