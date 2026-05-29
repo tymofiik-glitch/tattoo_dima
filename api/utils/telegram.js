@@ -149,7 +149,7 @@ function buildMainMessage(fields, { status = 'accepted', timeline = [] } = {}) {
 
   const formatQuote = (text) => {
     if (!text || text === 'N/A' || text === 'None') return '▎ _N/A_';
-    return String(text).split('\n').map(line => `▎ _${escapeMd(line)}_`).join('\n');
+    return String(text).split('\n').map(line => `▎ ${escapeMd(line)}`).join('\n');
   };
 
   const ideaBlock  = formatQuote(fields.Idea);
