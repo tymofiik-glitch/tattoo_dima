@@ -315,6 +315,18 @@
 
   if (clientName) document.getElementById('clientName').textContent = clientName;
 
+  const depositTotal = groupSize * 50;
+  document.querySelector('.amount-value').textContent = '€' + depositTotal;
+  document.querySelector('.btn-text').textContent = `PAY €${depositTotal} DEPOSIT`;
+
+  if (groupSize > 1) {
+    const sessionRow = document.getElementById('sessionRow');
+    const groupRow = document.createElement('div');
+    groupRow.className = 'info-row';
+    groupRow.innerHTML = `<span class="label">Group Size</span><span class="value">${groupSize} people</span>`;
+    sessionRow.parentNode.insertBefore(groupRow, sessionRow.nextSibling);
+  }
+
   if (sessionRaw) {
     const d = new Date(sessionRaw);
     if (!isNaN(d.getTime())) {
