@@ -464,11 +464,48 @@ async function sendAftercareReminderEmail({ name, email }, { idempotencyKey } = 
   return safeSend(resend, payload, idempotencyKey ? { idempotencyKey } : undefined);
 }
 
+async function sendTouchupEmail({ name, email, type }, { idempotencyKey } = {}) {
+  const resend = getResend();
+  const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
+  const isFree = type === 'free';
+
+  const payload = {
+    from: FROM(),
+    to: email,
+    subject: isFree ? 'Your free touchup is ready · the muse ink' : 'Touchup session · the muse ink — €50',
+    html: wrap({
+      title: isFree ? 'Your free touchup.' : 'Time for a touchup.',
+      sub: `For ${name} — one month after your session.`,
+      body: `
+        <p style="margin:0 0 24px">It has been about a month since your tattoo session. This is the perfect time for a touchup — the skin has fully healed and any small imperfections can now be corrected.</p>
+
+        ${isFree
+          ? `${infoSection('Your touchup is on us.', [
+              'A quick, focused session to perfect any spots that need attention.',
+              'Takes 15–45 minutes depending on the area.',
+              'No charge — this is included as part of your session.'
+            ])}`
+          : `${infoSection('Touchup session — €50', [
+              'A focused session to refine and perfect your piece.',
+              'Takes 15–45 minutes depending on the area.',
+              'Deposit of €50 is required to confirm your spot.'
+            ])}`
+        }
+
+        <p style="margin:24px 0 0"><a href="${waLink}" style="display:inline-block;background:#2d3d28;color:#f5f0e8;text-decoration:none;padding:13px 28px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase">Book your touchup →</a></p>
+      `
+    })
+  };
+
+  return safeSend(resend, payload, idempotencyKey ? { idempotencyKey } : undefined);
+}
+
 module.exports = {
   sendEnquiryConfirmation,
   sendRejectionEmail,
   sendBookingConfirmation,
   sendPreCareEmail,
   sendAftercareEmail,
-  sendAftercareReminderEmail
+  sendAftercareReminderEmail,
+  sendTouchupEmail
 };

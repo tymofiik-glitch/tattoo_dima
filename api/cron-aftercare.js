@@ -1,4 +1,4 @@
-const { sendAftercareEmail, sendPreCareEmail, sendAftercareReminderEmail } = require('./utils/email');
+const { sendAftercareEmail, sendPreCareEmail, sendAftercareReminderEmail, sendTouchupEmail } = require('./utils/email');
 const { notifyAlena, appendTimelineAndEdit } = require('./utils/telegram');
 const { setSecurityHeaders } = require('./utils/security');
 
@@ -57,6 +57,26 @@ const TYPE_CONFIG = {
       await appendTimelineAndEdit(
         record,
         `✅ Aftercare reminder sent · ${today}`,
+        { status: 'session_done' }
+      );
+    }
+  },
+  touchup: {
+    sentField:    'TouchupSentAt',
+    lockField:    'TouchupLockedAt',
+    extraFilter:  "AND({Session Status} = 'completed', OR({Touchup Type} = 'free', {Touchup Type} = 'paid'))",
+    targetOffset: -30,
+    send: (record, opts) => sendTouchupEmail({
+      name: record.fields.Name || 'there',
+      email: record.fields.Email,
+      type: record.fields['Touchup Type'] || 'free'
+    }, opts),
+    onSuccess: async (record) => {
+      const today = new Date().toISOString().split('T')[0];
+      const type = record.fields['Touchup Type'] || 'free';
+      await appendTimelineAndEdit(
+        record,
+        `💆 Touchup email sent (${type}) · ${today}`,
         { status: 'session_done' }
       );
     }

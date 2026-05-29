@@ -309,6 +309,7 @@
   const clientName  = params.get('name')  ? decodeURIComponent(params.get('name'))  : null;
   const clientEmail = params.get('email') ? decodeURIComponent(params.get('email')) : null;
   const leadId      = params.get('leadId') ? params.get('leadId') : null;
+  const groupSize   = Math.min(6, Math.max(1, parseInt(params.get('groupSize')) || 1));
   const sessionRaw  = params.get('date')  ? decodeURIComponent(params.get('date'))  : null;
   const status      = params.get('status');
 
@@ -379,7 +380,7 @@
       const res = await fetch('/api/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: clientName, email: clientEmail, leadId: leadId })
+        body: JSON.stringify({ name: clientName, email: clientEmail, leadId: leadId, groupSize: groupSize })
       });
 
       const data = await res.json();

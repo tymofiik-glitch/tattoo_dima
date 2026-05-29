@@ -8,7 +8,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { name, email, leadId } = req.body || {};
+  const { name, email, leadId, groupSize } = req.body || {};
+  const people = Math.min(6, Math.max(1, parseInt(groupSize) || 1));
+  const depositAmount = (50 * people).toFixed(2);
 
   const clientEmail = email || 'guest@kaktuz.ink';
 
@@ -25,11 +27,11 @@ module.exports = async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: { currency: 'EUR', value: '50.00' },
-        description: `Tattoo Deposit — ${name || 'Client'}`,
+        amount: { currency: 'EUR', value: depositAmount },
+        description: `Tattoo Deposit${people > 1 ? ` (${people} people)` : ''} — ${name || 'Client'}`,
         redirectUrl: `https://${domain}/deposit?status=success&name=${encodeURIComponent(name || '')}`,
         webhookUrl: `https://${domain}/api/payment-webhook`,
-        metadata: { name, email: clientEmail, leadId: leadId || '', orderId }
+        metadata: { name, email: clientEmail, leadId: leadId || '', orderId, groupSize: people }
       }),
     });
 

@@ -1,4 +1,5 @@
-const { sendRejectionEmail } = require('./utils/email');
+const { sendRejectionEmail, sendBookingConfirmation } = require('./utils/email');
+const { generateIcs, googleCalendarUrl } = require('./utils/ics');
 const { buildMainMessage, buildKeyboard, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
 
 // In-memory state for the two-step "set appointment" flow per chat.
@@ -221,6 +222,7 @@ module.exports = async (req, res) => {
     const hasInMemory = awaitingDate[incomingChatId];
 
     // 2. Fallback to in-memory if reply context didn't resolve an ID
+    const isReschedule = hasInMemory?.isReschedule || false;
     if (!originalMsgId && hasInMemory) {
       originalMsgId = hasInMemory.originalMsgId;
       clientName = hasInMemory.clientName;
@@ -319,9 +321,19 @@ module.exports = async (req, res) => {
         hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
       });
 
-      let responseText = `✅ Дата сохранена\n📅 *${escapeMd(dateStr)}*`;
-      if (depositPaid) {
-        responseText += `\n✉️ Письмо с календарём отправлено на ${escapeMd(clientEmail || '—')}`;
+      // Send calendar email if deposit already paid (reschedule or initial date with existing deposit)
+      if ((depositPaid || isReschedule) && clientEmail) {
+        try {
+          const address = record?.fields?.Address || null;
+          const icsContent = generateIcs({ clientName: clientName || 'Client', clientEmail, sessionDate, address });
+          const gUrl = googleCalendarUrl({ sessionDate, address });
+          await sendBookingConfirmation({ name: clientName || 'Client', email: clientEmail, sessionDate, address, icsContent, googleUrl: gUrl });
+        } catch(e) { console.error('Reschedule email failed:', e.message); }
+      }
+
+      let responseText = `✅ Дата ${isReschedule ? 'обновлена' : 'сохранена'}\n📅 *${escapeMd(dateStr)}*`;
+      if (depositPaid || isReschedule) {
+        responseText += `\n✉️ Письмо с ${isReschedule ? 'новым ' : ''}календарём отправлено на ${escapeMd(clientEmail || '—')}`;
       } else {
         responseText += `\n💳 В карточке клиента активирована кнопка _«Ссылка на депозит»_ с этой датой. Отправь её клиенту.`;
       }
@@ -511,6 +523,86 @@ module.exports = async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, message_id: msgId })
     });
+  } else if (data === 'reschedule') {
+    const clientName  = extractField(msgText, 'CLIENT') || 'Client';
+    const clientEmail = extractField(msgText, 'EMAIL') || '';
+    awaitingDate[chatId] = { clientName, clientEmail, originalMsgId: msgId, isReschedule: true };
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `📅 Введи *новую* дату и время для *${escapeMd(clientName)}*:\n\`2025-06-15 14:00\`\n\nКлиенту придёт письмо с обновлённым календарём.\n\nID: ${msgId}`,
+        parse_mode: 'Markdown',
+        reply_markup: { force_reply: true, selective: true }
+      })
+    });
+
+  } else if (data === 'ask_complete') {
+    const clientName = extractField(msgText, 'CLIENT') || 'Client';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId, message_id: msgId,
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: `✅ Отметить сеанс ${clientName} как завершённый?`, callback_data: 'ignore' }],
+            [
+              { text: '🎁 Завершить + free touchup', callback_data: 'complete_touchup_free' },
+              { text: '💳 Завершить + touchup €50', callback_data: 'complete_touchup_paid' }
+            ],
+            [{ text: '✅ Завершить без touchup', callback_data: 'confirm_complete' }, { text: '🔙 Отмена', callback_data: 'cancel_complete' }]
+          ]
+        }
+      })
+    });
+
+  } else if (data === 'cancel_complete') {
+    const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+    const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+    if (airtableToken && airtableBase && msgId) {
+      const formula = encodeURIComponent(`{Telegram Message ID} = '${msgId}'`);
+      try {
+        const r = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, { headers: { 'Authorization': `Bearer ${airtableToken}` } });
+        const d = await r.json();
+        if (d.records?.length > 0) {
+          const rec = d.records[0];
+          await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildKeyboard({ ...rec.fields, id: rec.id }, 'deposit_paid') })
+          });
+        }
+      } catch(e) { console.error('cancel_complete restore failed:', e.message); }
+    }
+
+  } else if (data === 'confirm_complete' || data === 'complete_touchup_free' || data === 'complete_touchup_paid') {
+    const touchupType = data === 'complete_touchup_free' ? 'free' : data === 'complete_touchup_paid' ? 'paid' : 'none';
+    const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+    const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+    if (airtableToken && airtableBase && msgId) {
+      const formula = encodeURIComponent(`{Telegram Message ID} = '${msgId}'`);
+      try {
+        const findRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, { headers: { 'Authorization': `Bearer ${airtableToken}` } });
+        const findData = await findRes.json();
+        if (findData.records?.length > 0) {
+          const rec = findData.records[0];
+          const patchFields = { 'Session Status': 'completed', 'Status': '✅ Completed', 'Touchup Type': touchupType };
+          await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${rec.id}`, {
+            method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: patchFields })
+          });
+          const today = new Date().toISOString().split('T')[0];
+          const touchupNote = touchupType !== 'none' ? ` · touchup ${touchupType}` : '';
+          await appendTimelineAndEdit(
+            { ...rec, fields: { ...rec.fields, ...patchFields, id: rec.id } },
+            `✅ Session completed · ${today}${touchupNote}`,
+            { status: 'session_done' }
+          );
+        }
+      } catch(err) { console.error('confirm_complete failed:', err.message); }
+    }
+
   } else if (data === 'set_date') {
     const clientName  = extractField(msgText, 'CLIENT') || 'Client';
     const clientEmail = extractField(msgText, 'EMAIL') || '';

@@ -409,6 +409,11 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 .mf.err{animation:shake .35s ease}
 .sc-g{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.ppl-row{display:flex;align-items:center;gap:0;border-bottom:1px solid rgba(26,24,20,.22);padding:6px 0 10px}
+.ppl-btn{background:none;border:none;cursor:pointer;width:32px;height:32px;font-size:18px;color:var(--ink-2);display:flex;align-items:center;justify-content:center;transition:color .2s}
+.ppl-btn:hover{color:var(--ink)}
+.ppl-val{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--ink);min-width:32px;text-align:center}
+.ppl-note{font-family:var(--micro);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-left:10px}
 .scc{border:1px solid rgba(26,24,20,.18);background:transparent;cursor:pointer;padding:12px 5px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .2s,background .2s}
 .scc:hover{border-color:var(--olive)}
 .scc.act{border-color:var(--olive);background:rgba(45,61,40,.07)}
@@ -884,7 +889,17 @@ nav.sc .n-lang-sep{color:rgba(28,24,20,.2)}
           </div>
           <input type="hidden" name="phone" id="phFull" value="+31"/>
         </div>
-        <div class="mn"><span class="mnote">Sessions from €150 · Deposit €50</span><button type="button" class="mnext" data-n="2">Continue →</button></div>
+        <div class="mf">
+          <label>Number of people</label>
+          <div class="ppl-row">
+            <button type="button" class="ppl-btn" id="pplDec">−</button>
+            <span class="ppl-val" id="pplVal">1</span>
+            <button type="button" class="ppl-btn" id="pplInc">+</button>
+            <span class="ppl-note" id="pplNote">Solo session · Deposit €50</span>
+          </div>
+          <input type="hidden" name="groupSize" id="groupSizeInput" value="1"/>
+        </div>
+        <div class="mn"><span class="mnote">Sessions from €150 · Deposit €50/person</span><button type="button" class="mnext" data-n="2">Continue →</button></div>
       </div>
       <div class="mp" data-p="2">
         <p class="mey">Step 2 of 3</p>
@@ -1130,6 +1145,13 @@ function setLang(lang){
   function sync(){full.value=(cc.value+' '+num.value.trim()).trim();}
   cc.addEventListener('change',sync);
   num.addEventListener('input',sync);
+})();
+(function(){
+  const dec=document.getElementById('pplDec'),inc=document.getElementById('pplInc'),val=document.getElementById('pplVal'),note=document.getElementById('pplNote'),inp=document.getElementById('groupSizeInput');
+  const labels=['Solo session · Deposit €50','2 people · Deposit €100','3 people · Deposit €150','4 people · Deposit €200','5 people · Deposit €250','6 people · Deposit €300'];
+  function update(n){val.textContent=n;inp.value=n;note.textContent=labels[n-1]||`${n} people · Deposit €${n*50}`;}
+  dec.addEventListener('click',()=>{const n=Math.max(1,parseInt(inp.value)-1);update(n);});
+  inc.addEventListener('click',()=>{const n=Math.min(6,parseInt(inp.value)+1);update(n);});
 })();
 mo.querySelectorAll('#scg .scc').forEach(c=>c.addEventListener('click',()=>{
   mo.querySelectorAll('#scg .scc').forEach(x=>x.classList.remove('act'));c.classList.add('act');

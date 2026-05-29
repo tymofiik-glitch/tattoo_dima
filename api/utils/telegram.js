@@ -111,11 +111,14 @@ function buildKeyboard(fields, status) {
       `?name=${encodeURIComponent(fields.Name || '')}` +
       `&email=${encodeURIComponent(fields.Email || '')}` +
       (fields.id ? `&leadId=${fields.id}` : '') +
-      `&date=${encodeURIComponent(sessionDate.toISOString())}`;
+      `&date=${encodeURIComponent(sessionDate.toISOString())}` +
+      (groupSize > 1 ? `&groupSize=${groupSize}` : '');
     rows.push([{ text: `💳 Ссылка на депозит · ${shortDate}`, url: depositUrl }]);
     rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }, { text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   } else {
-    rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }, { text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
+    // deposit paid — reschedule + mark complete
+    rows.push([{ text: '📅 Перенести дату', callback_data: 'reschedule' }, { text: '✅ Завершить сеанс', callback_data: 'ask_complete' }]);
+    rows.push([{ text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   }
 
   rows.push([{ text: '🗑 Прекратить работу', callback_data: 'ask_delete' }]);
@@ -140,6 +143,8 @@ function buildMainMessage(fields, { status = 'accepted', timeline = [] } = {}) {
   const size      = escapeMd(fields.Size      || 'N/A');
   const placement = escapeMd(fields.Placement || 'N/A');
   const budget    = escapeMd(fields.Budget    || 'N/A');
+  const groupSize = parseInt(fields['Group Size']) || 1;
+  const groupLine = groupSize > 1 ? `\n👥 *Group:* ${groupSize} people · Deposit €${groupSize * 50}` : '';
 
   const formatQuote = (text) => {
     if (!text || text === 'N/A' || text === 'None') return '▎ _N/A_';
@@ -167,7 +172,7 @@ ${header}
 📱 ${phone} • 📸 ${instagram}
 📧 ${email}
 
-🖼 *TATTOO DETAILS*
+🖼 *TATTOO DETAILS*${groupLine}
 📐 *Size:* ${size} • 📍 *Place:* ${placement}
 💰 *Budget:* ${budget}
 

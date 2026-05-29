@@ -83,6 +83,7 @@ module.exports = async (req, res) => {
         const displayBudget = budgetMap[fields.budget] || fields.budget || 'Not specified';
 
         // Map form fields to the Airtable schema expected by buildMainMessage
+        const groupSize = Math.min(6, Math.max(1, parseInt(fields.groupSize) || 1));
         const mappedFields = {
             Name: fields.name,
             Email: fields.email,
@@ -92,7 +93,8 @@ module.exports = async (req, res) => {
             Placement: fields.placement,
             Budget: displayBudget,
             Idea: fields.idea,
-            Notes: fields.notes
+            Notes: fields.notes,
+            ...(groupSize > 1 ? { 'Group Size': String(groupSize) } : {})
         };
 
         const { buildMainMessage } = require('./utils/telegram');
