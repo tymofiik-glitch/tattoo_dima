@@ -2,11 +2,103 @@ const { sendRejectionEmail, sendBookingConfirmation } = require('./utils/email')
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
 const { buildMainMessage, buildKeyboard, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
 
-// In-memory state for the two-step "set appointment" flow per chat.
-// Step 1: awaitingDate    — Alena enters date/time
-// Step 2: awaitingAddress — Alena enters the studio address
 const awaitingDate = {};
 const awaitingAddress = {};
+
+// ─── Inline calendar builder ──────────────────────────────────────────────────
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function buildCalendarKeyboard(cardMsgId, year, month, isReschedule) {
+  const flag = isReschedule ? '1' : '0';
+  const prev = new Date(year, month - 1, 1);
+  const next = new Date(year, month + 1, 1);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  const rows = [];
+  rows.push([
+    { text: '◀', callback_data: `cal_nav_${cardMsgId}_${fmt(prev)}_${flag}` },
+    { text: `${MONTH_NAMES[month]} ${year}`, callback_data: 'ignore' },
+    { text: '▶', callback_data: `cal_nav_${cardMsgId}_${fmt(next)}_${flag}` }
+  ]);
+  rows.push(['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => ({ text: d, callback_data: 'ignore' })));
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let row = [];
+  for (let i = 0; i < firstDow; i++) row.push({ text: ' ', callback_data: 'ignore' });
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const past = new Date(year, month, d) < today;
+    row.push({ text: past ? '·' : String(d), callback_data: past ? 'ignore' : `cal_day_${cardMsgId}_${ds}_${flag}` });
+    if (row.length === 7) { rows.push(row); row = []; }
+  }
+  if (row.length) { while (row.length < 7) row.push({ text: ' ', callback_data: 'ignore' }); rows.push(row); }
+  rows.push([{ text: '✖ Отмена', callback_data: `cal_cancel_${cardMsgId}` }]);
+  return { inline_keyboard: rows };
+}
+
+function buildTimeKeyboard(cardMsgId, dateStr, isReschedule) {
+  const flag = isReschedule ? '1' : '0';
+  const hours = ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+  const rows = [];
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const label = new Date(y, m-1, d).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+  rows.push([{ text: `📅 ${label} — выбери время:`, callback_data: 'ignore' }]);
+  for (let i = 0; i < hours.length; i += 4)
+    rows.push(hours.slice(i, i+4).map(h => ({ text: h, callback_data: `cal_ok_${cardMsgId}_${dateStr}_${h}_${flag}` })));
+  rows.push([{ text: '◀ Назад', callback_data: `cal_nav_${cardMsgId}_${y}-${String(m).padStart(2,'0')}_${flag}` }]);
+  return { inline_keyboard: rows };
+}
+
+async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, timeStr, isReschedule) {
+  const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+  const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+  const sessionDate   = parseAmsterdamDate(`${dateStr} ${timeStr}`);
+  if (!sessionDate) return;
+
+  let record = null, depositPaid = false;
+  if (airtableToken && airtableBase) {
+    const formula = encodeURIComponent(`{Telegram Message ID} = '${cardMsgId}'`);
+    try {
+      const r = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, { headers: { 'Authorization': `Bearer ${airtableToken}` } });
+      const d = await r.json();
+      if (d.records?.length > 0) {
+        record = d.records[0];
+        depositPaid = !!record.fields['Mollie Payment ID'];
+        if (!isReschedule && depositPaid && record.fields['Session Date']) isReschedule = true;
+      }
+    } catch(e) { console.error('saveSessionDate Airtable fetch:', e.message); }
+  }
+
+  if (record && airtableToken && airtableBase) {
+    const fields = { 'Session Date': dateStr, 'Status': depositPaid ? '📅 Date Set' : (record.fields.Status || '💬 In Progress'), 'Session Status': 'scheduled' };
+    await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
+      method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields })
+    });
+    const humanDate = sessionDate.toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
+    await appendTimelineAndEdit({ ...record, fields: { ...record.fields, ...fields } }, `📅 Date set · ${humanDate}`, { status: depositPaid ? 'date_set' : 'accepted' });
+  }
+
+  if ((depositPaid || isReschedule) && record?.fields?.Email) {
+    try {
+      const address = record.fields.Address || null;
+      const name = record.fields.Name || 'Client';
+      const email = record.fields.Email;
+      const icsContent = generateIcs({ clientName: name, clientEmail: email, sessionDate, address });
+      const gUrl = googleCalendarUrl({ sessionDate, address });
+      await sendBookingConfirmation({ name, email, sessionDate, address, icsContent, googleUrl: gUrl });
+    } catch(e) { console.error('saveSessionDate email:', e.message); }
+  }
+
+  // Delete calendar message and notify
+  await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chat_id: chatId, message_id: calMsgId }) });
+  const dateLabel = sessionDate.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
+  const clientEmail = record?.fields?.Email || '';
+  let txt = `✅ Дата ${isReschedule ? 'обновлена' : 'сохранена'}\n📅 *${escapeMd(dateLabel)}*`;
+  if (depositPaid || isReschedule) txt += `\n✉️ Письмо с календарём → ${escapeMd(clientEmail || '—')}`;
+  else txt += `\n💳 Кнопка депозита активирована в карточке.`;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chat_id: chatId, text: txt, parse_mode: 'Markdown' }) });
+}
 
 function parseAmsterdamDate(dateStr) {
   const isoStr = dateStr.trim().replace(' ', 'T') + ':00';
@@ -547,18 +639,10 @@ module.exports = async (req, res) => {
       body: JSON.stringify({ chat_id: chatId, message_id: msgId })
     });
   } else if (data === 'reschedule') {
-    const clientName  = extractField(msgText, 'CLIENT') || 'Client';
-    const clientEmail = extractField(msgText, 'EMAIL') || '';
-    awaitingDate[chatId] = { clientName, clientEmail, originalMsgId: msgId, isReschedule: true };
+    const now = new Date();
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: `📅 Введи *новую* дату и время для *${escapeMd(clientName)}*:\n\`2025-06-15 14:00\`\n\nКлиенту придёт письмо с обновлённым календарём.\n\nID: ${msgId}`,
-        parse_mode: 'Markdown',
-        reply_markup: { force_reply: true, selective: true }
-      })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: '📅 Выбери новую дату:', reply_markup: buildCalendarKeyboard(msgId, now.getFullYear(), now.getMonth(), true) })
     });
 
   } else if (data === 'ask_complete') {
@@ -626,19 +710,48 @@ module.exports = async (req, res) => {
       } catch(err) { console.error('confirm_complete failed:', err.message); }
     }
 
+  } else if (data.startsWith('cal_nav_')) {
+    // cal_nav_CARDMSGID_YYYY-MM_FLAG
+    const parts = data.split('_');
+    const cardMsgId = parts[2];
+    const [year, month] = parts[3].split('-').map(Number);
+    const isReschedule = parts[4] === '1';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildCalendarKeyboard(cardMsgId, year, month - 1, isReschedule) })
+    });
+
+  } else if (data.startsWith('cal_day_')) {
+    // cal_day_CARDMSGID_YYYY-MM-DD_FLAG
+    const parts = data.split('_');
+    const cardMsgId = parts[2];
+    const dateStr = parts[3];
+    const isReschedule = parts[4] === '1';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildTimeKeyboard(cardMsgId, dateStr, isReschedule) })
+    });
+
+  } else if (data.startsWith('cal_ok_')) {
+    // cal_ok_CARDMSGID_YYYY-MM-DD_HH:MM_FLAG
+    const parts = data.split('_');
+    const cardMsgId = parts[2];
+    const dateStr = parts[3];
+    const timeStr = parts[4];
+    const isReschedule = parts[5] === '1';
+    await saveSessionDate(token, chatId, msgId, cardMsgId, dateStr, timeStr, isReschedule);
+
+  } else if (data.startsWith('cal_cancel_')) {
+    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId })
+    });
+
   } else if (data === 'set_date') {
-    const clientName  = extractField(msgText, 'CLIENT') || 'Client';
-    const clientEmail = extractField(msgText, 'EMAIL') || '';
-    awaitingDate[chatId] = { clientName, clientEmail, originalMsgId: msgId };
+    const now = new Date();
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: `📅 Введи дату и время сеанса для *${escapeMd(clientName)}* в формате:\n\`2025-06-15 14:00\`\n\nПосле этого в карточке появится кнопка _«Ссылка на депозит»_ с этой датой.\n\nID: ${msgId}`,
-        parse_mode: 'Markdown',
-        reply_markup: { force_reply: true, selective: true }
-      })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: '📅 Выбери дату сеанса:', reply_markup: buildCalendarKeyboard(msgId, now.getFullYear(), now.getMonth(), false) })
     });
 
   } else if (data === 'ask_no_show') {
