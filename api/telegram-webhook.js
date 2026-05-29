@@ -670,11 +670,9 @@ module.exports = async (req, res) => {
         reply_markup: {
           inline_keyboard: [
             [{ text: `✅ Отметить сеанс ${clientName} как завершённый?`, callback_data: 'ignore' }],
-            [
-              { text: '🎁 Завершить + free touchup', callback_data: 'complete_touchup_free' },
-              { text: '💳 Завершить + touchup €50', callback_data: 'complete_touchup_paid' }
-            ],
-            [{ text: '✅ Завершить без touchup', callback_data: 'confirm_complete' }, { text: '🔙 Отмена', callback_data: 'cancel_complete' }]
+            [ { text: '🎁 Free Touchup', callback_data: 'complete_touchup_free' } ],
+            [ { text: '💳 Touchup €50', callback_data: 'complete_touchup_paid' } ],
+            [ { text: '✅ Без touchup', callback_data: 'confirm_complete' }, { text: '🔙 Отмена', callback_data: 'cancel_complete' } ]
           ]
         }
       })
