@@ -47,7 +47,8 @@ function extractField(text, label) {
     'PHONE': /📱\s*([^\n•]+)/,
     'SIZE': /📐\s*Size:\s*([^\n•]+)/i,
     'PLACE': /📍\s*Place:\s*([^\n]+)/i,
-    'BUDGET': /💰\s*Budget:\s*([^\n]+)/i
+    'BUDGET': /💰\s*Budget:\s*([^\n]+)/i,
+    'GROUP': /👥\s*Group:\s*(\d+)\s*people/i
   };
 
   if (newPatterns[label]) {
@@ -131,6 +132,7 @@ async function createAirtableLead(messageText, messageId, chatId) {
     'Placement':            extractField(messageText, 'PLACE'),
     'Budget':               extractField(messageText, 'BUDGET'),
     'Notes':                extractField(messageText, 'NOTES'),
+    'Group Size':           extractField(messageText, 'GROUP') || '',
     'Status':               '💬 In Progress',
     'Telegram Message ID':  String(messageId || ''),
     'Telegram Chat Link':   telegramLink
@@ -221,12 +223,31 @@ module.exports = async (req, res) => {
 
     const hasInMemory = awaitingDate[incomingChatId];
 
-    // 2. Fallback to in-memory if reply context didn't resolve an ID
-    const isReschedule = hasInMemory?.isReschedule || false;
+    // 2. Fallback to in-memory (same process, non-serverless)
+    let isReschedule = hasInMemory?.isReschedule || false;
     if (!originalMsgId && hasInMemory) {
       originalMsgId = hasInMemory.originalMsgId;
       clientName = hasInMemory.clientName;
       clientEmail = hasInMemory.clientEmail;
+    }
+
+    // 3. Serverless fallback: if text looks like a date and no ID resolved yet,
+    //    find the most recent lead in Airtable without a session date
+    if (!originalMsgId && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(incomingText)) {
+      const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+      const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+      if (airtableToken && airtableBase) {
+        try {
+          const formula = encodeURIComponent(`AND({Session Date} = '', {Status} != '❌ Rejected', {Status} != '⚠️ No-show', {Status} != '✅ Completed', {Telegram Message ID} != '')`);
+          const r = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}&sort[0][field]=Created&sort[0][direction]=desc&maxRecords=1`, {
+            headers: { 'Authorization': `Bearer ${airtableToken}` }
+          });
+          const d = await r.json();
+          if (d.records?.length > 0) {
+            originalMsgId = d.records[0].fields['Telegram Message ID'];
+          }
+        } catch(e) { console.error('Serverless date fallback failed:', e.message); }
+      }
     }
 
     if (originalMsgId) {
@@ -270,6 +291,8 @@ module.exports = async (req, res) => {
             clientName = record.fields.Name || clientName || 'Client';
             clientEmail = record.fields.Email || clientEmail || '';
             depositPaid = record.fields.Status === '💳 Deposit Paid' || !!record.fields['Mollie Payment ID'];
+            // Serverless-safe reschedule detection: deposit paid + date already set
+            if (!hasInMemory && depositPaid && record.fields['Session Date']) isReschedule = true;
           }
         } catch (err) {
           console.error('Airtable lead fetch failed:', err.message);
