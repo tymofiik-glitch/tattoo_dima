@@ -99,6 +99,7 @@ function buildKeyboard(fields, status) {
   const depositPaid = status === 'deposit_paid' || !!fields['Mollie Payment ID'];
   const sessionDate = getSessionDateTime(fields);
   const dateSet = !!sessionDate;
+  const groupSize = parseInt(fields['Group Size']) || 1;
 
   if (status === 'session_done') return { inline_keyboard: rows };
 
