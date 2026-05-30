@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex,nofollow"/>
+<title>Add Lead · Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=GFS+Didot:ital@0;1&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--ink:#1a1814;--ink-2:#4a4540;--ink-3:#8a7a65;--gold:#b8956a;--linen:#f5f0e8;--olive:#2d3d28;--rule:rgba(26,24,20,.12)}
+  body{background:var(--linen);color:var(--ink);font-family:'Inter','Helvetica Neue',sans-serif;font-size:15px;line-height:1.7;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:40px 20px 60px}
+  .wrap{width:100%;max-width:420px}
+  .logo{font-family:'GFS Didot',serif;font-style:italic;font-size:22px;color:var(--ink);margin-bottom:6px}
+  .logo span{display:block;font-family:'Inter',sans-serif;font-style:normal;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin-top:2px}
+  .eyebrow{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:24px;margin-top:32px;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:'';display:inline-block;width:20px;height:.5px;background:var(--gold)}
+  h1{font-family:'GFS Didot',serif;font-weight:400;font-style:italic;font-size:28px;line-height:1.1;color:var(--ink);margin-bottom:32px}
+  .field{margin-bottom:22px}
+  .field label{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2);margin-bottom:10px;font-weight:500}
+  .field label span{text-transform:none;letter-spacing:0;font-size:10px;color:var(--ink-3);font-weight:400}
+  .field input,.field textarea,.field select{width:100%;background:transparent;border:0;border-bottom:1px solid rgba(26,24,20,.22);padding:10px 0 12px;color:var(--ink);font-family:'Inter',sans-serif;font-size:16px;outline:none;transition:border-color .25s;-webkit-appearance:none}
+  .field input:focus,.field textarea:focus{border-bottom-color:var(--olive);border-bottom-width:1.5px}
+  .field input::placeholder,.field textarea::placeholder{color:var(--ink-3);font-weight:300}
+  .field textarea{resize:none;line-height:1.65}
+  .ph-row{display:flex;align-items:center;border-bottom:1px solid rgba(26,24,20,.22);transition:border-color .25s}
+  .ph-row:focus-within{border-bottom-color:var(--olive);border-bottom-width:1.5px}
+  .ph-cc{background:transparent;border:none;font-family:'Inter',sans-serif;font-size:15px;color:var(--ink);cursor:pointer;padding:10px 8px 12px 0;outline:none}
+  .ph-div{width:.5px;height:18px;background:rgba(26,24,20,.18);margin:0 10px 0 4px;flex-shrink:0}
+  .ph-num{border:none!important;padding:10px 0 12px;flex:1}
+  .source-row{display:flex;gap:8px;margin-bottom:22px}
+  .src-btn{flex:1;border:1px solid rgba(26,24,20,.18);background:transparent;cursor:pointer;padding:10px 8px;font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);transition:border-color .2s,background .2s}
+  .src-btn:hover{border-color:var(--olive)}
+  .src-btn.act{border-color:var(--olive);background:rgba(45,61,40,.07);color:var(--olive);font-weight:500}
+  .submit{width:100%;background:var(--olive);color:var(--linen);border:none;cursor:pointer;padding:16px;font-family:'Inter',sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;margin-top:8px;transition:background .25s}
+  .submit:hover{background:#1e2c1a}
+  .submit:disabled{opacity:.5;cursor:not-allowed}
+  .success{display:none;text-align:center;padding:32px 0}
+  .success-icon{font-size:40px;margin-bottom:16px}
+  .success h2{font-family:'GFS Didot',serif;font-style:italic;font-size:24px;color:var(--ink);margin-bottom:8px}
+  .success p{font-size:13px;color:var(--ink-3)}
+  .success .again{margin-top:24px;display:inline-block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--olive);cursor:pointer;border-bottom:1px solid rgba(45,61,40,.3);padding-bottom:2px}
+  .err-banner{display:none;background:rgba(192,57,43,.08);border-left:2px solid #c0392b;padding:12px 14px;font-size:12px;color:#c0392b;margin-top:12px}
+  .divider{height:.5px;background:var(--rule);margin:28px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">the muse ink<span>Manager · Add lead</span></div>
+
+  <div id="formSection">
+    <div class="eyebrow">New client</div>
+    <h1>Add a lead<br/><em>manually.</em></h1>
+
+    <form id="addForm" novalidate>
+
+      <div class="field">
+        <label>Source</label>
+        <div class="source-row">
+          <button type="button" class="src-btn act" data-src="WhatsApp">📱 WhatsApp</button>
+          <button type="button" class="src-btn" data-src="Instagram">📸 Instagram</button>
+          <button type="button" class="src-btn" data-src="Other">Other</button>
+        </div>
+        <input type="hidden" id="sourceInput" value="WhatsApp"/>
+      </div>
+
+      <div class="field">
+        <label>Client name</label>
+        <input type="text" id="f-name" placeholder="Full name" autocomplete="off"/>
+      </div>
+
+      <div class="field">
+        <label>Phone / WhatsApp</label>
+        <div class="ph-row">
+          <select class="ph-cc" id="f-cc">
+            <option value="+31" selected>🇳🇱 +31</option>
+            <option value="+32">🇧🇪 +32</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+33">🇫🇷 +33</option>
+            <option value="+34">🇪🇸 +34</option>
+            <option value="+39">🇮🇹 +39</option>
+            <option value="+48">🇵🇱 +48</option>
+            <option value="+380">🇺🇦 +380</option>
+            <option value="+90">🇹🇷 +90</option>
+            <option value="+1">🇺🇸 +1</option>
+          </select>
+          <div class="ph-div"></div>
+          <input type="tel" class="ph-num" id="f-phone" placeholder="6 12 345 678"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email <span>(optional)</span></label>
+        <input type="email" id="f-email" placeholder="client@example.com" autocomplete="off"/>
+      </div>
+
+      <div class="field">
+        <label>Instagram <span>(optional)</span></label>
+        <input type="text" id="f-ig" placeholder="@handle"/>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Idea / Request</label>
+        <textarea id="f-idea" rows="3" placeholder="Subject, style, placement, size…"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Notes <span>(optional)</span></label>
+        <textarea id="f-notes" rows="2" placeholder="Budget, timing, any other details…"></textarea>
+      </div>
+
+      <button type="submit" class="submit" id="submitBtn">Send to bot ✦</button>
+      <div class="err-banner" id="errBanner"></div>
+    </form>
+  </div>
+
+  <div class="success" id="successSection">
+    <div class="success-icon">✦</div>
+    <h2>Card sent.</h2>
+    <p id="successName"></p>
+    <span class="again" id="addAnother">Add another →</span>
+  </div>
+</div>
+
+<script>
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  const KEY = new URLSearchParams(location.search).get('key');
+  if (KEY !== '9edc38aa') location.replace('/');
+
+  // ── Source selector ───────────────────────────────────────────────────────
+  document.querySelectorAll('.src-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.src-btn').forEach(b => b.classList.remove('act'));
+      btn.classList.add('act');
+      document.getElementById('sourceInput').value = btn.dataset.src;
+    });
+  });
+
+  // ── Phone assembly ────────────────────────────────────────────────────────
+  function getPhone() {
+    const cc = document.getElementById('f-cc').value;
+    const num = document.getElementById('f-phone').value.trim().replace(/\s/g, '');
+    return num ? cc + num : '';
+  }
+
+  // ── Form submit ───────────────────────────────────────────────────────────
+  document.getElementById('addForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name  = document.getElementById('f-name').value.trim();
+    const phone = getPhone();
+    const idea  = document.getElementById('f-idea').value.trim();
+
+    if (!name || !phone || !idea) {
+      showError('Name, phone and idea are required.');
+      return;
+    }
+
+    const source  = document.getElementById('sourceInput').value;
+    const email   = document.getElementById('f-email').value.trim();
+    const ig      = document.getElementById('f-ig').value.trim();
+    const notes   = document.getElementById('f-notes').value.trim();
+    const notesWithSource = `[${source}]${notes ? ' ' + notes : ''}`;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    hideError();
+
+    const fd = new FormData();
+    fd.append('name', name);
+    fd.append('email', email || `noemail+${Date.now()}@kaktuz.ink`);
+    fd.append('instagram', ig || '');
+    fd.append('phone', phone);
+    fd.append('idea', idea);
+    fd.append('size', 'xs');
+    fd.append('placement', '');
+    fd.append('budget', '150-300');
+    fd.append('groupSize', '1');
+    fd.append('notes', notesWithSource);
+
+    try {
+      const res = await fetch('/api/send-enquiry', {
+        method: 'POST',
+        headers: { 'Origin': 'https://kaktuz.ink' },
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Server error');
+      showSuccess(name, source);
+    } catch (err) {
+      showError(err.message);
+      btn.disabled = false;
+      btn.textContent = 'Send to bot ✦';
+    }
+  });
+
+  function showSuccess(name, source) {
+    document.getElementById('formSection').style.display = 'none';
+    const s = document.getElementById('successSection');
+    s.style.display = 'block';
+    document.getElementById('successName').textContent = `${name} · via ${source}`;
+  }
+
+  document.getElementById('addAnother').addEventListener('click', () => {
+    document.getElementById('addForm').reset();
+    document.querySelectorAll('.src-btn').forEach((b,i) => b.classList.toggle('act', i===0));
+    document.getElementById('sourceInput').value = 'WhatsApp';
+    document.getElementById('successSection').style.display = 'none';
+    document.getElementById('formSection').style.display = 'block';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').textContent = 'Send to bot ✦';
+  });
+
+  function showError(msg) {
+    const b = document.getElementById('errBanner');
+    b.textContent = msg;
+    b.style.display = 'block';
+  }
+  function hideError() {
+    document.getElementById('errBanner').style.display = 'none';
+  }
+</script>
+</body>
+</html>
