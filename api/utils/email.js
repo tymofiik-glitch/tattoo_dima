@@ -286,8 +286,7 @@ async function sendBookingConfirmation({ name, email, sessionDate, address, icsC
     <p style="margin:28px 0 10px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
               font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Finding the studio</p>
     ${mapCard(studioAddress)}
-    <p style="margin:0 0 8px">The studio is private and by appointment only.
-      Dmytro will meet you at the entrance.</p>
+    <p style="margin:0 0 8px">When you arrive, please feel free to walk right in and make yourself comfortable.</p>
     <p style="margin:0 0 24px"><strong>Please arrive on time</strong>
       so we can begin the session as scheduled.</p>` : `
     <p style="margin:0 0 24px">Our manager will be in touch to confirm your exact date and time.
