@@ -54,11 +54,13 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
   const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
   const sessionDate   = parseAmsterdamDate(`${dateStr} ${timeStr}`);
 
-  // Always delete the calendar message first so the UI is clean
-  await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, message_id: calMsgId })
-  }).catch(() => {});
+  // If the calendar was a standalone message, delete it
+  if (String(calMsgId) !== String(cardMsgId)) {
+    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: calMsgId })
+    }).catch(() => {});
+  }
 
   if (!sessionDate) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '⚠️ Не удалось разобрать дату.' }) });
