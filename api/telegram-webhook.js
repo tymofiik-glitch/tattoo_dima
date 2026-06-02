@@ -83,7 +83,16 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
 
   try {
     if (record && airtableToken && airtableBase) {
-      const fields = { 'Session Date': dateStr, 'Status': depositPaid ? '📅 Date Set' : (record.fields.Status || '💬 In Progress'), 'Session Status': 'scheduled' };
+      const { parseTimeline, serializeTimeline } = require('./utils/telegram');
+      const cleanTimeline = parseTimeline(record.fields.Timeline).filter(t => !t.includes('Date set') && !t.includes('Rescheduled'));
+      
+      const fields = { 
+        'Session Date': dateStr, 
+        'Status': depositPaid ? '📅 Date Set' : (record.fields.Status || '💬 In Progress'), 
+        'Session Status': 'scheduled',
+        'Timeline': serializeTimeline(cleanTimeline)
+      };
+      
       await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${record.id}`, {
         method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields })
@@ -91,7 +100,8 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
       const datePart = sessionDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Amsterdam' });
       const timePart = sessionDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
       const humanDate = `${datePart}, ${timePart}`;
-      await appendTimelineAndEdit({ ...record, fields: { ...record.fields, ...fields } }, `📅 Date set · ${humanDate}`, { status: depositPaid ? 'date_set' : 'accepted' });
+      const actionText = isReschedule ? `🔄 Rescheduled · ${humanDate}` : `📅 Date set · ${humanDate}`;
+      await appendTimelineAndEdit({ ...record, fields: { ...record.fields, ...fields } }, actionText, { status: depositPaid ? 'date_set' : 'accepted' });
     }
   } catch(e) { console.error('saveSessionDate Airtable update:', e.message); }
 
