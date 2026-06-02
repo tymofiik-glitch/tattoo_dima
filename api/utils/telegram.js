@@ -5,6 +5,7 @@
 
 const STATUS_HEADERS = {
   accepted:        '🟢 *NEW LEAD*',
+  waiting_deposit: '🟠 *WAITING DEPOSIT*',
   deposit_paid:    '💳 *DEPOSIT PAID*',
   date_set:        '📅 *DATE SET*',
   session_done:    '✅ *COMPLETED*',
@@ -13,12 +14,25 @@ const STATUS_HEADERS = {
 
 // Emoji prefix for the Forum Topic title based on status
 const STATUS_TOPIC_EMOJI = {
-  accepted:     '🟢',
-  deposit_paid: '💳',
-  date_set:     '📅',
-  session_done: '✅',
-  touchup:      '🔁',
-  rejected:     '❌'
+  accepted:        '🟢',
+  waiting_deposit: '🟠',
+  deposit_paid:    '💳',
+  date_set:        '📅',
+  session_done:    '✅',
+  touchup:         '🔁',
+  rejected:        '❌'
+};
+
+// Icon color for the Forum Topic based on status (Telegram color integers)
+const STATUS_TOPIC_COLOR = {
+  accepted:        7322096,   // blue
+  waiting_deposit: 16766590,  // yellow/orange
+  deposit_paid:    13338331,  // purple
+  date_set:        13338331,  // purple
+  session_done:    9367192,   // green
+  touchup:         9367192,   // green
+  rejected:        16478047,  // red
+  error:           16478047,  // red
 };
 
 function token() {
@@ -111,7 +125,11 @@ function buildKeyboard(fields, status) {
   const dateSet = !!sessionDate;
   const groupSize = parseInt(fields['Group Size']) || 1;
 
-  if (status === 'session_done') return { inline_keyboard: rows };
+  if (status === 'session_done') {
+    rows.push([{ text: '🎁 Touchup (Free)', callback_data: 'send_touchup_free' }]);
+    rows.push([{ text: '💳 Touchup (€50)', callback_data: 'send_touchup_paid' }]);
+    return { inline_keyboard: rows };
+  }
 
   if (!dateSet && !depositPaid) {
     rows.push([{ text: '📅 Время + депозит', callback_data: 'set_date' }]);
@@ -171,6 +189,7 @@ function buildMainMessage(fields, { status = 'accepted', timeline = [] } = {}) {
 
   let hashtag = '';
   if (status === 'accepted') hashtag = '#new\\_lead';
+  else if (status === 'waiting_deposit') hashtag = '#waiting\\_deposit';
   else if (status === 'deposit_paid') hashtag = '#deposit\\_paid';
   else if (status === 'date_set') hashtag = '#date\\_set';
   else if (status === 'session_done') hashtag = '#completed';
@@ -258,7 +277,7 @@ async function createForumTopic(chatId, name) {
     const res = await fetch(`https://api.telegram.org/bot${t}/createForumTopic`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, name: name.slice(0, 128) })
+      body: JSON.stringify({ chat_id: chatId, name: name.slice(0, 128), icon_color: STATUS_TOPIC_COLOR.accepted })
     });
     const data = await res.json();
     if (data.ok) return data.result.message_thread_id;
@@ -270,18 +289,29 @@ async function createForumTopic(chatId, name) {
   }
 }
 
-async function renameForumTopic(chatId, topicId, name) {
+async function updateForumTopic(chatId, topicId, name, color) {
   const t = token();
+  const body = { chat_id: chatId, message_thread_id: parseInt(topicId, 10), name: name.slice(0, 128) };
+  if (color != null) body.icon_color = color;
   try {
     await fetch(`https://api.telegram.org/bot${t}/editForumTopic`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, message_thread_id: parseInt(topicId, 10), name: name.slice(0, 128) })
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
-  } catch (err) {
-    console.error('renameForumTopic error:', err.message);
-  }
+  } catch (err) { console.error('updateForumTopic error:', err.message); }
 }
+
+async function pinMessage(chatId, msgId) {
+  const t = token();
+  try {
+    await fetch(`https://api.telegram.org/bot${t}/pinChatMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: parseInt(msgId, 10), disable_notification: true })
+    });
+  } catch (err) { console.error('pinMessage error:', err.message); }
+}
+
+// Keep old name as alias for compatibility
+const renameForumTopic = (chatId, topicId, name) => updateForumTopic(chatId, topicId, name, null);
 
 async function closeForumTopic(chatId, topicId) {
   const t = token();
@@ -343,13 +373,19 @@ async function appendTimelineAndEdit(record, line, { status, replyMarkup } = {})
     console.error('Timeline patch failed:', err.message);
   }
 
-  // Rename + close topic based on status
+  // Rename (with color + date) + close topic based on status
   if (chatId && topicId && status) {
     const emoji = STATUS_TOPIC_EMOJI[status] || '🟢';
-    const newName = `${emoji} ${clientName}`;
+    const color = STATUS_TOPIC_COLOR[status] || null;
+    const firstName = clientName.split(' ')[0];
+    const sessionDateRaw = fields['Session Date'];
+    const dateLabel = sessionDateRaw
+      ? ' · ' + new Date(sessionDateRaw + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+      : '';
+    const newName = `${emoji} ${firstName}${dateLabel}`;
     try {
-      await renameForumTopic(chatId, topicId, newName);
-      if (status === 'session_done') {
+      await updateForumTopic(chatId, topicId, newName, color);
+      if (status === 'session_done' || status === 'rejected') {
         await closeForumTopic(chatId, topicId);
       }
     } catch (err) {
@@ -380,6 +416,8 @@ module.exports = {
   formatShortDate,
   escapeMd,
   createForumTopic,
+  updateForumTopic,
+  pinMessage,
   renameForumTopic,
   closeForumTopic,
   reopenForumTopic

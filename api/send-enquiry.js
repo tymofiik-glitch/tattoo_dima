@@ -1,6 +1,6 @@
 const Busboy = require('busboy');
 const { sendEnquiryConfirmation } = require('./utils/email');
-const { escapeMd, notifyAlena, createForumTopic } = require('./utils/telegram');
+const { escapeMd, notifyAlena, createForumTopic, pinMessage } = require('./utils/telegram');
 const { setCorsHeaders, setSecurityHeaders } = require('./utils/security');
 
 // In-memory rate limiter: max 5 submissions per IP per hour
@@ -162,6 +162,7 @@ module.exports = async (req, res) => {
             // The webhook reads message.message_thread_id from the callback_query automatically
             if (msgId) {
               console.log('Card sent in topic:', topicId, 'msgId:', msgId);
+              await pinMessage(chatId, msgId);
             }
         } catch (parseErr) {
             console.error('Failed to parse Telegram response:', parseErr.message);
