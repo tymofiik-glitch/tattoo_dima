@@ -135,48 +135,23 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // 5. Single combined reply: deposit paid + email status + session time
-    const sessionLine = sessionDate
-      ? sessionDate.toLocaleString('en-GB', {
-          weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-          hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
-        })
-      : null;
-
-    const lines = [
-      `💰 *Депозит оплачен*`,
-      ``,
-      `👤 *Client:* ${escapeMd(name || 'Unknown')}`,
-      `💶 *Amount:* ${payment.amount.value} ${payment.amount.currency}`
-    ];
-    if (sessionLine) lines.push(`📅 *Session:* ${escapeMd(sessionLine)} (Amsterdam)`);
-    if (emailSent) {
-      lines.push(`✉️ *Email sent:* ${escapeMd(email || '—')}`);
-    } else if (email) {
-      lines.push(`⚠️ *Email FAILED:* ${escapeMd(emailError || 'unknown')}`);
-    }
-    lines.push(``);
-    lines.push(sessionLine
-      ? `✅ Сессия подтверждена, календарь отправлен клиенту.`
-      : `✅ Депозит зафиксирован. Дата ещё не назначена.`);
-
-    try {
-      const sendPayload = {
-        chat_id: process.env.TELEGRAM_CHAT_ID,
-        text: lines.join('\n'),
-        parse_mode: 'Markdown'
-      };
-      if (telegramMessageId) {
-        sendPayload.reply_to_message_id = parseInt(telegramMessageId, 10);
+    // Card is already updated via appendTimelineAndEdit above.
+    // Only send a separate message if email failed (so manager can act).
+    if (!emailSent && email && emailError) {
+      try {
+        const sendPayload = {
+          chat_id: process.env.TELEGRAM_CHAT_ID,
+          text: `⚠️ *Email FAILED after deposit*\n👤 ${escapeMd(name || 'Unknown')}\n📧 ${escapeMd(email)}\nError: ${escapeMd(emailError)}\n\nНапиши клиенту вручную.`,
+          parse_mode: 'Markdown'
+        };
+        if (telegramMessageId) sendPayload.reply_to_message_id = parseInt(telegramMessageId, 10);
+        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sendPayload)
+        });
+      } catch (err) {
+        console.error('Telegram error notification failed:', err);
       }
-      await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sendPayload)
-      });
-      console.log('Telegram notification sent');
-    } catch (err) {
-      console.error('Telegram notification failed:', err);
     }
 
     res.status(200).send('OK');

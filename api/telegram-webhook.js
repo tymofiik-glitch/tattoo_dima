@@ -491,7 +491,7 @@ module.exports = async (req, res) => {
   if (body?.message?.photo && !body?.callback_query) {
     const replyTo = body.message.reply_to_message;
     if (replyTo?.text) {
-      const recordMatch = replyTo.text.match(/RECORD:([a-zA-Z0-9]+)/);
+      const recordMatch = replyTo.text.match(/RECORD:([a-zA-Z0-9]+)/) || replyTo.text.match(/\u200b([a-zA-Z0-9]{10,})/);
       if (recordMatch) {
         const recordId = recordMatch[1];
         const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
@@ -761,8 +761,9 @@ module.exports = async (req, res) => {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               chat_id: chatId,
-              text: `📸 *Отправь фото тату для ${escapeMd(clientName)}*\nОтветь на это сообщение фото — прикреплю к письму в 21:00.\n\nRECORD:${rec.id}`,
+              text: `📸 *Отправь фото тату для ${escapeMd(clientName)}*\nОтветь на это сообщение фото — прикреплю к письму в 21:00.\n\u200b${rec.id}`,
               parse_mode: 'Markdown',
+              reply_to_message_id: rec.fields['Telegram Message ID'] ? parseInt(rec.fields['Telegram Message ID'], 10) : undefined,
               reply_markup: { force_reply: true, selective: true }
             })
           });
