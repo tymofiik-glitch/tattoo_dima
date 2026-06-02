@@ -1,6 +1,6 @@
 const Busboy = require('busboy');
 const { sendEnquiryConfirmation } = require('./utils/email');
-const { escapeMd, notifyAlena } = require('./utils/telegram');
+const { escapeMd, notifyAlena, createForumTopic } = require('./utils/telegram');
 const { setCorsHeaders, setSecurityHeaders } = require('./utils/security');
 
 // In-memory rate limiter: max 5 submissions per IP per hour
@@ -107,14 +107,24 @@ module.exports = async (req, res) => {
             ]]
         };
 
+        // Create a Forum Topic for this client first
+        let topicId = null;
+        try {
+          topicId = await createForumTopic(chatId, `🟢 ${fields.name}`);
+        } catch (topicErr) {
+          console.error('Forum topic creation failed (non-fatal):', topicErr.message);
+        }
+
         // Send to Telegram. Treat 4xx as a real failure: returning success
         // here hides bad-Markdown rejections and leaves Alena unaware that
         // a lead arrived. On Markdown parse rejection, retry once as plain
         // text so the lead still surfaces (degraded, but visible).
         async function sendToTelegram(useMarkdown) {
+            const threadId = topicId ? topicId : undefined;
             if (fileUploads.length > 0) {
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
+                if (threadId) formData.append('message_thread_id', String(threadId));
                 formData.append('photo', new Blob([fileUploads[0].content], { type: fileUploads[0].contentType }), fileUploads[0].filename);
                 formData.append('caption', messageText);
                 if (useMarkdown) formData.append('parse_mode', 'Markdown');
@@ -122,6 +132,7 @@ module.exports = async (req, res) => {
                 return fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
             }
             const payload = { chat_id: chatId, text: messageText, reply_markup: keyboard };
+            if (threadId) payload.message_thread_id = threadId;
             if (useMarkdown) payload.parse_mode = 'Markdown';
             return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                 method: 'POST',
@@ -147,15 +158,13 @@ module.exports = async (req, res) => {
         try {
             const tgData = await tgRes.json();
             const msgId = tgData?.result?.message_id;
+            // Store topicId in sessionStorage for webhook to pick up via message_thread_id
+            // The webhook reads message.message_thread_id from the callback_query automatically
             if (msgId) {
-                await fetch(`https://api.telegram.org/bot${token}/pinChatMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: chatId, message_id: msgId, disable_notification: true })
-                });
+              console.log('Card sent in topic:', topicId, 'msgId:', msgId);
             }
-        } catch (pinErr) {
-            console.error('Failed to pin message:', pinErr.message);
+        } catch (parseErr) {
+            console.error('Failed to parse Telegram response:', parseErr.message);
         }
 
         if (fields.email) {

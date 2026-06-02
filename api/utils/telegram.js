@@ -11,6 +11,16 @@ const STATUS_HEADERS = {
   error:           '⚠️ *ERROR*'
 };
 
+// Emoji prefix for the Forum Topic title based on status
+const STATUS_TOPIC_EMOJI = {
+  accepted:     '🟢',
+  deposit_paid: '💳',
+  date_set:     '📅',
+  session_done: '✅',
+  touchup:      '🔁',
+  rejected:     '❌'
+};
+
 function token() {
   return process.env.TELEGRAM_BOT_TOKEN;
 }
@@ -240,6 +250,65 @@ async function notifyAlena(text) {
   }
 }
 
+// ─── Forum Topic helpers ───────────────────────────────────────────────────
+
+async function createForumTopic(chatId, name) {
+  const t = token();
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${t}/createForumTopic`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, name: name.slice(0, 128) })
+    });
+    const data = await res.json();
+    if (data.ok) return data.result.message_thread_id;
+    console.error('createForumTopic failed:', data);
+    return null;
+  } catch (err) {
+    console.error('createForumTopic error:', err.message);
+    return null;
+  }
+}
+
+async function renameForumTopic(chatId, topicId, name) {
+  const t = token();
+  try {
+    await fetch(`https://api.telegram.org/bot${t}/editForumTopic`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_thread_id: parseInt(topicId, 10), name: name.slice(0, 128) })
+    });
+  } catch (err) {
+    console.error('renameForumTopic error:', err.message);
+  }
+}
+
+async function closeForumTopic(chatId, topicId) {
+  const t = token();
+  try {
+    await fetch(`https://api.telegram.org/bot${t}/closeForumTopic`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_thread_id: parseInt(topicId, 10) })
+    });
+  } catch (err) {
+    console.error('closeForumTopic error:', err.message);
+  }
+}
+
+async function reopenForumTopic(chatId, topicId) {
+  const t = token();
+  try {
+    await fetch(`https://api.telegram.org/bot${t}/reopenForumTopic`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_thread_id: parseInt(topicId, 10) })
+    });
+  } catch (err) {
+    console.error('reopenForumTopic error:', err.message);
+  }
+}
+
 // Parses Timeline field (newline-separated strings) into array.
 function parseTimeline(raw) {
   if (!raw) return [];
@@ -252,11 +321,14 @@ function serializeTimeline(lines) {
 
 // Appends a line to the Timeline field in Airtable, patches the record,
 // and re-renders the Telegram main message with the new state + optional
-// status override. Returns { ok, telegramOk }.
+// status override. Also renames/closes the Forum Topic if applicable.
+// Returns { ok, telegramOk }.
 async function appendTimelineAndEdit(record, line, { status, replyMarkup } = {}) {
   const fields    = record.fields || {};
   const messageId = fields['Telegram Message ID'];
+  const topicId   = fields['Telegram Topic ID'];
   const chatId    = alenaChatId();
+  const clientName = fields.Name || 'Client';
 
   const existing = parseTimeline(fields.Timeline);
   const next = [...existing, line];
@@ -271,6 +343,20 @@ async function appendTimelineAndEdit(record, line, { status, replyMarkup } = {})
     console.error('Timeline patch failed:', err.message);
   }
 
+  // Rename + close topic based on status
+  if (chatId && topicId && status) {
+    const emoji = STATUS_TOPIC_EMOJI[status] || '🟢';
+    const newName = `${emoji} ${clientName}`;
+    try {
+      await renameForumTopic(chatId, topicId, newName);
+      if (status === 'session_done') {
+        await closeForumTopic(chatId, topicId);
+      }
+    } catch (err) {
+      console.error('Topic rename/close failed:', err.message);
+    }
+  }
+
   if (!messageId || !chatId) return { ok: true, telegramOk: false };
 
   const updatedFields = { ...fields, id: record.id, Timeline: serializeTimeline(next) };
@@ -282,6 +368,7 @@ async function appendTimelineAndEdit(record, line, { status, replyMarkup } = {})
 
 module.exports = {
   STATUS_HEADERS,
+  STATUS_TOPIC_EMOJI,
   buildMainMessage,
   buildKeyboard,
   editMainMessage,
@@ -291,5 +378,9 @@ module.exports = {
   serializeTimeline,
   getSessionDateTime,
   formatShortDate,
-  escapeMd
+  escapeMd,
+  createForumTopic,
+  renameForumTopic,
+  closeForumTopic,
+  reopenForumTopic
 };

@@ -214,7 +214,7 @@ function extractField(text, label) {
   return '';
 }
 
-async function createAirtableLead(messageText, messageId, chatId) {
+async function createAirtableLead(messageText, messageId, chatId, topicId) {
   const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
   const airtableBase = process.env.AIRTABLE_BASE_ID?.trim();
 
@@ -245,7 +245,8 @@ async function createAirtableLead(messageText, messageId, chatId) {
     'Group Size':           extractField(messageText, 'GROUP') || '',
     'Status':               '💬 In Progress',
     'Telegram Message ID':  String(messageId || ''),
-    'Telegram Chat Link':   telegramLink
+    'Telegram Chat Link':   telegramLink,
+    ...(topicId ? { 'Telegram Topic ID': String(topicId) } : {})
   };
 
   console.log('Fields to write:', JSON.stringify(fields));
@@ -528,6 +529,7 @@ module.exports = async (req, res) => {
   const { id: callbackId, data, message } = body.callback_query;
   const chatId  = message?.chat?.id;
   const msgId   = message?.message_id;
+  const topicId = message?.message_thread_id; // Forum Topic ID
   // Берем текст — для обычных сообщений это text, для фото с подписью — caption
   const msgText = message?.text || message?.caption || '';
 
@@ -552,7 +554,7 @@ module.exports = async (req, res) => {
       const parts = data.split('|');
       phone = parts[1] || phone;
       name = parts[2] || name;
-      const createdId = await createAirtableLead(msgText, msgId, chatId);
+      const createdId = await createAirtableLead(msgText, msgId, chatId, topicId);
       if (createdId) {
         ok = true;
         leadId = createdId;
@@ -763,6 +765,7 @@ module.exports = async (req, res) => {
               chat_id: chatId,
               text: `📸 *Отправь фото тату для ${escapeMd(clientName)}*\nОтветь на это сообщение фото — прикреплю к письму в 21:00.\n\u200b${rec.id}`,
               parse_mode: 'Markdown',
+              message_thread_id: rec.fields['Telegram Topic ID'] ? parseInt(rec.fields['Telegram Topic ID'], 10) : undefined,
               reply_to_message_id: rec.fields['Telegram Message ID'] ? parseInt(rec.fields['Telegram Message ID'], 10) : undefined,
               reply_markup: { force_reply: true, selective: true }
             })

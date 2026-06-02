@@ -1,5 +1,5 @@
 const { sendAftercareEmail, sendPreCareEmail, sendAftercareReminderEmail, sendTouchupEmail } = require('./utils/email');
-const { notifyAlena, appendTimelineAndEdit } = require('./utils/telegram');
+const { notifyAlena, appendTimelineAndEdit, reopenForumTopic, renameForumTopic } = require('./utils/telegram');
 const { setSecurityHeaders } = require('./utils/security');
 
 // Daily cron — scans Airtable and triggers three email types with strong
@@ -103,6 +103,13 @@ const TYPE_CONFIG = {
         `💆 Touchup email sent (${type}) · ${today}`,
         { status: 'session_done' }
       );
+      // Reopen topic so the client is visible again for the touchup
+      const chatId = process.env.TELEGRAM_CHAT_ID;
+      const topicId = record.fields['Telegram Topic ID'];
+      if (chatId && topicId) {
+        await reopenForumTopic(chatId, topicId);
+        await renameForumTopic(chatId, topicId, `🔁 ${record.fields.Name || 'Client'}`);
+      }
     }
   }
 };
