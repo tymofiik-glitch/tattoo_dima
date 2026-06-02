@@ -104,15 +104,6 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
     }
   } catch(e) { console.error('saveSessionDate email:', e.message); }
 
-  const dateLabel = sessionDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
-  const clientEmail = record?.fields?.Email || '';
-  let txt = `✅ Дата ${isReschedule ? 'обновлена' : 'сохранена'}\n📅 *${escapeMd(dateLabel)}*`;
-  if (depositPaid || isReschedule) txt += `\n✉️ Письмо с календарём → ${escapeMd(clientEmail || '—')}`;
-  else txt += `\n💳 Кнопка депозита активирована в карточке.`;
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: txt, parse_mode: 'Markdown' })
-  }).catch(e => console.error('saveSessionDate sendMessage:', e.message));
 }
 
 function parseAmsterdamDate(dateStr) {
@@ -688,9 +679,9 @@ module.exports = async (req, res) => {
     });
   } else if (data === 'reschedule') {
     const now = new Date();
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: '📅 Выбери новую дату:', reply_markup: buildCalendarKeyboard(msgId, now.getFullYear(), now.getMonth(), true) })
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildCalendarKeyboard(msgId, now.getFullYear(), now.getMonth(), true) })
     });
 
   } else if (data === 'ask_complete') {
@@ -800,17 +791,11 @@ module.exports = async (req, res) => {
     const isReschedule = parts[5] === '1';
     await saveSessionDate(token, chatId, msgId, cardMsgId, dateStr, timeStr, isReschedule);
 
-  } else if (data.startsWith('cal_cancel_')) {
-    await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, message_id: msgId })
-    });
-
   } else if (data === 'set_date') {
     const now = new Date();
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: '📅 Выбери дату сеанса:', reply_markup: buildCalendarKeyboard(msgId, now.getFullYear(), now.getMonth(), false) })
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildCalendarKeyboard(msgId, now.getFullYear(), now.getMonth(), false) })
     });
 
   } else if (data === 'ask_no_show') {
@@ -833,12 +818,23 @@ module.exports = async (req, res) => {
       })
     });
 
-  } else if (data === 'cancel_no_show') {
+  } else if (data === 'cancel_no_show' || data.startsWith('cal_cancel_')) {
+    const isCalCancel = data.startsWith('cal_cancel_');
+    const targetMsgId = isCalCancel ? data.split('_')[2] : msgId;
+
+    if (isCalCancel && msgId != targetMsgId) {
+      await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, message_id: msgId })
+      });
+      return res.status(200).json({ ok: true });
+    }
+
     // Restore normal keyboard by re-fetching record state
     const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
     const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
-    if (airtableToken && airtableBase && msgId) {
-      const formula = encodeURIComponent(`{Telegram Message ID} = '${msgId}'`);
+    if (airtableToken && airtableBase && targetMsgId) {
+      const formula = encodeURIComponent(`{Telegram Message ID} = '${targetMsgId}'`);
       try {
         const r = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, {
           headers: { 'Authorization': `Bearer ${airtableToken}` }
@@ -847,14 +843,21 @@ module.exports = async (req, res) => {
         if (d.records?.length > 0) {
           const rec = d.records[0];
           const fields = { ...rec.fields, id: rec.id };
-          const status = rec.fields['Mollie Payment ID'] ? 'deposit_paid' : 'accepted';
+          let status = 'accepted';
+          if (fields['Session Status'] === 'completed' || fields['Status'] === '⚠️ No-show') {
+            status = 'session_done';
+          } else if (fields['Session Date']) {
+            status = 'date_set';
+          } else if (fields['Mollie Payment ID']) {
+            status = 'deposit_paid';
+          }
           await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildKeyboard(fields, status) })
+            body: JSON.stringify({ chat_id: chatId, message_id: targetMsgId, reply_markup: buildKeyboard(fields, status) })
           });
         }
-      } catch (err) { console.error('cancel_no_show restore failed:', err.message); }
+      } catch (err) { console.error('cancel restore failed:', err.message); }
     }
 
   } else if (data === 'confirm_no_show') {

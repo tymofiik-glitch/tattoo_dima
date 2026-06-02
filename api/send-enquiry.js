@@ -144,6 +144,20 @@ module.exports = async (req, res) => {
             throw new Error(`Telegram send failed: ${tgRes.status} ${errBody.substring(0, 300)}`);
         }
 
+        try {
+            const tgData = await tgRes.json();
+            const msgId = tgData?.result?.message_id;
+            if (msgId) {
+                await fetch(`https://api.telegram.org/bot${token}/pinChatMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId, message_id: msgId, disable_notification: true })
+                });
+            }
+        } catch (pinErr) {
+            console.error('Failed to pin message:', pinErr.message);
+        }
+
         if (fields.email) {
             try {
                 await sendEnquiryConfirmation({ name: fields.name || 'there', email: fields.email });
