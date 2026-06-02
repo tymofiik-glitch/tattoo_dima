@@ -475,7 +475,7 @@ async function sendTouchupEmail({ name, email, type, leadId }, { idempotencyKey 
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
   const isFree = type === 'free';
   
-  const depositUrl = `https://kaktuz.ink/deposit?name=${encodeURIComponent(name || '')}&email=${encodeURIComponent(email || '')}${leadId ? `&leadId=${leadId}` : ''}`;
+  const depositUrl = `https://kaktuz.ink/touchup?name=${encodeURIComponent(name || '')}&email=${encodeURIComponent(email || '')}${leadId ? `&leadId=${leadId}` : ''}`;
   const buttonLink = isFree ? waLink : depositUrl;
   const buttonText = isFree ? 'Book your touchup →' : 'Pay deposit & book →';
 

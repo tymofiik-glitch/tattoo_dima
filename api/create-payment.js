@@ -8,8 +8,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { name, email, leadId, groupSize } = req.body || {};
-  const people = Math.min(6, Math.max(1, parseInt(groupSize) || 1));
+  const { name, email, leadId, groupSize, type } = req.body || {};
+  const isTouchup = type === 'touchup';
+  const people = isTouchup ? 1 : Math.min(6, Math.max(1, parseInt(groupSize) || 1));
   const depositAmount = (50 * people).toFixed(2);
 
   const clientEmail = email || 'guest@kaktuz.ink';
@@ -20,6 +21,14 @@ module.exports = async function handler(req, res) {
   const domain = 'kaktuz.ink';
 
   try {
+    const description = isTouchup 
+      ? `Touchup Session — ${name || 'Client'}`
+      : `Tattoo Deposit${people > 1 ? ` (${people} people)` : ''} — ${name || 'Client'}`;
+      
+    const redirectUrl = isTouchup
+      ? `https://${domain}/touchup?status=success&name=${encodeURIComponent(name || '')}`
+      : `https://${domain}/deposit?status=success&name=${encodeURIComponent(name || '')}`;
+
     const response = await fetch('https://api.mollie.com/v2/payments', {
       method: 'POST',
       headers: {
@@ -28,10 +37,10 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         amount: { currency: 'EUR', value: depositAmount },
-        description: `Tattoo Deposit${people > 1 ? ` (${people} people)` : ''} — ${name || 'Client'}`,
-        redirectUrl: `https://${domain}/deposit?status=success&name=${encodeURIComponent(name || '')}`,
+        description,
+        redirectUrl,
         webhookUrl: `https://${domain}/api/payment-webhook`,
-        metadata: { name, email: clientEmail, leadId: leadId || '', orderId, groupSize: people }
+        metadata: { name, email: clientEmail, leadId: leadId || '', orderId, groupSize: people, type: isTouchup ? 'touchup' : 'deposit' }
       }),
     });
 

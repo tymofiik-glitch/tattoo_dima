@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Touchup Session · Dmytro Bilynets</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=GFS+Didot:ital,wght@0,400;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Didot';
+      src: url('fonts/Didot-Bold.otf') format('opentype');
+      font-weight: 400 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Didot';
+      src: url('fonts/Didot-Bold.otf') format('opentype');
+      font-weight: 400 700;
+      font-style: italic;
+      font-synthesis: style;
+    }
+  </style>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #1a1a1a;
+      --text: #f5f0e8;
+      --accent: #d4af37; /* Gold accent */
+      --btn-bg: #2d3d28; /* Studio olive */
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: opacity 0.8s ease;
+    }
+
+    body.fade-out { opacity: 0; }
+
+    .deposit-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 40px 24px;
+      text-align: center;
+      animation: fadeIn 1s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .brand-logo {
+      font-family: 'Didot', 'GFS Didot', Georgia, serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+      opacity: 0.6;
+    }
+
+    .title {
+      font-family: 'Didot', 'GFS Didot', Georgia, serif;
+      font-size: 48px;
+      font-style: italic;
+      line-height: 1;
+      margin-bottom: 40px;
+    }
+
+    .title em {
+      display: block;
+      font-size: 24px;
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+
+    .info-grid {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+      text-align: left;
+      border: 1px solid rgba(245, 240, 232, 0.05);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(245, 240, 232, 0.1);
+    }
+    .info-row:last-child { border-bottom: none; }
+
+    .label {
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 1px;
+      opacity: 0.4;
+      font-weight: 500;
+    }
+
+    .value {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .amount-value {
+      font-family: 'Didot', 'GFS Didot', Georgia, serif;
+      font-size: 24px;
+      font-style: italic;
+    }
+
+    .policy {
+      font-size: 11px;
+      line-height: 1.6;
+      opacity: 0.4;
+      margin-bottom: 32px;
+    }
+
+    .pay-btn {
+      width: 100%;
+      background: var(--btn-bg);
+      color: var(--text);
+      border: none;
+      border-radius: 6px;
+      padding: 18px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pay-btn:hover {
+      background: #3a4d34;
+      transform: translateY(-2px);
+    }
+
+    .pay-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .btn-text {
+      transition: opacity 0.3s ease;
+    }
+
+    .pay-btn.loading .btn-text { opacity: 0; }
+
+    .spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(245, 240, 232, 0.2);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    .pay-btn.loading .spinner { display: block; }
+
+    @keyframes spin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* Success State */
+    .success-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease;
+    }
+
+    .success-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .success-star {
+      color: var(--accent);
+      font-size: 40px;
+      margin-bottom: 24px;
+      animation: starPop 1s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+    }
+
+    @keyframes starPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .success-title {
+      font-family: 'Didot', 'GFS Didot', Georgia, serif;
+      font-size: 32px;
+      text-align: center;
+    }
+
+    .success-title em {
+      display: block;
+      font-size: 20px;
+      opacity: 0.6;
+    }
+
+    .security {
+      margin-top: 40px;
+      font-size: 10px;
+      opacity: 0.3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .footer-brand {
+      margin-top: 24px;
+      font-size: 10px;
+      opacity: 0.2;
+    }
+  </style>
+</head>
+<body>
+
+<div class="deposit-card" id="depositCard">
+  <div class="brand-logo">kaktuz · Den Haag</div>
+  
+  <h1 class="title">
+    Touchup
+    <em>session.</em>
+  </h1>
+
+  <div class="info-grid">
+    <div class="info-row">
+      <span class="label">Client</span>
+      <span class="value" id="clientName">—</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Service</span>
+      <span class="value">Touchup appointment</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Artist</span>
+      <span class="value">Dmytro Bilynets</span>
+    </div>
+    <div class="info-row" id="sessionRow" style="display:none">
+      <span class="label">Session</span>
+      <span class="value" id="sessionDate">—</span>
+    </div>
+    <div class="info-row">
+      <span class="label">Total</span>
+      <span class="value amount-value">€50</span>
+    </div>
+  </div>
+
+  <p class="policy">
+    This payment secures your touchup session and covers the full cost of the appointment.
+  </p>
+
+  <button class="pay-btn" onclick="handlePay()">
+    <span class="btn-text">PAY €50 TOUCHUP</span>
+    <div class="spinner"></div>
+  </button>
+
+  <div class="security">
+    <svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1">
+      <path d="M6 1L1 3v4c0 3 2.5 5 5 6 2.5-1 5-3 5-6V3L6 1z"/>
+    </svg>
+    Secured by Mollie · SSL encrypted
+  </div>
+
+  <div class="footer-brand">© Dmytro Bilynets · kaktuz</div>
+</div>
+
+<!-- Success UI -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-star">✦</div>
+  <div class="success-title">
+    You're in.
+    <em>See you soon.</em>
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const clientName  = params.get('name')  ? decodeURIComponent(params.get('name'))  : null;
+  const clientEmail = params.get('email') ? decodeURIComponent(params.get('email')) : null;
+  const leadId      = params.get('leadId') ? params.get('leadId') : null;
+  const sessionRaw  = params.get('date')  ? decodeURIComponent(params.get('date'))  : null;
+  const status      = params.get('status');
+
+  if (clientName) document.getElementById('clientName').textContent = clientName;
+
+  document.querySelector('.amount-value').textContent = '€50';
+  document.querySelector('.btn-text').textContent = `PAY €50 TOUCHUP`;
+
+  if (sessionRaw) {
+    const d = new Date(sessionRaw);
+    if (!isNaN(d.getTime())) {
+      const formatted = d.toLocaleString('en-GB', {
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit',
+        timeZone: 'Europe/Amsterdam'
+      });
+      document.getElementById('sessionDate').textContent = formatted;
+      document.getElementById('sessionRow').style.display = 'flex';
+    }
+  }
+
+  // Handle return from Mollie: show success immediately, verify in background
+  if (status === 'success') {
+    const paymentId = sessionStorage.getItem('molliePaymentId');
+    sessionStorage.removeItem('molliePaymentId');
+
+    document.getElementById('depositCard').style.display = 'none';
+    document.getElementById('successOverlay').classList.add('show');
+
+    // Background verification — if payment genuinely failed, restore form
+    if (paymentId) {
+      fetch(`/api/verify-payment?id=${encodeURIComponent(paymentId)}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.status !== 'paid' && d.status !== 'pending' && d.status !== 'authorized') {
+            document.getElementById('successOverlay').classList.remove('show');
+            document.getElementById('depositCard').style.display = '';
+            const btn = document.querySelector('.pay-btn');
+            if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+          }
+        })
+        .catch(() => { /* keep success visible on network error */ });
+    }
+  }
+
+  // URL Validation
+  if (!clientName || !clientEmail) {
+    const payBtn = document.querySelector('.pay-btn');
+    if (payBtn) payBtn.style.display = 'none';
+    
+    const policy = document.querySelector('.policy');
+    if (policy) policy.style.display = 'none';
+
+    const infoGrid = document.querySelector('.info-grid');
+    if (infoGrid) {
+      infoGrid.insertAdjacentHTML('afterend', `
+        <div style="background: rgba(184, 149, 106, 0.08); border: 1px solid rgba(184, 149, 106, 0.25); padding: 18px 20px; margin: 24px 0; text-align: left;">
+          <div style="font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 16px; color: #b8956a; margin-bottom: 6px;">Link Expired or Incomplete</div>
+          <div style="font-family: 'Inter', sans-serif; font-size: 12px; color: rgba(28,24,20,0.65); line-height: 1.5;">This deposit link is missing crucial booking details. Please ask us in our chat to generate and send a new link.</div>
+        </div>
+      `);
+    }
+  }
+
+  async function handlePay() {
+    const btn = document.querySelector('.pay-btn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: clientName, email: clientEmail, leadId: leadId, type: 'touchup' })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.checkoutUrl) {
+        throw new Error(data.error || 'Connection issue');
+      }
+
+      // Store payment ID so we can verify status after Mollie redirects back
+      if (data.paymentId) sessionStorage.setItem('molliePaymentId', data.paymentId);
+
+      // Smooth fade out before redirect
+      document.body.classList.add('fade-out');
+
+      setTimeout(() => {
+        window.location.href = data.checkoutUrl;
+      }, 700);
+
+    } catch (err) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      alert('Error: ' + err.message);
+    }
+  }
+</script>
+
+</body>
+</html>
