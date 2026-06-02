@@ -372,19 +372,31 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
 }
 
 // ─── Email #5: Aftercare (same day of session) ─────────────────────────
-async function sendAftercareEmail({ name, email }, { idempotencyKey } = {}) {
+async function sendAftercareEmail({ name, email, photos = [] }, { idempotencyKey } = {}) {
   const resend = getResend();
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
+
+  const attachments = photos.map((buf, i) => ({
+    filename: `tattoo-${i + 1}.jpg`,
+    content: Buffer.isBuffer(buf) ? buf.toString('base64') : buf
+  }));
+
+  const photoNote = attachments.length > 0
+    ? `<p style="margin:0 0 28px;padding:16px 18px;background:rgba(184,149,106,.08);border-left:2px solid #b8956a;font-size:14px;color:#1a1814"><strong>📎 Dmytro's photos of your fresh tattoo are attached to this email.</strong> Save this email — you'll want to look back at these once it's healed.</p>`
+    : '';
 
   const payload = {
     from: FROM(),
     to: email,
-    subject: 'Aftercare instructions · Your tattoo by Dmytro',
+    subject: photos.length > 0
+      ? 'Your tattoo photos + aftercare guide · the muse ink'
+      : 'Aftercare guide · Your tattoo by Dmytro · the muse ink',
     html: wrap({
       title: 'Your aftercare guide.',
-      sub: `Instructions for ${name}.`,
+      sub: `For ${name} — keep this email.`,
       body: `
-        <p style="margin:0 0 24px">Thank you for the session today. To ensure your tattoo heals perfectly, please follow these step-by-step instructions carefully.</p>
+        ${photoNote}
+        <p style="margin:0 0 24px">Thank you for the session today. To ensure your tattoo heals perfectly, follow these instructions carefully.</p>
 
         ${infoSection('Days 1–3 (The Protective Film)', [
           '<strong>Leave the film on.</strong> Keep the protective film on your tattoo for 3 full days. It protects the fresh tattoo from bacteria.',
@@ -392,9 +404,9 @@ async function sendAftercareEmail({ name, email }, { idempotencyKey } = {}) {
           'If fluid (blood or excess ink) builds up under the film, this is completely normal. Do not puncture the film.'
         ])}
 
-        ${infoSection('Day 3 onwards (Film Removal & Washing)', [
+        ${infoSection('Day 3 — Film Removal & Washing', [
           'Gently peel off the film in a warm shower. Pull it slowly and parallel to your skin, not straight up.',
-          'Once off, wash the tattoo immediately with lukewarm water and a mild, fragrance-free soap (like Unicura or Sanex). Use your clean hands, never a washcloth.',
+          'Once off, wash the tattoo immediately with lukewarm water and a mild, fragrance-free soap. Use your clean hands, never a washcloth.',
           'Pat dry with a clean paper towel. Do not rub.'
         ])}
 
@@ -409,12 +421,13 @@ async function sendAftercareEmail({ name, email }, { idempotencyKey } = {}) {
           'Keep the tattoo out of direct sunlight. Once fully healed, always use <strong>SPF 50+</strong> sunscreen to protect the colors.'
         ])}
 
-        ${warningCard('<strong>⚠️ IMPORTANT WARNING:</strong> If you notice anything unusual — such as <strong>persistent or spreading redness</strong>, swelling, throbbing pain, or weeping after day 3 — please contact the studio immediately. Do not ignore these symptoms as they can be signs of irritation or infection.')}
+        ${warningCard('<strong>⚠️ IMPORTANT:</strong> If you notice persistent or spreading redness, swelling, throbbing pain, or weeping after day 3 — contact the studio immediately. Do not ignore signs of irritation or infection.')}
 
-        <p style="margin:24px 0 8px">We'd love to see the healed result. Please send a photo to the studio via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)"><strong>WhatsApp</strong></a> once your tattoo is fully healed.</p>
-        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Contact the studio →</a></p>
+        <p style="margin:24px 0 8px;color:#8a7a65;font-size:13px">In 3 days you'll receive a reminder to remove the protective film.</p>
+        <p style="margin:8px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Questions? Write to us →</a></p>
       `
-    })
+    }),
+    ...(attachments.length > 0 ? { attachments } : {})
   };
 
   return safeSend(resend, payload, idempotencyKey ? { idempotencyKey } : undefined);
@@ -428,35 +441,29 @@ async function sendAftercareReminderEmail({ name, email }, { idempotencyKey } = 
   const payload = {
     from: FROM(),
     to: email,
-    subject: 'Aftercare reminder · Time to remove the film',
+    subject: 'Day 3 · Time to remove the film — the muse ink',
     html: wrap({
       title: 'Remove the film today.',
-      sub: `A quick reminder for ${name}.`,
+      sub: `Day 3 reminder for ${name}.`,
       body: `
-        <p style="margin:0 0 24px">It has been 3 days since your session. It is now time to gently remove the protective film from your tattoo. <strong>Stage 2 begins as soon as the film is off.</strong></p>
-        
-        ${infoSection('Stage 2: Washing + Cream + Covering (next 4 days)', [
-          '<strong>Wash the tattoo 2–4 times a day</strong> with the soap I gave you (3 times is ideal).',
-          '<strong>Apply the cream I gave you afterwards.</strong> Apply a thin, semi-transparent layer — the tattoo should still be visible, but with a slight white haze.',
-          'The most important thing is that the tattoo stays constantly moisturized.'
-        ])}
-        
-        ${infoSection('When to cover your tattoo', [
-          '<strong>If you leave the house</strong> (to work, public transport, etc.): Apply cream, cover the tattoo with two layers of paper towel, and secure with tape.',
-          '<strong>At night:</strong> Use this type of cover so the tattoo doesn’t rub against your sheets and stays moisturized.',
-          '<strong>Long sleeves:</strong> If you wear long-sleeved clothing, it’s best to protect the tattoo this way as well.',
-          '<em>*This bandage can be worn for 5–6 hours, then it should be removed, the tattoo washed, and if necessary, a new one applied.</em>'
+        <p style="margin:0 0 24px">It's been 3 days since your session — time to remove the protective film.</p>
+
+        ${infoSection('How to remove the film', [
+          'Get in a warm shower and gently peel the film off, pulling slowly and parallel to your skin.',
+          'Wash the tattoo immediately with lukewarm water and a mild, fragrance-free soap using clean hands.',
+          'Pat dry with a clean paper towel — do not rub.'
         ])}
 
-        ${infoSection('Stage 3: Only Washing & Moisturizing (last 3–4 days)', [
-          'At this point, you don’t need to cover the tattoo anymore.',
-          'Just continue to wash it regularly and keep it moisturized.',
-          'The skin may peel slightly — this is completely normal. <strong>Don’t scratch or pick at it</strong>, simply keep applying cream.'
+        ${infoSection('What to do after (next 7–10 days)', [
+          'Apply a thin layer of healing cream (Bepanthen or similar) 2–3 times a day.',
+          'Keep washing gently twice a day. The skin may peel slightly — this is completely normal.',
+          '<strong>Do not scratch or pick at flakes.</strong> Never scratch or rub the tattoo.'
         ])}
-        
-        ${warningCard('<strong>General Rules (first 2 weeks):</strong> No swimming (sea, pool, lake, jacuzzi). No saunas, steam rooms, or tanning beds. Do not touch, scratch, or rub the tattoo. Treat the tattoo like a wound — because that’s exactly what it is.')}
-        
-        <p style="margin:24px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Have any questions? Write to me →</a></p>
+
+        ${warningCard('<strong>Reminder — first 2 weeks:</strong> No swimming, baths, saunas, or sea water. No direct sunlight. Treat it like a wound — because it is one.')}
+
+        <p style="margin:24px 0 8px;color:#8a7a65;font-size:13px">For the full aftercare guide, refer to the email we sent you on session day — it has everything step by step.</p>
+        <p style="margin:8px 0 0"><a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">Questions? Write to us →</a></p>
       `
     })
   };

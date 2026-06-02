@@ -484,6 +484,39 @@ module.exports = async (req, res) => {
     return res.status(200).json({ ok: true });
   }
 
+  // Handle photo replies — Dima sends session photos after completing a session
+  if (body?.message?.photo && !body?.callback_query) {
+    const replyTo = body.message.reply_to_message;
+    if (replyTo?.text) {
+      const recordMatch = replyTo.text.match(/RECORD:([a-zA-Z0-9]+)/);
+      if (recordMatch) {
+        const recordId = recordMatch[1];
+        const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+        const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+        // Get highest-res file_id from the photo array
+        const photos = body.message.photo;
+        const fileId = photos[photos.length - 1].file_id;
+        try {
+          // Fetch existing photo IDs and append
+          const recRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, { headers: { 'Authorization': `Bearer ${airtableToken}` } });
+          const recData = await recRes.json();
+          const existing = recData.fields?.['Session Photo IDs'] || '';
+          const updated = existing ? `${existing},${fileId}` : fileId;
+          await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
+            method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { 'Session Photo IDs': updated } })
+          });
+          const count = updated.split(',').length;
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: body.message.chat.id, text: `✅ Фото сохранено (${count} всего) — будет в письме в 21:00.` })
+          });
+        } catch(e) { console.error('Photo save failed:', e.message); }
+      }
+    }
+    return res.status(200).json({ ok: true });
+  }
+
   // Если нет callback — это просто ping, отвечаем OK
   if (!body?.callback_query) {
     return res.status(200).json({ ok: true });
@@ -707,6 +740,7 @@ module.exports = async (req, res) => {
         const findData = await findRes.json();
         if (findData.records?.length > 0) {
           const rec = findData.records[0];
+          const clientName = rec.fields.Name || 'Client';
           const patchFields = { 'Session Status': 'completed', 'Status': '✅ Completed', 'Touchup Type': touchupType };
           await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${rec.id}`, {
             method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
@@ -719,6 +753,18 @@ module.exports = async (req, res) => {
             `✅ Session completed · ${today}${touchupNote}`,
             { status: 'session_done' }
           );
+          // Ask for session photos to attach to aftercare email
+          const photoPrompt = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `📸 *Отправь фото тату для ${escapeMd(clientName)}*\nОтветь на это сообщение фото — прикреплю к письму в 21:00.\n\nRECORD:${rec.id}`,
+              parse_mode: 'Markdown',
+              reply_markup: { force_reply: true, selective: true }
+            })
+          });
+          const photoPromptData = await photoPrompt.json();
+          console.log('Photo prompt sent, message_id:', photoPromptData.result?.message_id);
         }
       } catch(err) { console.error('confirm_complete failed:', err.message); }
     }
