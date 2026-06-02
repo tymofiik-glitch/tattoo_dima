@@ -470,10 +470,14 @@ async function sendAftercareReminderEmail({ name, email }, { idempotencyKey } = 
   return safeSend(resend, payload, idempotencyKey ? { idempotencyKey } : undefined);
 }
 
-async function sendTouchupEmail({ name, email, type }, { idempotencyKey } = {}) {
+async function sendTouchupEmail({ name, email, type, leadId }, { idempotencyKey } = {}) {
   const resend = getResend();
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
   const isFree = type === 'free';
+  
+  const depositUrl = `https://kaktuz.ink/deposit?name=${encodeURIComponent(name || '')}&email=${encodeURIComponent(email || '')}${leadId ? `&leadId=${leadId}` : ''}`;
+  const buttonLink = isFree ? waLink : depositUrl;
+  const buttonText = isFree ? 'Book your touchup →' : 'Pay deposit & book →';
 
   const payload = {
     from: FROM(),
@@ -498,7 +502,7 @@ async function sendTouchupEmail({ name, email, type }, { idempotencyKey } = {}) 
             ])}`
         }
 
-        <p style="margin:24px 0 0"><a href="${waLink}" style="display:inline-block;background:#2d3d28;color:#f5f0e8;text-decoration:none;padding:13px 28px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase">Book your touchup →</a></p>
+        <p style="margin:24px 0 0"><a href="${buttonLink}" style="display:inline-block;background:#2d3d28;color:#f5f0e8;text-decoration:none;padding:13px 28px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase">${buttonText}</a></p>
       `
     })
   };

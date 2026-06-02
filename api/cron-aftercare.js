@@ -92,7 +92,8 @@ const TYPE_CONFIG = {
     send: (record, opts) => sendTouchupEmail({
       name: record.fields.Name || 'there',
       email: record.fields.Email,
-      type: record.fields['Touchup Type'] || 'free'
+      type: record.fields['Touchup Type'] || 'free',
+      leadId: record.id
     }, opts),
     onSuccess: async (record) => {
       const today = new Date().toISOString().split('T')[0];
