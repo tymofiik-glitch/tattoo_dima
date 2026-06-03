@@ -125,11 +125,7 @@ function buildKeyboard(fields, status) {
   const dateSet = !!sessionDate;
   const groupSize = parseInt(fields['Group Size']) || 1;
 
-  if (status === 'session_done') {
-    rows.push([{ text: '🎁 Touchup (Free)', callback_data: 'send_touchup_free' }]);
-    rows.push([{ text: '💳 Touchup (€50)', callback_data: 'send_touchup_paid' }]);
-    return { inline_keyboard: rows };
-  }
+  if (status === 'session_done') return { inline_keyboard: rows };
 
   if (!dateSet && !depositPaid) {
     rows.push([{ text: '📅 Время + депозит', callback_data: 'set_date' }]);
@@ -145,7 +141,8 @@ function buildKeyboard(fields, status) {
     rows.push([{ text: `💳 Ссылка на депозит · ${shortDate}`, url: depositUrl }]);
     rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }, { text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   } else {
-    // deposit paid — reschedule + mark complete
+    // deposit paid — photo, reschedule, complete
+    rows.push([{ text: '📸 Добавить фото к письму', callback_data: 'add_photo' }]);
     rows.push([{ text: '📅 Перенести дату', callback_data: 'reschedule' }, { text: '✅ Завершить сеанс', callback_data: 'ask_complete' }]);
     rows.push([{ text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   }
@@ -314,6 +311,16 @@ async function pinMessage(chatId, msgId) {
 // Keep old name as alias for compatibility
 const renameForumTopic = (chatId, topicId, name) => updateForumTopic(chatId, topicId, name, null);
 
+async function deleteForumTopic(chatId, topicId) {
+  const t = token();
+  try {
+    await fetch(`https://api.telegram.org/bot${t}/deleteForumTopic`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_thread_id: parseInt(topicId, 10) })
+    });
+  } catch (err) { console.error('deleteForumTopic error:', err.message); }
+}
+
 async function closeForumTopic(chatId, topicId) {
   const t = token();
   try {
@@ -387,7 +394,7 @@ async function appendTimelineAndEdit(record, line, { status, replyMarkup } = {})
     try {
       await updateForumTopic(chatId, topicId, newName, color);
       if (status === 'session_done' || status === 'rejected') {
-        await closeForumTopic(chatId, topicId);
+        await deleteForumTopic(chatId, topicId);
       }
     } catch (err) {
       console.error('Topic rename/close failed:', err.message);
@@ -417,6 +424,7 @@ module.exports = {
   formatShortDate,
   escapeMd,
   createForumTopic,
+  deleteForumTopic,
   updateForumTopic,
   pinMessage,
   renameForumTopic,
