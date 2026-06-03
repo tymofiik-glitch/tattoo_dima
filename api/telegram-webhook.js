@@ -49,7 +49,7 @@ function buildTimeKeyboard(cardMsgId, dateStr, isReschedule) {
   return { inline_keyboard: rows };
 }
 
-async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, timeStr, isReschedule) {
+async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, timeStr, isReschedule, topicId = null) {
   const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
   const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
   const sessionDate   = parseAmsterdamDate(`${dateStr} ${timeStr}`);
@@ -63,7 +63,7 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
   }
 
   if (!sessionDate) {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '⚠️ Не удалось разобрать дату.', disable_notification: true }) });
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '⚠️ Не удалось разобрать дату.', disable_notification: true, ...(topicId && { message_thread_id: parseInt(topicId, 10) }) }) });
     return;
   }
 
@@ -126,8 +126,8 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
   if (depositPaid || isReschedule) txt += `\n✉️ Письмо с календарём → ${escapeMd(clientEmail || '—')}`;
   else txt += `\n💳 Кнопка депозита активирована в карточке.`;
   const confirmPayload = { chat_id: chatId, text: txt, parse_mode: 'Markdown', disable_notification: true };
-  const topicId = record?.fields?.['Telegram Topic ID'];
-  if (topicId) confirmPayload.message_thread_id = parseInt(topicId, 10);
+  const recordTopicId = topicId || record?.fields?.['Telegram Topic ID'];
+  if (recordTopicId) confirmPayload.message_thread_id = parseInt(recordTopicId, 10);
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(confirmPayload)
@@ -334,6 +334,7 @@ module.exports = async (req, res) => {
   if (body?.message?.text && !body?.callback_query) {
     const incomingText = body.message.text.trim();
     const incomingChatId = body.message.chat?.id;
+    const incomingTopicId = body.message.message_thread_id;
     const replyTo = body.message.reply_to_message;
 
     let originalMsgId = null;
@@ -388,7 +389,8 @@ module.exports = async (req, res) => {
             chat_id: incomingChatId,
             text: `⚠️ Не могу разобрать дату. Попробуй ещё раз в формате: 2025-06-15 14:00\n\nID: ${originalMsgId}`,
             reply_markup: { force_reply: true, selective: true },
-            disable_notification: true
+            disable_notification: true,
+            ...(incomingTopicId && { message_thread_id: parseInt(incomingTopicId, 10) })
           })
         });
         // Keep the state active
@@ -496,7 +498,8 @@ module.exports = async (req, res) => {
           chat_id: incomingChatId,
           text: responseText,
           parse_mode: 'Markdown',
-          disable_notification: true
+          disable_notification: true,
+          ...(incomingTopicId && { message_thread_id: parseInt(incomingTopicId, 10) })
         })
       });
 
@@ -565,6 +568,7 @@ module.exports = async (req, res) => {
   const topicId = message?.message_thread_id; // Forum Topic ID
   // Берем текст — для обычных сообщений это text, для фото с подписью — caption
   const msgText = message?.text || message?.caption || '';
+
 
   console.log('callback data:', data);
   console.log('message text (first 100):', msgText.substring(0, 100));
@@ -837,7 +841,7 @@ module.exports = async (req, res) => {
     const dateStr = parts[3];
     const timeStr = parts[4];
     const isReschedule = parts[5] === '1';
-    await saveSessionDate(token, chatId, msgId, cardMsgId, dateStr, timeStr, isReschedule);
+    await saveSessionDate(token, chatId, msgId, cardMsgId, dateStr, timeStr, isReschedule, topicId);
 
   } else if (data === 'set_date') {
     const now = new Date();
