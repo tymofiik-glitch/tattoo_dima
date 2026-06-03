@@ -199,6 +199,29 @@
       opacity: 1;
       pointer-events: auto;
     }
+    .cal-btn {
+      margin-top: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      padding: 14px 28px;
+      font-family: 'Inter','Helvetica Neue',sans-serif;
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      animation: calPulse 2s ease-in-out infinite;
+      transition: opacity .4s;
+    }
+    .cal-btn:hover { opacity: .88; }
+    .cal-btn.added { background: #2d3d28; animation: none; }
+    @keyframes calPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(184,149,106,.5); }
+      50%      { box-shadow: 0 0 0 10px rgba(184,149,106,0); }
+    }
 
     .success-star {
       color: var(--accent);
@@ -302,6 +325,9 @@
     You're in.
     <em>See you soon.</em>
   </div>
+  <button class="cal-btn" id="calBtn" style="display:none" onclick="addToCalendar()">
+    📅 Add to calendar
+  </button>
 </div>
 
 <script>
@@ -340,6 +366,23 @@
     }
   }
 
+  function addToCalendar() {
+    const btn = document.getElementById('calBtn');
+    if (sessionRaw) {
+      const start = new Date(sessionRaw);
+      const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
+      const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+      const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+        '&text=' + encodeURIComponent('Tattoo session · the muse ink') +
+        '&dates=' + fmt(start) + '/' + fmt(end) +
+        '&details=' + encodeURIComponent('Your tattoo session with Dmytro Bilynets at the muse ink, Den Haag.');
+      window.open(url, '_blank');
+    }
+    btn.textContent = '✓ Added';
+    btn.classList.add('added');
+    setTimeout(() => btn.style.display = 'none', 1500);
+  }
+
   // Handle return from Mollie: show success immediately, verify in background
   if (status === 'success') {
     const paymentId = sessionStorage.getItem('molliePaymentId');
@@ -347,6 +390,7 @@
 
     document.getElementById('depositCard').style.display = 'none';
     document.getElementById('successOverlay').classList.add('show');
+    if (sessionRaw) document.getElementById('calBtn').style.display = 'inline-flex';
 
     // Background verification — if payment genuinely failed, restore form
     if (paymentId) {

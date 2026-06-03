@@ -9,6 +9,7 @@ const STATUS_HEADERS = {
   deposit_paid:    '💳 *DEPOSIT PAID*',
   date_set:        '📅 *DATE SET*',
   session_done:    '✅ *COMPLETED*',
+  touchup_pending: '🔁 *TOUCHUP — ОЖИДАНИЕ ОПЛАТЫ*',
   error:           '⚠️ *ERROR*'
 };
 
@@ -19,7 +20,7 @@ const STATUS_TOPIC_EMOJI = {
   deposit_paid:    '💳',
   date_set:        '📅',
   session_done:    '✅',
-  touchup:         '🔁',
+  touchup_pending: '🔁',
   rejected:        '❌'
 };
 
@@ -125,7 +126,14 @@ function buildKeyboard(fields, status) {
   const dateSet = !!sessionDate;
   const groupSize = parseInt(fields['Group Size']) || 1;
 
-  if (status === 'session_done') return { inline_keyboard: rows };
+  if (status === 'session_done') {
+    return { inline_keyboard: rows };
+  }
+
+  if (status === 'touchup_pending') {
+    rows.push([{ text: '⏳ Ожидание оплаты тачапа €50', callback_data: 'ignore' }]);
+    return { inline_keyboard: rows };
+  }
 
   if (!dateSet && !depositPaid) {
     rows.push([{ text: '📅 Время + депозит', callback_data: 'set_date' }]);

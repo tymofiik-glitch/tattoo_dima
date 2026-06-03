@@ -739,7 +739,8 @@ module.exports = async (req, res) => {
             [{ text: `Завершить сеанс — ${clientName}?`, callback_data: 'ignore' }],
             [{ text: '🎁 Free touchup', callback_data: 'complete_touchup_free' }],
             [{ text: '💳 Touchup €50', callback_data: 'complete_touchup_paid' }],
-            [{ text: '✅ Без touchup', callback_data: 'confirm_complete' }, { text: '🔙 Отмена', callback_data: 'cancel_complete' }]
+            [{ text: '✅ Без touchup', callback_data: 'confirm_complete' }],
+            [{ text: '🔙 Отмена', callback_data: 'cancel_complete' }]
           ]
         }
       })
@@ -763,8 +764,53 @@ module.exports = async (req, res) => {
       } catch(e) { console.error('cancel_complete restore failed:', e.message); }
     }
 
-  } else if (data === 'confirm_complete' || data === 'complete_touchup_free' || data === 'complete_touchup_paid') {
-    const touchupType = data === 'complete_touchup_free' ? 'free' : data === 'complete_touchup_paid' ? 'paid' : 'none';
+  } else if (data === 'complete_touchup_free') {
+    const clientName = extractField(msgText, 'CLIENT') || 'Client';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: { inline_keyboard: [
+        [{ text: `🎁 Free touchup — ${clientName}`, callback_data: 'ignore' }],
+        [{ text: 'Клиент получит письмо через 30 дней.', callback_data: 'ignore' }],
+        [{ text: '✅ Подтвердить и закрыть', callback_data: 'confirm_touchup_free' }, { text: '🔙 Назад', callback_data: 'back_to_complete' }]
+      ]}})
+    });
+
+  } else if (data === 'complete_touchup_paid') {
+    const clientName = extractField(msgText, 'CLIENT') || 'Client';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: { inline_keyboard: [
+        [{ text: `💳 Touchup €50 — ${clientName}`, callback_data: 'ignore' }],
+        [{ text: 'Ссылка на оплату уйдёт через 30 дней.', callback_data: 'ignore' }],
+        [{ text: '✅ Подтвердить', callback_data: 'confirm_touchup_paid' }, { text: '🔙 Назад', callback_data: 'back_to_complete' }]
+      ]}})
+    });
+
+  } else if (data === 'confirm_complete') {
+    const clientName = extractField(msgText, 'CLIENT') || 'Client';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: { inline_keyboard: [
+        [{ text: `Закрыть ${clientName} без тачапа?`, callback_data: 'ignore' }],
+        [{ text: '✅ Да, закрыть', callback_data: 'confirm_no_touchup_close' }, { text: '🔙 Назад', callback_data: 'back_to_complete' }]
+      ]}})
+    });
+
+  } else if (data === 'back_to_complete') {
+    const clientName = extractField(msgText, 'CLIENT') || 'Client';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: { inline_keyboard: [
+        [{ text: `Завершить сеанс — ${clientName}?`, callback_data: 'ignore' }],
+        [{ text: '🎁 Free touchup', callback_data: 'complete_touchup_free' }],
+        [{ text: '💳 Touchup €50', callback_data: 'complete_touchup_paid' }],
+        [{ text: '✅ Без touchup', callback_data: 'confirm_complete' }],
+        [{ text: '🔙 Отмена', callback_data: 'cancel_complete' }]
+      ]}})
+    });
+
+  } else if (data === 'confirm_touchup_free' || data === 'confirm_no_touchup_close') {
+    const touchupType = data === 'confirm_touchup_free' ? 'free' : 'none';
     const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
     const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
     if (airtableToken && airtableBase && msgId) {
@@ -774,21 +820,47 @@ module.exports = async (req, res) => {
         const findData = await findRes.json();
         if (findData.records?.length > 0) {
           const rec = findData.records[0];
-          const clientName = rec.fields.Name || 'Client';
           const patchFields = { 'Session Status': 'completed', 'Status': '✅ Completed', 'Touchup Type': touchupType };
           await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${rec.id}`, {
             method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ fields: patchFields })
           });
           const today = new Date().toISOString().split('T')[0];
-          const touchupNote = touchupType !== 'none' ? ` · touchup ${touchupType}` : '';
+          const note = touchupType === 'free' ? ' · touchup free' : '';
+          // appendTimelineAndEdit with session_done auto-deletes the topic
           await appendTimelineAndEdit(
             { ...rec, fields: { ...rec.fields, ...patchFields, id: rec.id } },
-            `✅ Session completed · ${today}${touchupNote}`,
+            `✅ Session completed · ${today}${note}`,
             { status: 'session_done' }
           );
         }
-      } catch(err) { console.error('confirm_complete failed:', err.message); }
+      } catch(err) { console.error('confirm_close failed:', err.message); }
+    }
+
+  } else if (data === 'confirm_touchup_paid') {
+    const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+    const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+    if (airtableToken && airtableBase && msgId) {
+      const formula = encodeURIComponent(`{Telegram Message ID} = '${msgId}'`);
+      try {
+        const findRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads?filterByFormula=${formula}`, { headers: { 'Authorization': `Bearer ${airtableToken}` } });
+        const findData = await findRes.json();
+        if (findData.records?.length > 0) {
+          const rec = findData.records[0];
+          const patchFields = { 'Session Status': 'completed', 'Status': '🔁 Touchup Pending', 'Touchup Type': 'paid' };
+          await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${rec.id}`, {
+            method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: patchFields })
+          });
+          const today = new Date().toISOString().split('T')[0];
+          // touchup_pending status keeps topic open
+          await appendTimelineAndEdit(
+            { ...rec, fields: { ...rec.fields, ...patchFields, id: rec.id } },
+            `✅ Session completed · ${today} · 💳 Touchup €50 — email в 30 дней`,
+            { status: 'touchup_pending' }
+          );
+        }
+      } catch(err) { console.error('confirm_touchup_paid failed:', err.message); }
     }
 
   } else if (data.startsWith('cal_nav_')) {

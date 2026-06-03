@@ -205,6 +205,7 @@ async function sendEnquiryConfirmation({ name, email }) {
       sub: `Thank you, ${name}.`,
       body: `
         <p style="margin:0 0 20px">Your booking request has just landed. Dmytro reviews every enquiry personally before responding — we'll be in touch within <span style="color:#b8956a">48 hours</span> with next steps or further questions.</p>
+        <p style="margin:0 0 20px">Every design is created <strong>live in the studio during your session</strong> — no need to prepare a sketch, just bring your idea and reference images if you have them.</p>
         <p style="margin:0 0 24px">In the meantime, feel free to browse more of his recent work on Instagram.</p>
         <p style="margin:24px 0 0"><a href="${INSTAGRAM_URL}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4);padding-bottom:2px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase">View on Instagram →</a></p>
       `
@@ -303,12 +304,25 @@ async function sendBookingConfirmation({ name, email, sessionDate, address, icsC
         ${dateSection}
         ${detailCard(
           detailRow('Deposit', '€50 — Paid', true) +
-          (sessionDate ? detailRow('Duration', '~3 hours') : '') +
           detailRow('Artist', 'Dmytro Bilynets') +
           detailRow('Studio', 'the muse ink · Den Haag')
         )}
         ${calendarSection}
         ${arrivalSection}
+        ${sessionDate ? `
+        <p style="margin:28px 0 10px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+                  font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Free parking nearby</p>
+        <p style="margin:0 0 10px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.7;color:#4a4540">
+          The street where the studio is located has free parking all the way to the roundabout.
+          Parking at the roundabout is paid, but you can usually find a free spot within 50–100 metres.
+          <strong>Free parking until 18:00.</strong>
+        </p>
+        <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg"
+             alt="Free parking map" width="480"
+             style="width:100%;max-width:480px;height:auto;display:block;margin:0 0 24px;border-radius:4px"/>` : ''}
+        <p style="margin:0 0 16px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.7;color:#8a8478;font-style:italic">
+          Every design is created live in the studio during your session — no need to prepare a sketch.
+        </p>
         ${noteCard(`Questions before your session? Message us via <a href="${waLink}" style="color:#b8956a;text-decoration:none;border-bottom:1px solid rgba(184,149,106,.4)">WhatsApp</a>.`)}
         <p style="margin:28px 0 0;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
                   font-size:11px;line-height:1.7;color:#8a8478">
@@ -354,11 +368,22 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
 
         ${infoSection('Logistics', [
           `<strong>Address:</strong> ${studioAddress}`,
-          'Private studio — Dmytro will meet you at the entrance to let you in',
+          'Private studio — walk right in and make yourself comfortable.',
           'Arrive on time'
         ])}
 
         ${mapCard(studioAddress)}
+
+        <p style="margin:28px 0 10px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+                  font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#b8956a">Free parking nearby</p>
+        <p style="margin:0 0 10px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.7;color:#4a4540">
+          The street where the studio is located has free parking all the way to the roundabout.
+          Parking at the roundabout is paid, but you can usually find a free spot within 50–100 metres.
+          <strong>Free parking until 18:00.</strong>
+        </p>
+        <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg"
+             alt="Free parking map" width="480"
+             style="width:100%;max-width:480px;height:auto;display:block;margin:0 0 24px;border-radius:4px"/>
 
         ${noteCard(`Need to reschedule? Let us know <strong>at least 48 hours in advance</strong> — deposits are non-refundable within 48 hours of the session.`)}
 
