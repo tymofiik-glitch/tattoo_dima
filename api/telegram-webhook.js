@@ -3,7 +3,6 @@ const { generateIcs, googleCalendarUrl } = require('./utils/ics');
 const { buildMainMessage, buildKeyboard, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
 
 const awaitingDate = {};
-const awaitingAddress = {};
 
 // ─── Inline calendar builder ──────────────────────────────────────────────────
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -265,7 +264,6 @@ async function createAirtableLead(messageText, messageId, chatId, topicId) {
     ...(topicId ? { 'Telegram Topic ID': parseInt(topicId, 10) } : {})
   };
 
-  console.log('Fields to write:', JSON.stringify(fields));
 
   try {
     const res = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads`, {
@@ -751,7 +749,7 @@ module.exports = async (req, res) => {
           const rec = d.records[0];
           await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildKeyboard({ ...rec.fields, id: rec.id }, 'deposit_paid') })
+            body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildKeyboard({ ...rec.fields, id: rec.id }, rec.fields['Session Date'] ? 'date_set' : 'deposit_paid') })
           });
         }
       } catch(e) { console.error('cancel_complete restore failed:', e.message); }
