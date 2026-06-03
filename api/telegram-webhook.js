@@ -532,9 +532,17 @@ module.exports = async (req, res) => {
             body: JSON.stringify({ fields: { 'Session Photo IDs': updated } })
           });
           const count = updated.split(',').length;
+          // Update card timeline with photo count
+          try {
+            await appendTimelineAndEdit(
+              { ...recData, fields: { ...recData.fields, 'Session Photo IDs': updated } },
+              `📸 Фото добавлено · ${count} шт — уйдёт с письмом в 21:00`,
+              { status: 'date_set' }
+            );
+          } catch(te) { console.error('Photo timeline update failed:', te.message); }
           await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: incomingChatId, message_thread_id: incomingTopicId, text: `✅ Фото сохранено (${count}) — прикреплю к письму в 21:00.`, disable_notification: true })
+            body: JSON.stringify({ chat_id: incomingChatId, message_thread_id: incomingTopicId, text: `✅ Фото (${count}) сохранено — прикреплю к письму в 21:00.`, disable_notification: true })
           });
         }
       } catch(e) { console.error('Photo save failed:', e.message); }
