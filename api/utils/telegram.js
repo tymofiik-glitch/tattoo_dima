@@ -289,10 +289,11 @@ async function createForumTopic(chatId, name) {
   }
 }
 
-async function updateForumTopic(chatId, topicId, name, color) {
+// Note: Telegram's editForumTopic does NOT support icon_color (only createForumTopic does).
+// Color is set once at creation. Renaming is the only visual update available post-creation.
+async function updateForumTopic(chatId, topicId, name) {
   const t = token();
   const body = { chat_id: chatId, message_thread_id: parseInt(topicId, 10), name: name.slice(0, 128) };
-  if (color != null) body.icon_color = color;
   try {
     await fetch(`https://api.telegram.org/bot${t}/editForumTopic`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)

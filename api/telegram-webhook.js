@@ -63,7 +63,7 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
   }
 
   if (!sessionDate) {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '⚠️ Не удалось разобрать дату.' }) });
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: '⚠️ Не удалось разобрать дату.', disable_notification: true }) });
     return;
   }
 
@@ -101,7 +101,7 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
       const timePart = sessionDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
       const humanDate = `${datePart}, ${timePart}`;
       const actionText = isReschedule ? `🔄 Rescheduled · ${humanDate}` : `📅 Date set · ${humanDate}`;
-      await appendTimelineAndEdit({ ...record, fields: { ...record.fields, ...fields } }, actionText, { status: depositPaid ? 'date_set' : 'accepted' });
+      await appendTimelineAndEdit({ ...record, fields: { ...record.fields, ...fields } }, actionText, { status: depositPaid ? 'date_set' : 'waiting_deposit' });
     }
   } catch(e) { console.error('saveSessionDate Airtable update:', e.message); }
 
@@ -116,6 +116,22 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
     }
   } catch(e) { console.error('saveSessionDate email:', e.message); }
 
+  // Confirmation message to Alona
+  const dateLabel = sessionDate.toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam'
+  });
+  const clientEmail = record?.fields?.Email || '';
+  let txt = `✅ Дата ${isReschedule ? 'обновлена' : 'сохранена'}\n📅 *${escapeMd(dateLabel)}*`;
+  if (depositPaid || isReschedule) txt += `\n✉️ Письмо с календарём → ${escapeMd(clientEmail || '—')}`;
+  else txt += `\n💳 Кнопка депозита активирована в карточке.`;
+  const confirmPayload = { chat_id: chatId, text: txt, parse_mode: 'Markdown', disable_notification: true };
+  const topicId = record?.fields?.['Telegram Topic ID'];
+  if (topicId) confirmPayload.message_thread_id = parseInt(topicId, 10);
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(confirmPayload)
+  }).catch(e => console.error('saveSessionDate sendMessage:', e.message));
 }
 
 function parseAmsterdamDate(dateStr) {
@@ -246,7 +262,7 @@ async function createAirtableLead(messageText, messageId, chatId, topicId) {
     'Status':               '💬 In Progress',
     'Telegram Message ID':  String(messageId || ''),
     'Telegram Chat Link':   telegramLink,
-    ...(topicId ? { 'Telegram Topic ID': String(topicId) } : {})
+    ...(topicId ? { 'Telegram Topic ID': parseInt(topicId, 10) } : {})
   };
 
   console.log('Fields to write:', JSON.stringify(fields));
@@ -371,7 +387,8 @@ module.exports = async (req, res) => {
           body: JSON.stringify({
             chat_id: incomingChatId,
             text: `⚠️ Не могу разобрать дату. Попробуй ещё раз в формате: 2025-06-15 14:00\n\nID: ${originalMsgId}`,
-            reply_markup: { force_reply: true, selective: true }
+            reply_markup: { force_reply: true, selective: true },
+            disable_notification: true
           })
         });
         // Keep the state active
@@ -478,7 +495,8 @@ module.exports = async (req, res) => {
         body: JSON.stringify({
           chat_id: incomingChatId,
           text: responseText,
-          parse_mode: 'Markdown'
+          parse_mode: 'Markdown',
+          disable_notification: true
         })
       });
 
@@ -488,8 +506,10 @@ module.exports = async (req, res) => {
     return res.status(200).json({ ok: true });
   }
 
-  // Handle photo replies — Dima sends session photos after completing a session
-  if (body?.message?.photo && !body?.callback_query) {
+  const isPhoto = body?.message?.photo;
+  const isImageDoc = body?.message?.document?.mime_type?.startsWith('image/');
+  
+  if ((isPhoto || isImageDoc) && !body?.callback_query) {
     const replyTo = body.message.reply_to_message;
     if (replyTo?.text) {
       const recordMatch = replyTo.text.match(/RECORD:([a-zA-Z0-9]+)/) || replyTo.text.match(/\u200b([a-zA-Z0-9]{10,})/);
@@ -497,24 +517,37 @@ module.exports = async (req, res) => {
         const recordId = recordMatch[1];
         const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
         const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
-        // Get highest-res file_id from the photo array
-        const photos = body.message.photo;
-        const fileId = photos[photos.length - 1].file_id;
+        const fileId = isPhoto ? body.message.photo[body.message.photo.length - 1].file_id : body.message.document.file_id;
         try {
-          // Fetch existing photo IDs and append
           const recRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, { headers: { 'Authorization': `Bearer ${airtableToken}` } });
           const recData = await recRes.json();
           const existing = recData.fields?.['Session Photo IDs'] || '';
           const updated = existing ? `${existing},${fileId}` : fileId;
+          const isFirstPhoto = !existing;
+          
+          const fieldsToUpdate = { 'Session Photo IDs': updated };
+          if (isFirstPhoto) {
+            fieldsToUpdate['Session Status'] = 'completed';
+            fieldsToUpdate['Status'] = '✅ Completed';
+          }
+          
           await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
             method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fields: { 'Session Photo IDs': updated } })
+            body: JSON.stringify({ fields: fieldsToUpdate })
           });
           const count = updated.split(',').length;
           await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: body.message.chat.id, text: `✅ Фото сохранено (${count} всего) — будет в письме в 21:00.` })
+            body: JSON.stringify({ chat_id: body.message.chat.id, message_thread_id: body.message.message_thread_id, text: `✅ Фото сохранено (${count} всего) — будет в письме в 21:00.`, disable_notification: true })
           });
+          
+          if (isFirstPhoto) {
+            await appendTimelineAndEdit(
+              { ...recData, fields: { ...recData.fields, ...fieldsToUpdate } },
+              '✅ Сеанс завершен (фото загружены)',
+              { status: 'session_done' }
+            );
+          }
         } catch(e) { console.error('Photo save failed:', e.message); }
       }
     }
@@ -707,10 +740,8 @@ module.exports = async (req, res) => {
         chat_id: chatId, message_id: msgId,
         reply_markup: {
           inline_keyboard: [
-            [{ text: `✅ Отметить сеанс ${clientName} как завершённый?`, callback_data: 'ignore' }],
-            [ { text: '🎁 Free Touchup', callback_data: 'complete_touchup_free' } ],
-            [ { text: '💳 Touchup €50', callback_data: 'complete_touchup_paid' } ],
-            [ { text: '✅ Без touchup', callback_data: 'confirm_complete' }, { text: '🔙 Отмена', callback_data: 'cancel_complete' } ]
+            [ { text: '📸 Отправь фотки до 21:00', callback_data: 'confirm_complete' } ],
+            [ { text: '🔙 Отмена', callback_data: 'cancel_complete' } ]
           ]
         }
       })
@@ -766,6 +797,7 @@ module.exports = async (req, res) => {
               text: `📸 *Отправь фото тату для ${escapeMd(clientName)}*\nОтветь на это сообщение фото — прикреплю к письму в 21:00.\n\u200b${rec.id}`,
               parse_mode: 'Markdown',
               message_thread_id: rec.fields['Telegram Topic ID'] ? parseInt(rec.fields['Telegram Topic ID'], 10) : undefined,
+              disable_notification: true,
               reply_to_message_id: rec.fields['Telegram Message ID'] ? parseInt(rec.fields['Telegram Message ID'], 10) : undefined,
               reply_markup: { force_reply: true, selective: true }
             })
@@ -862,8 +894,10 @@ module.exports = async (req, res) => {
           let status = 'accepted';
           if (fields['Session Status'] === 'completed' || fields['Status'] === '⚠️ No-show') {
             status = 'session_done';
-          } else if (fields['Session Date']) {
+          } else if (fields['Session Date'] && fields['Mollie Payment ID']) {
             status = 'date_set';
+          } else if (fields['Session Date'] && !fields['Mollie Payment ID']) {
+            status = 'waiting_deposit';
           } else if (fields['Mollie Payment ID']) {
             status = 'deposit_paid';
           }
