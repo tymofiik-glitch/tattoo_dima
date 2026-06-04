@@ -67,7 +67,7 @@ function wrap({ title, sub, body }) {
 <tr><td align="center">
 <table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;background:#f5f0e8">
   <tr><td style="padding:32px 8px 16px;text-align:center">
-    <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/logo.png"
+    <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/logo-animated.gif"
          alt="the muse ink"
          width="96" height="96"
          style="width:96px;height:96px;border-radius:50%;display:inline-block;border:1px solid rgba(184,149,106,.25)"/>
