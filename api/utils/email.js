@@ -317,9 +317,16 @@ async function sendBookingConfirmation({ name, email, sessionDate, address, icsC
           Parking at the roundabout is paid, but you can usually find a free spot within 50–100 metres.
           <strong>Free parking until 18:00.</strong>
         </p>
-        <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg?v=${Date.now()}"
-             alt="Free parking map" width="480"
-             style="width:100%;max-width:480px;height:auto;display:block;margin:0 0 24px;border-radius:4px"/>` : ''}
+        <div style="max-width:480px;margin:0 0 24px;border-radius:4px;overflow:hidden;background-color:#F5F0E8;">
+          <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg?v=${Date.now()}"
+               alt="Free parking map" width="480"
+               style="width:100%;height:auto;display:block;border-bottom:1px solid #b8956a;"/>
+          <div style="padding:16px 12px;text-align:center;">
+            <div style="color:#4a4540;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;margin-bottom:6px;">🅿  Free parking until 18:00 (Red lines)</div>
+            <div style="color:#8a7a65;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;margin-bottom:3px;">Streets around the studio — Regentesseplein area</div>
+            <div style="color:#b8956a;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;">Avoid the roundabout (paid zone)</div>
+          </div>
+        </div>` : ''}
         <p style="margin:0 0 16px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.7;color:#8a8478;font-style:italic">
           Every design is created live in the studio during your session — no need to prepare a sketch.
         </p>
@@ -381,9 +388,16 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
           Parking at the roundabout is paid, but you can usually find a free spot within 50–100 metres.
           <strong>Free parking until 18:00.</strong>
         </p>
-        <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg?v=${Date.now()}"
-             alt="Free parking map" width="480"
-             style="width:100%;max-width:480px;height:auto;display:block;margin:0 0 24px;border-radius:4px"/>
+        <div style="max-width:480px;margin:0 0 24px;border-radius:4px;overflow:hidden;background-color:#F5F0E8;">
+          <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg?v=${Date.now()}"
+               alt="Free parking map" width="480"
+               style="width:100%;height:auto;display:block;border-bottom:1px solid #b8956a;"/>
+          <div style="padding:16px 12px;text-align:center;">
+            <div style="color:#4a4540;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;margin-bottom:6px;">🅿  Free parking until 18:00 (Red lines)</div>
+            <div style="color:#8a7a65;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;margin-bottom:3px;">Streets around the studio — Regentesseplein area</div>
+            <div style="color:#b8956a;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:11px;">Avoid the roundabout (paid zone)</div>
+          </div>
+        </div>
 
         ${noteCard(`Need to reschedule? Let us know <strong>at least 48 hours in advance</strong> — deposits are non-refundable within 48 hours of the session.`)}
 
