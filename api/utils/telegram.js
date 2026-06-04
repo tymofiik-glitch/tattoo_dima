@@ -153,10 +153,20 @@ function buildKeyboard(fields, status) {
     if (sessionDate) {
       const fmtCal = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
       const end = new Date(sessionDate.getTime() + 3*60*60*1000);
+      const igHandle = String(fields.Instagram || '').replace('@', '');
+      const calDetails = [
+        `👤 Client: ${fields.Name || ''}`,
+        fields.Phone ? `📱 ${fields.Phone}` : '',
+        igHandle ? `📸 instagram.com/${igHandle}` : '',
+        fields.Idea ? `\n🖼 Idea: ${fields.Idea}` : '',
+        fields.Size ? `📐 Size: ${fields.Size}` : '',
+        fields.Placement ? `📍 Placement: ${fields.Placement}` : '',
+        fields.Budget ? `💰 Budget: ${fields.Budget}` : '',
+      ].filter(Boolean).join('\n');
       const calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
-        '&text=' + encodeURIComponent('Tattoo session · the muse ink') +
+        '&text=' + encodeURIComponent(`${fields.Name || 'Client'} · tattoo · the muse ink`) +
         '&dates=' + fmtCal(sessionDate) + '/' + fmtCal(end) +
-        '&details=' + encodeURIComponent('Tattoo session with Dmytro Bilynets at the muse ink, Den Haag.');
+        '&details=' + encodeURIComponent(calDetails);
       rows.push([{ text: '📅 Add to Google Calendar', url: calUrl }]);
     }
     rows.push([{ text: '📸 Добавить фото к письму', callback_data: 'add_photo' }]);
