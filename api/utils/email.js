@@ -317,7 +317,7 @@ async function sendBookingConfirmation({ name, email, sessionDate, address, icsC
           Parking at the roundabout is paid, but you can usually find a free spot within 50–100 metres.
           <strong>Free parking until 18:00.</strong>
         </p>
-        <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg"
+        <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg?v=${Date.now()}"
              alt="Free parking map" width="480"
              style="width:100%;max-width:480px;height:auto;display:block;margin:0 0 24px;border-radius:4px"/>` : ''}
         <p style="margin:0 0 16px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.7;color:#8a8478;font-style:italic">
@@ -381,7 +381,7 @@ async function sendPreCareEmail({ name, email, sessionDate, address }, { idempot
           Parking at the roundabout is paid, but you can usually find a free spot within 50–100 metres.
           <strong>Free parking until 18:00.</strong>
         </p>
-        <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg"
+        <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/parking-map.jpg?v=${Date.now()}"
              alt="Free parking map" width="480"
              style="width:100%;max-width:480px;height:auto;display:block;margin:0 0 24px;border-radius:4px"/>
 
