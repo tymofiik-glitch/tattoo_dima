@@ -22,7 +22,7 @@ async function safeSend(resend, payload, options) {
   return result;
 }
 
-const FROM = () => 'DMYTRO BILYNETS · the muse ink <hello@kaktuz.ink>';
+const FROM = () => 'DMYTRO BILYNETS · the muse ink <noreply@kaktuz.ink>';
 const WHATSAPP = () => process.env.ALENA_WHATSAPP || '';
 const INSTAGRAM_URL = 'https://instagram.com/kaktuz_tattooz';
 
