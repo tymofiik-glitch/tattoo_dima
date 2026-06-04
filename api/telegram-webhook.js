@@ -1,4 +1,4 @@
-const { sendRejectionEmail, sendBookingConfirmation } = require('./utils/email');
+const { sendRejectionEmail, sendBookingConfirmation, sendTouchupEmail } = require('./utils/email');
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
 const { buildMainMessage, buildKeyboard, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
 
@@ -826,8 +826,11 @@ module.exports = async (req, res) => {
             body: JSON.stringify({ fields: patchFields })
           });
           const today = new Date().toISOString().split('T')[0];
-          const note = touchupType === 'free' ? ' · touchup free' : '';
-          // appendTimelineAndEdit with session_done auto-deletes the topic
+          // Send touchup email immediately if free
+          if (touchupType === 'free' && rec.fields.Email) {
+            sendTouchupEmail({ name: rec.fields.Name || 'there', email: rec.fields.Email, type: 'free' }).catch(e => console.error('Touchup email failed:', e.message));
+          }
+          const note = touchupType === 'free' ? ' · touchup email sent' : '';
           await appendTimelineAndEdit(
             { ...rec, fields: { ...rec.fields, ...patchFields, id: rec.id } },
             `✅ Session completed · ${today}${note}`,
@@ -852,11 +855,14 @@ module.exports = async (req, res) => {
             method: 'PATCH', headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ fields: patchFields })
           });
+          // Send paid touchup email immediately with payment link
+          if (rec.fields.Email) {
+            sendTouchupEmail({ name: rec.fields.Name || 'there', email: rec.fields.Email, type: 'paid' }).catch(e => console.error('Touchup paid email failed:', e.message));
+          }
           const today = new Date().toISOString().split('T')[0];
-          // touchup_pending status keeps topic open
           await appendTimelineAndEdit(
             { ...rec, fields: { ...rec.fields, ...patchFields, id: rec.id } },
-            `✅ Session completed · ${today} · 💳 Touchup €50 — email в 30 дней`,
+            `✅ Session completed · ${today} · 💳 Touchup €50 email sent`,
             { status: 'touchup_pending' }
           );
         }

@@ -149,9 +149,18 @@ function buildKeyboard(fields, status) {
     rows.push([{ text: `💳 Ссылка на депозит · ${shortDate}`, url: depositUrl }]);
     rows.push([{ text: '📝 Изменить дату', callback_data: 'set_date' }, { text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   } else {
-    // deposit paid — photo, reschedule, complete
+    // deposit paid — calendar, photo, reschedule, complete
+    if (sessionDate) {
+      const fmtCal = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+      const end = new Date(sessionDate.getTime() + 3*60*60*1000);
+      const calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+        '&text=' + encodeURIComponent('Tattoo session · the muse ink') +
+        '&dates=' + fmtCal(sessionDate) + '/' + fmtCal(end) +
+        '&details=' + encodeURIComponent('Tattoo session with Dmytro Bilynets at the muse ink, Den Haag.');
+      rows.push([{ text: '📅 Add to Google Calendar', url: calUrl }]);
+    }
     rows.push([{ text: '📸 Добавить фото к письму', callback_data: 'add_photo' }]);
-    rows.push([{ text: '📅 Перенести дату', callback_data: 'reschedule' }, { text: '✅ Завершить сеанс', callback_data: 'ask_complete' }]);
+    rows.push([{ text: '🔄 Перенести дату', callback_data: 'reschedule' }, { text: '✅ Завершить сеанс', callback_data: 'ask_complete' }]);
     rows.push([{ text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   }
 
