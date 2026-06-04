@@ -66,11 +66,14 @@ function wrap({ title, sub, body }) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f0e8;padding:32px 16px">
 <tr><td align="center">
 <table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%;background:#f5f0e8">
-  <tr><td style="padding:32px 8px 8px;text-align:center">
-    ${ornament(200)}
+  <tr><td style="padding:32px 8px 16px;text-align:center">
+    <img src="https://raw.githubusercontent.com/tymofiik-glitch/tattoo_dima/main/img/logo.png"
+         alt="the muse ink"
+         width="96" height="96"
+         style="width:96px;height:96px;border-radius:50%;display:inline-block;border:1px solid rgba(184,149,106,.25)"/>
   </td></tr>
 
-  <tr><td style="padding:8px 8px 32px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8a8478">
+  <tr><td style="padding:0 8px 28px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8a8478">
     Dmytro Bilynets &nbsp;·&nbsp; the muse ink
   </td></tr>
 
