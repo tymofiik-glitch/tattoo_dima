@@ -11,25 +11,6 @@ const { setSecurityHeaders } = require('./utils/security');
 
 const LOCK_TTL_MIN = 10;
 
-async function fetchSessionPhotos(photoIdsField) {
-  if (!photoIdsField) return [];
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) return [];
-  const ids = photoIdsField.split(',').map(s => s.trim()).filter(Boolean);
-  const buffers = [];
-  for (const fileId of ids) {
-    try {
-      const meta = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-      const { result } = await meta.json();
-      if (!result?.file_path) continue;
-      const fileRes = await fetch(`https://api.telegram.org/file/bot${token}/${result.file_path}`);
-      const buf = Buffer.from(await fileRes.arrayBuffer());
-      buffers.push(buf);
-    } catch(e) { console.error('fetchSessionPhotos error for', fileId, e.message); }
-  }
-  return buffers;
-}
-
 const TYPE_CONFIG = {
   precare: {
     sentField:    'PreCareSentAt',
@@ -43,28 +24,6 @@ const TYPE_CONFIG = {
       address: record.fields.Address
     }, opts),
     onSuccess: null
-  },
-  aftercare: {
-    sentField:    'AftercareSentAt',
-    lockField:    'AftercareLockedAt',
-    extraFilter:  "OR({Session Status} = 'scheduled', {Session Status} = 'completed')",
-    targetOffset: 0,
-    send: async (record, opts) => {
-      const photos = await fetchSessionPhotos(record.fields['Session Photo IDs']);
-      return sendAftercareEmail({
-        name: record.fields.Name || 'there',
-        email: record.fields.Email,
-        photos
-      }, opts);
-    },
-    onSuccess: async (record) => {
-      const today = new Date().toISOString().split('T')[0];
-      await appendTimelineAndEdit(
-        record,
-        `✅ Aftercare sent · ${today}`,
-        { status: 'session_done' }
-      );
-    }
   },
   aftercare_reminder: {
     sentField:    'AftercareReminderSentAt',
@@ -273,7 +232,6 @@ module.exports = async (req, res) => {
   try {
     const completedSweep = await autoMarkCompleted();
     const preRes   = await processBatch('precare',   targetDate(+7));
-    const postRes  = await processBatch('aftercare', targetDate(0));
     const remRes   = await processBatch('aftercare_reminder', targetDate(-3));
     const touchRes = await processBatch('touchup', targetDate(-30));
 
@@ -281,17 +239,15 @@ module.exports = async (req, res) => {
       ok: true,
       autoCompleted: completedSweep,
       preCare:   preRes,
-      aftercare: postRes,
       aftercareReminder: remRes,
       touchup: touchRes
     };
 
-    const totalFailed = preRes.failed + postRes.failed + remRes.failed + touchRes.failed;
+    const totalFailed = preRes.failed + remRes.failed + touchRes.failed;
     if (totalFailed > 0) {
       await notifyAlena(
         `📊 Cron ${new Date().toISOString().split('T')[0]}: ` +
         `precare ${preRes.sent}/${preRes.total}, ` +
-        `aftercare ${postRes.sent}/${postRes.total}, ` +
         `reminder ${remRes.sent}/${remRes.total}, ` +
         `touchup ${touchRes.sent}/${touchRes.total}, ` +
         `*failures: ${totalFailed}*`

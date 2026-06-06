@@ -1,6 +1,6 @@
-const { sendRejectionEmail, sendBookingConfirmation, sendTouchupEmail } = require('./utils/email');
+const { sendRejectionEmail, sendBookingConfirmation, sendTouchupEmail, sendAftercareEmail } = require('./utils/email');
 const { generateIcs, googleCalendarUrl } = require('./utils/ics');
-const { buildMainMessage, buildKeyboard, appendTimelineAndEdit, escapeMd } = require('./utils/telegram');
+const { buildMainMessage, buildKeyboard, appendTimelineAndEdit, escapeMd, fetchSessionPhotos } = require('./utils/telegram');
 
 const awaitingDate = {};
 
@@ -35,16 +35,33 @@ function buildCalendarKeyboard(cardMsgId, year, month, isReschedule) {
   return { inline_keyboard: rows };
 }
 
-function buildTimeKeyboard(cardMsgId, dateStr, isReschedule) {
+function buildHourKeyboard(cardMsgId, dateStr, isReschedule) {
   const flag = isReschedule ? '1' : '0';
-  const hours = ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+  const hours = ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
   const rows = [];
   const [y, m, d] = dateStr.split('-').map(Number);
   const label = new Date(y, m-1, d).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-  rows.push([{ text: `📅 ${label} — выбери время:`, callback_data: 'ignore' }]);
-  for (let i = 0; i < hours.length; i += 4)
-    rows.push(hours.slice(i, i+4).map(h => ({ text: h, callback_data: `cal_ok_${cardMsgId}_${dateStr}_${h}_${flag}` })));
+  rows.push([{ text: `📅 ${label} — выбери час:`, callback_data: 'ignore' }]);
+  for (let i = 0; i < hours.length; i += 3) {
+    const chunk = hours.slice(i, i + 3);
+    rows.push(chunk.map(h => ({ text: `${h}:xx`, callback_data: `cal_hr_${cardMsgId}_${dateStr}_${h}_${flag}` })));
+  }
   rows.push([{ text: '◀ Назад', callback_data: `cal_nav_${cardMsgId}_${y}-${String(m).padStart(2,'0')}_${flag}` }]);
+  return { inline_keyboard: rows };
+}
+
+function buildMinuteKeyboard(cardMsgId, dateStr, hour, isReschedule) {
+  const flag = isReschedule ? '1' : '0';
+  const minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
+  const rows = [];
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const label = new Date(y, m-1, d).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+  rows.push([{ text: `📅 ${label} в ${hour}:xx — выбери минуты:`, callback_data: 'ignore' }]);
+  for (let i = 0; i < minutes.length; i += 4) {
+    const chunk = minutes.slice(i, i + 4);
+    rows.push(chunk.map(min => ({ text: `${hour}:${min}`, callback_data: `cal_ok_${cardMsgId}_${dateStr}_${hour}:${min}_${flag}` })));
+  }
+  rows.push([{ text: '◀ Назад к часам', callback_data: `cal_day_${cardMsgId}_${dateStr}_${flag}` }]);
   return { inline_keyboard: rows };
 }
 
@@ -532,17 +549,43 @@ module.exports = async (req, res) => {
             body: JSON.stringify({ fields: { 'Session Photo IDs': updated } })
           });
           const count = updated.split(',').length;
+
+          // Determine status for card update
+          let currentStatus = 'accepted';
+          if (recData.fields['Session Status'] === 'completed' || recData.fields['Status'] === '⚠️ No-show') {
+            currentStatus = 'session_done';
+          } else if (recData.fields['Session Date'] && recData.fields['Mollie Payment ID']) {
+            currentStatus = 'date_set';
+          } else if (recData.fields['Session Date'] && !recData.fields['Mollie Payment ID']) {
+            currentStatus = 'waiting_deposit';
+          } else if (recData.fields['Mollie Payment ID']) {
+            currentStatus = 'deposit_paid';
+          }
+
           // Update card timeline with photo count
           try {
             await appendTimelineAndEdit(
               { ...recData, fields: { ...recData.fields, 'Session Photo IDs': updated } },
-              `📸 Фото добавлено · ${count} шт — уйдёт с письмом в 21:00`,
-              { status: 'date_set' }
+              `📸 Фото добавлено · ${count} шт`,
+              { status: currentStatus }
             );
           } catch(te) { console.error('Photo timeline update failed:', te.message); }
+
+          const replyMarkup = !recData.fields?.AftercareSentAt ? {
+            inline_keyboard: [[
+              { text: '✉️ Отправить Aftercare клиенту', callback_data: `send_aftercare|${recData.id}` }
+            ]]
+          } : undefined;
+
           await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: incomingChatId, message_thread_id: incomingTopicId, text: `✅ Фото (${count}) сохранено — прикреплю к письму в 21:00.`, disable_notification: true })
+            body: JSON.stringify({
+              chat_id: incomingChatId,
+              message_thread_id: incomingTopicId,
+              text: `✅ Фото (${count}) сохранено.`,
+              disable_notification: true,
+              ...(replyMarkup && { reply_markup: replyMarkup })
+            })
           });
         }
       } catch(e) { console.error('Photo save failed:', e.message); }
@@ -572,6 +615,156 @@ module.exports = async (req, res) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ callback_query_id: callbackId })
   }).catch(() => {});
+
+  if (data?.startsWith('send_aftercare|')) {
+    const recordId = data.split('|')[1];
+    const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+    const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+    if (airtableToken && airtableBase && recordId) {
+      try {
+        const findRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
+          headers: { 'Authorization': `Bearer ${airtableToken}` }
+        });
+        if (!findRes.ok) {
+          throw new Error(`Airtable lead ${recordId} not found`);
+        }
+        const record = await findRes.json();
+        const fields = record.fields || {};
+        
+        if (fields.AftercareSentAt) {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              ...(topicId && { message_thread_id: parseInt(topicId, 10) }),
+              text: `⚠️ Aftercare-письмо уже было отправлено для ${fields.Name || 'клиента'}.`,
+              disable_notification: true
+            })
+          });
+          return res.status(200).json({ ok: true });
+        }
+        
+        if (!fields.Email) {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              ...(topicId && { message_thread_id: parseInt(topicId, 10) }),
+              text: `❌ Невозможно отправить: у ${fields.Name || 'клиента'} не указан email!`,
+              disable_notification: true
+            })
+          });
+          return res.status(200).json({ ok: true });
+        }
+
+        const photoIds = fields['Session Photo IDs'] || '';
+        if (!photoIds) {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              ...(topicId && { message_thread_id: parseInt(topicId, 10) }),
+              text: `❌ Невозможно отправить: сначала прикрепите фотографии!`,
+              disable_notification: true
+            })
+          });
+          return res.status(200).json({ ok: true });
+        }
+
+        // Send a temporary status message
+        const statusMsgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            ...(topicId && { message_thread_id: parseInt(topicId, 10) }),
+            text: `⏳ Скачиваю фото и отправляю aftercare-письмо...`,
+            disable_notification: true
+          })
+        });
+        const statusMsg = await statusMsgRes.json();
+        const statusMsgId = statusMsg?.result?.message_id;
+
+        const photos = await fetchSessionPhotos(photoIds);
+        const idempotencyKey = `${recordId}-aftercare-manual`;
+        
+        await sendAftercareEmail({
+          name: fields.Name || 'there',
+          email: fields.Email,
+          photos
+        }, { idempotencyKey });
+
+        // Update Airtable
+        const today = new Date().toISOString().split('T')[0];
+        await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { AftercareSentAt: new Date().toISOString() } })
+        });
+
+        // Determine status for keyboard refresh
+        let updatedStatus = 'accepted';
+        if (fields['Session Status'] === 'completed' || fields['Status'] === '⚠️ No-show') {
+          updatedStatus = 'session_done';
+        } else if (fields['Session Date'] && fields['Mollie Payment ID']) {
+          updatedStatus = 'date_set';
+        } else if (fields['Session Date'] && !fields['Mollie Payment ID']) {
+          updatedStatus = 'waiting_deposit';
+        } else if (fields['Mollie Payment ID']) {
+          updatedStatus = 'deposit_paid';
+        }
+
+        // Append to timeline & edit card
+        await appendTimelineAndEdit(
+          { ...record, fields: { ...fields, AftercareSentAt: new Date().toISOString() } },
+          `✉️ Aftercare sent manually · ${today}`,
+          { status: updatedStatus }
+        );
+
+        // Update status message
+        if (statusMsgId) {
+          await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              message_id: statusMsgId,
+              text: `✅ Aftercare-письмо с ${photos.length} фото успешно отправлено на ${fields.Email}!`
+            })
+          });
+        } else {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              ...(topicId && { message_thread_id: parseInt(topicId, 10) }),
+              text: `✅ Aftercare-письмо с ${photos.length} фото успешно отправлено на ${fields.Email}!`,
+              disable_notification: true
+            })
+          });
+        }
+
+        // Also edit the callback query message reply markup to remove the send button
+        if (msgId) {
+          await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: { inline_keyboard: [] } })
+          });
+        }
+
+      } catch (err) {
+        console.error('Manual aftercare send failed:', err.message);
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            ...(topicId && { message_thread_id: parseInt(topicId, 10) }),
+            text: `🚨 Ошибка при отправке aftercare: ${err.message}`,
+            disable_notification: true
+          })
+        });
+      }
+    }
+    return res.status(200).json({ ok: true });
+  }
 
   if (data?.startsWith('chat|') || data === 'cancel_delete') {
     let ok = true;
@@ -888,7 +1081,19 @@ module.exports = async (req, res) => {
     const isReschedule = parts[4] === '1';
     await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildTimeKeyboard(cardMsgId, dateStr, isReschedule) })
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildHourKeyboard(cardMsgId, dateStr, isReschedule) })
+    });
+
+  } else if (data.startsWith('cal_hr_')) {
+    // cal_hr_CARDMSGID_YYYY-MM-DD_HH_FLAG
+    const parts = data.split('_');
+    const cardMsgId = parts[2];
+    const dateStr = parts[3];
+    const hour = parts[4];
+    const isReschedule = parts[5] === '1';
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: msgId, reply_markup: buildMinuteKeyboard(cardMsgId, dateStr, hour, isReschedule) })
     });
 
   } else if (data.startsWith('cal_ok_')) {

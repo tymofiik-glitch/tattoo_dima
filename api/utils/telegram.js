@@ -105,6 +105,30 @@ function formatShortDate(date) {
   });
 }
 
+async function fetchSessionPhotos(photoIdsField) {
+  if (!photoIdsField) return [];
+  const t = token();
+  if (!t) return [];
+  const ids = photoIdsField.split(',').map(s => s.trim()).filter(Boolean);
+  
+  const promises = ids.map(async (fileId) => {
+    try {
+      const meta = await fetch(`https://api.telegram.org/bot${t}/getFile?file_id=${fileId}`);
+      const { result } = await meta.json();
+      if (!result?.file_path) return null;
+      const fileRes = await fetch(`https://api.telegram.org/file/bot${t}/${result.file_path}`);
+      return Buffer.from(await fileRes.arrayBuffer());
+    } catch(e) {
+      console.error('fetchSessionPhotos error for', fileId, e.message);
+      return null;
+    }
+  });
+
+  const results = await Promise.all(promises);
+  return results.filter(Boolean);
+}
+
+
 // Single-CTA keyboard derived from lifecycle:
 //   accepted (no date)        → WA/IG · 📅 Время + депозит · 🗑 delete
 //   accepted (date set)       → WA/IG · 💳 Ссылка на депозит · {date} · 📝 Изменить дату · 🗑 delete
@@ -169,7 +193,15 @@ function buildKeyboard(fields, status) {
         '&details=' + encodeURIComponent(calDetails);
       rows.push([{ text: '📅 Add to Google Calendar', url: calUrl }]);
     }
-    rows.push([{ text: '📸 Добавить фото к письму', callback_data: 'add_photo' }]);
+    const photoCount = fields['Session Photo IDs'] ? String(fields['Session Photo IDs']).split(',').filter(Boolean).length : 0;
+    if (photoCount > 0 && !fields.AftercareSentAt) {
+      rows.push([
+        { text: '📸 Добавить еще фото', callback_data: 'add_photo' },
+        { text: `✉️ Отправить Aftercare (${photoCount})`, callback_data: `send_aftercare|${fields.id}` }
+      ]);
+    } else {
+      rows.push([{ text: '📸 Добавить фото к письму', callback_data: 'add_photo' }]);
+    }
     rows.push([{ text: '🔄 Перенести дату', callback_data: 'reschedule' }, { text: '✅ Завершить сеанс', callback_data: 'ask_complete' }]);
     rows.push([{ text: '⚠️ No-show', callback_data: 'ask_no_show' }]);
   }
@@ -456,5 +488,6 @@ module.exports = {
   pinMessage,
   renameForumTopic,
   closeForumTopic,
-  reopenForumTopic
+  reopenForumTopic,
+  fetchSessionPhotos
 };
