@@ -22,7 +22,7 @@ async function safeSend(resend, payload, options) {
   return result;
 }
 
-const FROM = () => 'the muse ink <noreply@kaktuz.ink>';
+const FROM = () => 'DMYTRO BILYNETS · the muse ink <noreply@kaktuz.ink>';
 const WHATSAPP = () => process.env.ALENA_WHATSAPP || '';
 const INSTAGRAM_URL = 'https://instagram.com/kaktuz_tattooz';
 
@@ -71,7 +71,7 @@ function wrap({ title, sub, body }) {
   </td></tr>
 
   <tr><td style="padding:8px 8px 32px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8a8478">
-    the muse ink
+    Dmytro Bilynets &nbsp;·&nbsp; the muse ink
   </td></tr>
 
   <tr><td style="border-top:1px solid rgba(28,24,20,.12);padding:0"></td></tr>
