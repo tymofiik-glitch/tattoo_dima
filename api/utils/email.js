@@ -22,7 +22,7 @@ async function safeSend(resend, payload, options) {
   return result;
 }
 
-const FROM = () => 'DMYTRO BILYNETS · the muse ink <noreply@kaktuz.ink>';
+const FROM = () => 'the muse ink <noreply@kaktuz.ink>';
 const WHATSAPP = () => process.env.ALENA_WHATSAPP || '';
 const INSTAGRAM_URL = 'https://instagram.com/kaktuz_tattooz';
 
@@ -71,7 +71,7 @@ function wrap({ title, sub, body }) {
   </td></tr>
 
   <tr><td style="padding:8px 8px 32px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8a8478">
-    Dmytro Bilynets &nbsp;·&nbsp; the muse ink
+    the muse ink
   </td></tr>
 
   <tr><td style="border-top:1px solid rgba(28,24,20,.12);padding:0"></td></tr>
@@ -99,6 +99,10 @@ function wrap({ title, sub, body }) {
 
   <tr><td style="padding:24px 8px 8px;text-align:center">
     ${ornament(140)}
+  </td></tr>
+
+  <tr><td style="padding:16px 8px 8px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:400;font-size:11px;color:#8a8478;opacity:.8">
+    This is an automated email. Replies to this address are not monitored.
   </td></tr>
 
   <tr><td style="padding:8px 8px 24px;text-align:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;font-weight:400;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8a8478;opacity:.6">
@@ -416,7 +420,8 @@ async function sendAftercareEmail({ name, email, photos = [] }, { idempotencyKey
 
   const attachments = photos.map((buf, i) => ({
     filename: `tattoo-${i + 1}.jpg`,
-    content: Buffer.isBuffer(buf) ? buf.toString('base64') : buf
+    content: Buffer.isBuffer(buf) ? buf.toString('base64') : buf,
+    contentType: 'application/octet-stream'
   }));
 
   const photoNote = attachments.length > 0
