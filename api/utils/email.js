@@ -420,7 +420,7 @@ async function sendAftercareEmail({ name, email, photos = [] }, { idempotencyKey
   }));
 
   const photoNote = attachments.length > 0
-    ? `<p style="margin:0 0 28px;padding:16px 18px;background:rgba(184,149,106,.08);border-left:2px solid #b8956a;font-size:14px;color:#1a1814"><strong>📎 Dmytro's photos of your fresh tattoo are attached to this email.</strong> Save this email — you'll want to look back at these once it's healed.</p>`
+    ? `<p style="margin:0 0 28px;padding:16px 18px;background:rgba(184,149,106,.08);border-left:2px solid #b8956a;font-size:14px;color:#1a1814"><strong>📎 Your photos of your fresh tattoo are attached to this email.</strong> Save this email — you'll want to look back at these once it's healed.</p>`
     : '';
 
   const payload = {
@@ -428,7 +428,7 @@ async function sendAftercareEmail({ name, email, photos = [] }, { idempotencyKey
     to: email,
     subject: photos.length > 0
       ? 'Your tattoo photos + aftercare guide · the muse ink'
-      : 'Aftercare guide · Your tattoo by Dmytro · the muse ink',
+      : 'Aftercare guide · Your tattoo · the muse ink',
     html: wrap({
       title: 'Your aftercare guide.',
       sub: `For ${name} — keep this email.`,
