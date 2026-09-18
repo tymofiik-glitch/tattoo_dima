@@ -220,7 +220,7 @@ function buildMainMessage(fields, { status = 'accepted', timeline = [] } = {}) {
   const email     = escapeMd(fields.Email     || 'N/A');
   const rawIg     = String(fields.Instagram || '').replace(/@+/g, '');
   // Markdown hyperlink — brackets must NOT be escaped, only the handle text inside
-  const igHandle  = rawIg.replace(/[_*`[\]]/g, '\\$1');
+  const igHandle  = rawIg.replace(/([_*`[\]])/g, '\\$1');
   const instagram = rawIg
     ? `[@${igHandle}](https://instagram.com/${rawIg})`
     : 'N/A';
