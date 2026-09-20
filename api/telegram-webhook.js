@@ -150,6 +150,23 @@ async function saveSessionDate(token, chatId, calMsgId, cardMsgId, dateStr, time
   }).catch(e => console.error('saveSessionDate sendMessage:', e.message));
 }
 
+// Lifecycle status derived from the record — same ladder used inline elsewhere
+function statusFromFields(fields = {}) {
+  if (fields['Session Status'] === 'completed' || fields['Status'] === '⚠️ No-show') return 'session_done';
+  if (fields['Session Date'] && fields['Mollie Payment ID']) return 'date_set';
+  if (fields['Session Date']) return 'waiting_deposit';
+  if (fields['Mollie Payment ID']) return 'deposit_paid';
+  return 'accepted';
+}
+
+// Resend refuses a message over 40MB — stop before that so the send fails loudly, not silently
+const MAX_ATTACHMENT_BYTES = 38 * 1024 * 1024;
+function attachmentsTooBig(photos) {
+  const total = photos.reduce((sum, buf) => sum + buf.length, 0);
+  return total > MAX_ATTACHMENT_BYTES ? total : 0;
+}
+const mb = bytes => (bytes / 1024 / 1024).toFixed(1);
+
 function parseAmsterdamDate(dateStr) {
   const isoStr = dateStr.trim().replace(' ', 'T') + ':00';
   const candidate = new Date(isoStr + '+01:00');
@@ -685,6 +702,17 @@ module.exports = async (req, res) => {
         const statusMsgId = statusMsg?.result?.message_id;
 
         const photos = await fetchSessionPhotos(photoIds);
+        const oversize = attachmentsTooBig(photos);
+        if (oversize) {
+          const warning = `⚠️ Фото весят ${mb(oversize)} МБ — лимит письма 40 МБ, отправить нельзя.\nНажми «🗑 Убрать фото» и пришли заново меньше фото (или полегче).`;
+          if (statusMsgId) {
+            await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chat_id: chatId, message_id: statusMsgId, text: warning })
+            });
+          }
+          return res.status(200).json({ ok: true });
+        }
         const idempotencyKey = `${recordId}-aftercare-manual`;
         
         await sendAftercareEmail({
@@ -1116,6 +1144,46 @@ module.exports = async (req, res) => {
         reply_markup: { force_reply: true, selective: true }
       })
     });
+
+  } else if (data.startsWith('clear_photos|')) {
+    const recordId = data.split('|')[1];
+    const airtableToken = process.env.AIRTABLE_TOKEN?.trim();
+    const airtableBase  = process.env.AIRTABLE_BASE_ID?.trim();
+    try {
+      // Drop all collected photos and release the aftercare lock so Dima can re-upload fewer
+      await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { 'Session Photo IDs': '', AftercareSentAt: null } })
+      });
+
+      const recRes = await fetch(`https://api.airtable.com/v0/${airtableBase}/CRM_Leads/${recordId}`, {
+        headers: { 'Authorization': `Bearer ${airtableToken}` }
+      });
+      const record = await recRes.json();
+      await appendTimelineAndEdit(record, '🗑 Фото убраны — можно загрузить заново', { status: statusFromFields(record.fields || {}) });
+
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          ...(topicId && { message_thread_id: parseInt(topicId, 10) }),
+          text: '🗑 Фото убраны. Пришли заново только нужные (как файл, без сжатия) — письмо уйдёт с ними.',
+          disable_notification: true
+        })
+      });
+    } catch (err) {
+      console.error('Clear photos failed:', err.message);
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          ...(topicId && { message_thread_id: parseInt(topicId, 10) }),
+          text: `🚨 Не получилось убрать фото: ${err.message}`,
+          disable_notification: true
+        })
+      });
+    }
 
   } else if (data === 'set_date') {
     const now = new Date();

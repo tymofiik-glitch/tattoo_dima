@@ -199,6 +199,7 @@ function buildKeyboard(fields, status) {
         { text: '📸 Добавить еще фото', callback_data: 'add_photo' },
         { text: `✉️ Отправить Aftercare (${photoCount})`, callback_data: `send_aftercare|${fields.id}` }
       ]);
+      rows.push([{ text: `🗑 Убрать фото (${photoCount})`, callback_data: `clear_photos|${fields.id}` }]);
     } else {
       rows.push([{ text: '📸 Добавить фото к письму', callback_data: 'add_photo' }]);
     }
