@@ -1,3 +1,6 @@
+// One fixed studio — same constant the emails use, so invite and email agree.
+const STUDIO_ADDRESS = 'Regentesselaan 106, 2562 EE Den Haag';
+
 // Generates an iCalendar (.ics) string for a tattoo appointment
 function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -22,7 +25,7 @@ function generateIcs({ clientName, clientEmail, sessionDate, address, durationHo
   const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
   const now = new Date();
   const uid = `tattoo-${start.getTime()}@kaktuz.ink`;
-  const location = address || process.env.STUDIO_ADDRESS || 'Den Haag, Netherlands';
+  const location = address || STUDIO_ADDRESS;
   const organizerEmail = (process.env.RESEND_FROM || '').match(/<(.+?)>/)?.[1] || 'hello@kaktuz.ink';
 
   return [
@@ -64,7 +67,7 @@ function googleCalendarUrl({ sessionDate, address, durationHours = 3 }) {
     );
   }
 
-  const location = address || process.env.STUDIO_ADDRESS || 'Den Haag, Netherlands';
+  const location = address || STUDIO_ADDRESS;
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',

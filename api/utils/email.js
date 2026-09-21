@@ -25,6 +25,9 @@ async function safeSend(resend, payload, options) {
 const FROM = () => 'DMYTRO BILYNETS · the muse ink <noreply@kaktuz.ink>';
 const WHATSAPP = () => process.env.ALENA_WHATSAPP || '';
 const INSTAGRAM_URL = 'https://instagram.com/kaktuz_tattooz';
+// One fixed studio. Kept in code, not an env var, so a client never gets a
+// vague neighbourhood or a blank "shared before your session" placeholder.
+const STUDIO_ADDRESS = 'Regentesselaan 106, 2562 EE Den Haag';
 
 // ─── Shared HTML wrapper ────────────────────────────────────────────────
 // Light luxury palette matching the site (linen background, ink text, gold accent).
@@ -244,7 +247,7 @@ async function sendRejectionEmail({ name, email }) {
 async function sendBookingConfirmation({ name, email, sessionDate, address, icsContent, googleUrl }) {
   const resend = getResend();
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
-  const studioAddress = address || process.env.STUDIO_ADDRESS || 'Shared before your session';
+  const studioAddress = address || STUDIO_ADDRESS;
 
   let subject, heroTitle, heroSub, dateSection, attachments;
 
@@ -349,7 +352,7 @@ async function sendBookingConfirmation({ name, email, sessionDate, address, icsC
 // ─── Email #4: Pre-care (7 days before session) ─────────────────────────
 async function sendPreCareEmail({ name, email, sessionDate, address }, { idempotencyKey } = {}) {
   const resend = getResend();
-  const studioAddress = address || process.env.STUDIO_ADDRESS || 'Address shared in your confirmation email';
+  const studioAddress = address || STUDIO_ADDRESS;
   const waLink = WHATSAPP() ? `https://wa.me/${WHATSAPP()}` : INSTAGRAM_URL;
 
   const payload = {
