@@ -213,6 +213,69 @@ async function autoMarkCompleted() {
   return { flipped, scanned: records.length };
 }
 
+// Mollie retries a failed webhook only a handful of times. If every attempt
+// misses — one did on 8 Oct 2026 — the deposit stays unrecorded forever and
+// nobody notices until the client complains. Re-drive the webhook for any paid
+// payment whose lead never got its Mollie Payment ID written.
+const WEBHOOK_URL = 'https://kaktuz.ink/api/payment-webhook';
+const RECONCILE_WINDOW_DAYS = 14;
+const RECONCILE_GRACE_MIN = 30; // leave a fresh payment to its own webhook first
+
+async function reconcilePayments() {
+  const mollieKey = process.env.MOLLIE_API_KEY?.trim();
+  if (!mollieKey) return { skipped: 'no Mollie key' };
+
+  const res = await fetch('https://api.mollie.com/v2/payments?limit=50', {
+    headers: { 'Authorization': `Bearer ${mollieKey}` }
+  });
+  if (!res.ok) throw new Error(`Mollie list failed: ${res.status}`);
+  const payments = (await res.json())._embedded?.payments || [];
+
+  const now = Date.now();
+  const candidates = payments.filter(p => {
+    if (p.status !== 'paid' || !p.metadata?.leadId) return false;
+    const paidAt = new Date(p.paidAt || p.createdAt).getTime();
+    const ageMin = (now - paidAt) / 60000;
+    return ageMin > RECONCILE_GRACE_MIN && ageMin < RECONCILE_WINDOW_DAYS * 24 * 60;
+  });
+
+  let recovered = 0, failed = 0;
+  for (const p of candidates) {
+    try {
+      const record = await getRecord(p.metadata.leadId);
+      if (record.fields?.['Mollie Payment ID']) continue; // already recorded
+
+      console.log('Reconciling missed payment:', p.id, 'lead:', p.metadata.leadId);
+      const replay = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: p.id })
+      });
+      if (!replay.ok) throw new Error(`webhook replay ${replay.status}`);
+
+      const after = await getRecord(p.metadata.leadId);
+      if (!after.fields?.['Mollie Payment ID']) throw new Error('replay left the lead unrecorded');
+
+      recovered++;
+      await notifyAlena(
+        `🔁 *Платёж подхвачен задним числом*\n` +
+        `Клиент: ${after.fields?.Name || p.metadata.leadId}\n` +
+        `Платёж: \`${p.id}\` от ${String(p.paidAt || p.createdAt).split('T')[0]}\n` +
+        `Вебхук Mollie тогда не дошёл. Карточка обновлена, письмо клиенту отправлено.`
+      );
+    } catch (err) {
+      failed++;
+      console.error(`reconcilePayments failed for ${p.id}:`, err.message);
+      await notifyAlena(
+        `⚠️ *Не смог подхватить платёж*\n\`${p.id}\` · lead \`${p.metadata.leadId}\`\n` +
+        `${err.message}\nОтметь депозит вручную.`
+      );
+    }
+  }
+
+  return { scanned: candidates.length, recovered, failed };
+}
+
 module.exports = async (req, res) => {
   setSecurityHeaders(res);
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -231,6 +294,14 @@ module.exports = async (req, res) => {
 
   try {
     const completedSweep = await autoMarkCompleted();
+    // Never let a Mollie hiccup abort the email sweeps below
+    let reconciled;
+    try {
+      reconciled = await reconcilePayments();
+    } catch (err) {
+      console.error('reconcilePayments failed:', err.message);
+      reconciled = { error: err.message };
+    }
     const preRes   = await processBatch('precare',   targetDate(+7));
     const remRes   = await processBatch('aftercare_reminder', targetDate(-3));
     const touchRes = await processBatch('touchup', targetDate(-30));
@@ -238,6 +309,7 @@ module.exports = async (req, res) => {
     const summary = {
       ok: true,
       autoCompleted: completedSweep,
+      reconciledPayments: reconciled,
       preCare:   preRes,
       aftercareReminder: remRes,
       touchup: touchRes
