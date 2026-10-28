@@ -16,6 +16,7 @@ const TYPE_CONFIG = {
     sentField:    'PreCareSentAt',
     lockField:    'PreCareLockedAt',
     extraFilter:  "{Mollie Payment ID} != ''",
+    catchUp:      true,
     targetOffset: +7,
     send: (record, opts) => sendPreCareEmail({
       name: record.fields.Name || 'there',
@@ -137,7 +138,12 @@ async function releaseLock(recordId, lockField) {
 
 function buildFilter(cfg, target) {
   const ttlClause = `OR(NOT({${cfg.lockField}}), IS_BEFORE({${cfg.lockField}}, DATEADD(NOW(),-${LOCK_TTL_MIN},'minutes')))`;
-  const dateClause = `IS_SAME({Session Date}, '${target}', 'day')`;
+  // Pre-care matches a window, not one exact day. A deposit paid later than
+  // `targetOffset` days before the session used to miss its single chance and
+  // the client silently never got the email; now the next run catches them up.
+  const dateClause = cfg.catchUp
+    ? `AND(IS_AFTER({Session Date}, NOW()), IS_BEFORE({Session Date}, DATEADD(NOW(), ${cfg.targetOffset}, 'days')))`
+    : `IS_SAME({Session Date}, '${target}', 'day')`;
   return `AND(${dateClause}, NOT({${cfg.sentField}}), ${cfg.extraFilter}, ${ttlClause})`;
 }
 
